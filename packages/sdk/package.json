@@ -1,0 +1,8 @@
+{
+  "name": "@bop/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed API client for the platform backend: auth handling, request/response types, error normalization.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

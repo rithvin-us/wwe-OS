@@ -1,0 +1,1 @@
+# email-service dependencies. Pin versions when the service is implemented.

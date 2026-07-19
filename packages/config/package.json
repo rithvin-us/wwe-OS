@@ -1,0 +1,8 @@
+{
+  "name": "@bop/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared tooling configuration: base tsconfig, eslint, prettier presets consumed by all workspace packages.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
