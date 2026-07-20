@@ -1,20 +1,16 @@
-import {
-  KeyRound,
-  Layers,
-  LayoutDashboard,
-  ScrollText,
-  Settings,
-  Shield,
-  Users,
-  type LucideIcon,
-} from "@bop/icons";
+import { LayoutDashboard, Layers, Settings, type LucideIcon } from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
 /**
- * The one sidebar. Kept deliberately simple: Home, the apps, one quiet
- * Services entry, and Administration. App entries resolve from the registry
- * so name and icon can never drift between navigation, launcher, and pages.
+ * The one sidebar. Deliberately simple for a single-operator company: Home,
+ * the apps, a quiet Services entry, and System (Settings). App entries resolve
+ * from the registry so name and icon never drift between nav, launcher, pages.
+ *
+ * Multi-user administration (Users, Roles, Permissions, Audit) is intentionally
+ * hidden — one operator does everything, so there are no access gates to manage.
+ * The backend plumbing stays in place; re-enable the screens by restoring the
+ * commented entries in ADMIN_PAGES the day a second person joins.
  */
 export interface NavItem {
   name: string;
@@ -30,8 +26,8 @@ export interface NavGroup {
 }
 
 /**
- * Administration pages are platform surfaces, not apps. They render through
- * the same page template with their own definitions.
+ * Platform surfaces (not apps). They render through the same page template.
+ * Kept minimal by design — see the note above for the dormant admin screens.
  */
 export interface AdminPage {
   slug: string;
@@ -42,35 +38,16 @@ export interface AdminPage {
 
 export const ADMIN_PAGES: AdminPage[] = [
   {
-    slug: "admin/users",
-    name: "Users",
-    icon: Users,
-    purpose: "Manage who has an account and what they can access.",
-  },
-  {
-    slug: "admin/roles",
-    name: "Roles",
-    icon: Shield,
-    purpose: "Group permissions into roles and assign them to people.",
-  },
-  {
-    slug: "admin/permissions",
-    name: "Permissions",
-    icon: KeyRound,
-    purpose: "See exactly what each role allows.",
-  },
-  {
-    slug: "admin/audit",
-    name: "Audit",
-    icon: ScrollText,
-    purpose: "A record of who did what, and when.",
-  },
-  {
     slug: "settings",
     name: "Settings",
     icon: Settings,
-    purpose: "Organization details, appearance, and preferences.",
+    purpose: "Company details, sign-in, appearance, and preferences.",
   },
+  // --- Dormant until the company adds a second person (multi-user mode) ---
+  // { slug: "admin/users",       name: "Users",       icon: Users,     purpose: "Manage who has an account." },
+  // { slug: "admin/roles",       name: "Roles",       icon: Shield,    purpose: "Group permissions into roles." },
+  // { slug: "admin/permissions", name: "Permissions", icon: KeyRound,  purpose: "See what each role allows." },
+  // { slug: "admin/audit",       name: "Audit",       icon: ScrollText, purpose: "A record of who did what, and when." },
 ];
 
 export function getAdminPage(slug: string): AdminPage | undefined {
@@ -88,14 +65,9 @@ export const NAVIGATION: NavGroup[] = [
   },
   {
     label: null,
-    items: [{ name: "Services", href: "/services", icon: Layers, subtle: true }],
-  },
-  {
-    label: "Administration",
-    items: ADMIN_PAGES.map((p) => ({
-      name: p.name,
-      href: `/${p.slug}`,
-      icon: p.icon,
-    })),
+    items: [
+      { name: "Services", href: "/services", icon: Layers, subtle: true },
+      { name: "Settings", href: "/settings", icon: Settings, subtle: true },
+    ],
   },
 ];

@@ -1,0 +1,99 @@
+"""Platform error types and the DRF exception handler.
+
+Every error leaves the API in one shape:
+    {"success": false, "error": {"code", "message", "details"}}
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from rest_framework import status
+from rest_framework.exceptions import APIException
+from rest_framework.response import Response
+from rest_framework.views import exception_handler as drf_exception_handler
+
+logger = logging.getLogger("platform.errors")
+
+
+class PlatformError(APIException):
+    """Base for domain errors raised by services."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_code = "error"
+    default_detail = "A platform error occurred."
+
+
+class ValidationError(PlatformError):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_code = "validation_error"
+    default_detail = "The submitted data is invalid."
+
+
+class NotFoundError(PlatformError):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_code = "not_found"
+    default_detail = "The requested resource was not found."
+
+
+class ConflictError(PlatformError):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "conflict"
+    default_detail = "The request conflicts with the current state."
+
+
+class PermissionDeniedError(PlatformError):
+    status_code = status.HTTP_403_FORBIDDEN
+    default_code = "permission_denied"
+    default_detail = "You do not have permission to perform this action."
+
+
+class AuthenticationFailedError(PlatformError):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_code = "authentication_failed"
+    default_detail = "Authentication failed."
+
+
+class RateLimitedError(PlatformError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    default_code = "rate_limited"
+    default_detail = "Too many requests. Please try again later."
+
+
+def standard_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    response = drf_exception_handler(exc, context)
+    if response is None:
+        logger.exception("Unhandled exception in API")
+        return Response(
+            {
+                "success": False,
+                "error": {
+                    "code": "internal_error",
+                    "message": "An unexpected error occurred.",
+                    "details": None,
+                },
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    detail = response.data
+    code = getattr(exc, "default_code", "error")
+    message = "Request failed."
+    details: Any = None
+
+    if isinstance(detail, dict) and "detail" in detail and len(detail) == 1:
+        message = str(detail["detail"])
+    elif isinstance(detail, dict):
+        message = "One or more fields are invalid."
+        details = detail
+    elif isinstance(detail, list):
+        message = "; ".join(str(item) for item in detail)
+    else:
+        message = str(detail)
+
+    response.data = {
+        "success": False,
+        "error": {"code": code, "message": message, "details": details},
+    }
+    return response

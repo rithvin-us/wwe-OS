@@ -1,0 +1,29 @@
+feat(platform): implement Django-based shared platform kernel and core services
+
+This commit introduces the foundational Django architecture for the backend platform kernel, providing core shared capabilities necessary for all business modules.
+
+Key Additions:
+1. Core Platform Django Apps (`platform/`):
+   - `auth`: Custom authentication backend, throttles, and token management.
+   - `users`: User models, managers, and related services.
+   - `tenancy`: Multi-tenancy models and middleware for tenant isolation.
+   - `permissions` & `roles`: Role-based access control (RBAC) registry and models.
+   - `audit`: System-wide audit logging and tracking.
+   - `notifications`: Centralized notification models and services.
+   - `shared`: Base models, custom exceptions, global middleware, pagination, and unified response renderers.
+
+2. Platform Configuration & Infrastructure:
+   - Added `Dockerfile` and `entrypoint.sh` for the platform service.
+   - Updated `docker-compose.yml` to reflect platform dependencies.
+   - Configured `requirements.txt` and `requirements-dev.txt` for Python dependencies.
+   - Updated `pyproject.toml` and `.env.example` with platform settings.
+
+3. Comprehensive Documentation (`docs/`):
+   - Added platform API guidelines (`platform-api.md`).
+   - Detailed architecture docs for authentication, RBAC, and the platform kernel itself.
+   - Added backend deployment documentation and a single-operator roadmap plan.
+
+4. Frontend Navigation:
+   - Updated `apps/web/src/config/navigation.ts` to accommodate the new platform capabilities.
+
+This setup enforces our architectural rule that the `platform/` handles all cross-cutting concerns (auth, tenancy, auditing) independently, allowing upcoming business modules to focus strictly on domain logic.

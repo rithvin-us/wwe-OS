@@ -1,27 +1,58 @@
-# Platform
+# Platform Kernel
 
-Cross-cutting capabilities shared by every module. The platform is the kernel:
-identity, tenancy, workflow, notifications, audit, search, storage, billing, AI.
+Cross-cutting capabilities shared by every module — the kernel. **No business
+logic lives here** (that belongs in `modules/`). This is a Django + DRF project
+exposing the platform API under `/api/v1/`.
 
-**Rules**
+Stage 1 implements: `shared`, `tenancy`, `users`, `auth`, `permissions`,
+`roles`, `audit`, `notifications`. (`billing`, `search`, `storage`, `workflow`,
+`ai` remain capability placeholders for later stages.)
 
-1. Business logic NEVER lives here. It lives only in `modules/`.
-2. Every capability here must be reusable by any current or future module.
-3. Modules depend on platform. Platform never depends on modules.
-4. All platform services are multi-tenant aware from day one.
+## Quick start
 
-| Component        | Responsibility                            |
-| ---------------- | ----------------------------------------- |
-| `auth/`          | Authentication, sessions, tokens, SSO     |
-| `users/`         | User identity and profiles                |
-| `roles/`         | Role definitions and assignment           |
-| `permissions/`   | Permission model and policy checks        |
-| `workflow/`      | Generic workflow / approval engine        |
-| `notifications/` | Multi-channel notification dispatch       |
-| `audit/`         | Immutable audit trail                     |
-| `search/`        | Cross-module indexing and search          |
-| `storage/`       | File/object storage abstraction           |
-| `tenancy/`       | Tenant lifecycle and isolation            |
-| `billing/`       | Plans, subscriptions, usage metering      |
-| `ai/`            | Shared AI gateway (LLM, embeddings)       |
-| `shared/`        | Base classes, common utilities, contracts |
+```bash
+cd platform
+python -m venv .venv && . .venv/Scripts/activate   # POSIX: . .venv/bin/activate
+pip install -r requirements-dev.txt
+python manage.py migrate        # also seeds permissions + system roles
+python manage.py runserver      # http://localhost:8000
+pytest                          # test suite
+```
+
+Without `DATABASE_URL` set, the app runs on sqlite (used by tests). Point
+`DATABASE_URL` at PostgreSQL for a production-like run, or use the root
+`docker compose up -d --build` (postgres + redis + mailpit + backend).
+
+## Layout
+
+```
+config/        settings, urls, wsgi/asgi, health probes
+shared/        base model, repo/service/serializer/validator, event bus,
+               pagination, renderer, exceptions, DRF permission, context
+tenancy/       Tenant, Subscription, CompanyProfile + tenant middleware
+users/         generic User (identity only)
+auth/          JWT auth, sessions, lockout, reset, verification
+permissions/   granular permission catalog (code-defined, DB-synced)
+roles/         RBAC: system/custom roles, inheritance, assignment
+audit/         immutable audit trail (event-bus driven)
+notifications/ generic notification engine
+tests/         pytest suite (auth, RBAC, tenancy, audit, notifications, API)
+```
+
+## Conventions
+
+- Views thin → services hold rules → repositories/managers hit the DB.
+- Every model extends `shared.models.BaseModel`; tenant-owned data extends
+  `TenantOwnedModel`.
+- Cross-capability reactions go through the event bus (`shared/events.py`) —
+  never direct imports between capabilities.
+- Config via environment only (`config/env.py`, `.env.example`).
+
+## Docs
+
+- Architecture: [`../docs/architecture/platform-kernel.md`](../docs/architecture/platform-kernel.md)
+- Authentication: [`../docs/architecture/authentication.md`](../docs/architecture/authentication.md)
+- RBAC & permission matrix: [`../docs/architecture/rbac.md`](../docs/architecture/rbac.md)
+- API: [`../docs/api/platform-api.md`](../docs/api/platform-api.md)
+- Deployment: [`../docs/deployment/backend.md`](../docs/deployment/backend.md)
+- Live API docs (when running): `/api/v1/docs/` (Swagger), `/api/v1/redoc/`
