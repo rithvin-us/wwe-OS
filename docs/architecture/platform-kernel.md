@@ -7,16 +7,16 @@ foundation they are built on.
 
 ## Capabilities (Django apps)
 
-| App | Responsibility |
-|-----|----------------|
-| `shared` | Base model, repository/service/serializer/validator bases, event bus, pagination, error handling, renderer, DRF permission, request context. Abstract only — no tables. |
-| `tenancy` | `Tenant`, `Subscription`, `CompanyProfile`; tenant resolution middleware; tenant-scoped manager. |
-| `users` | The generic `User` (identity only — no HR fields). Email is the login identifier. |
-| `auth` | JWT auth, sessions/devices, login attempts, lockout, password reset, email verification. |
-| `permissions` | Granular permission catalog (code-defined, DB-synced). |
-| `roles` | Enterprise RBAC: system + custom roles, inheritance, assignment. |
-| `audit` | Immutable, append-only audit trail, wired to the event bus. |
-| `notifications` | Generic multi-channel notification engine (in-app, email; Telegram/webhook declared for later). |
+| App             | Responsibility                                                                                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared`        | Base model, repository/service/serializer/validator bases, event bus, pagination, error handling, renderer, DRF permission, request context. Abstract only — no tables. |
+| `tenancy`       | `Tenant`, `Subscription`, `CompanyProfile`; tenant resolution middleware; tenant-scoped manager.                                                                        |
+| `users`         | The generic `User` (identity only — no HR fields). Email is the login identifier.                                                                                       |
+| `auth`          | JWT auth, sessions/devices, login attempts, lockout, password reset, email verification.                                                                                |
+| `permissions`   | Granular permission catalog (code-defined, DB-synced).                                                                                                                  |
+| `roles`         | Enterprise RBAC: system + custom roles, inheritance, assignment.                                                                                                        |
+| `audit`         | Immutable, append-only audit trail, wired to the event bus.                                                                                                             |
+| `notifications` | Generic multi-channel notification engine (in-app, email; Telegram/webhook declared for later).                                                                         |
 
 ## Layering
 

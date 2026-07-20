@@ -14,18 +14,18 @@ Base path: `/api/v1/`. Authentication: `Authorization: Bearer <access token>`.
 
 ## Health
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/healthz` | Liveness (process up) |
-| GET | `/readyz` | Readiness (database + cache reachable) |
+| Method | Path       | Purpose                                |
+| ------ | ---------- | -------------------------------------- |
+| GET    | `/healthz` | Liveness (process up)                  |
+| GET    | `/readyz`  | Readiness (database + cache reachable) |
 
 ## OpenAPI
 
-| Path | |
-|------|--|
+| Path              |                  |
+| ----------------- | ---------------- |
 | `/api/v1/schema/` | OpenAPI 3 schema |
-| `/api/v1/docs/` | Swagger UI |
-| `/api/v1/redoc/` | ReDoc |
+| `/api/v1/docs/`   | Swagger UI       |
+| `/api/v1/redoc/`  | ReDoc            |
 
 ## Endpoints
 
@@ -51,11 +51,11 @@ Base path: `/api/v1/`. Authentication: `Authorization: Bearer <access token>`.
 
 ## Errors
 
-| Status | `code` | When |
-|--------|--------|------|
-| 401 | `authentication_failed` | Missing/invalid credentials |
-| 403 | `permission_denied` | Authenticated but lacks the permission |
-| 404 | `not_found` | Resource absent or outside the tenant |
-| 409 | `conflict` | State conflict (e.g. duplicate slug) |
-| 422 | `validation_error` | Field validation failed (`details` carries fields) |
-| 429 | `rate_limited` | Throttle or account lockout |
+| Status | `code`                  | When                                               |
+| ------ | ----------------------- | -------------------------------------------------- |
+| 401    | `authentication_failed` | Missing/invalid credentials                        |
+| 403    | `permission_denied`     | Authenticated but lacks the permission             |
+| 404    | `not_found`             | Resource absent or outside the tenant              |
+| 409    | `conflict`              | State conflict (e.g. duplicate slug)               |
+| 422    | `validation_error`      | Field validation failed (`details` carries fields) |
+| 429    | `rate_limited`          | Throttle or account lockout                        |

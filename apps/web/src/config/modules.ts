@@ -46,8 +46,9 @@ export const APPS: PlatformApp[] = [
     name: "Purchases",
     icon: ShoppingCart,
     tagline: "Request, approve, and track purchases.",
-    availability: "coming-soon",
+    availability: "in-progress",
   },
+  /*
   {
     slug: "inventory",
     name: "Inventory",
@@ -55,6 +56,7 @@ export const APPS: PlatformApp[] = [
     tagline: "Stock, items, and where things are.",
     availability: "coming-soon",
   },
+  */
   {
     slug: "dms",
     name: "Documents",
@@ -69,6 +71,7 @@ export const APPS: PlatformApp[] = [
     tagline: "Agreements, renewals, and expiry reminders.",
     availability: "coming-soon",
   },
+  /*
   {
     slug: "assets",
     name: "Assets",
@@ -76,6 +79,7 @@ export const APPS: PlatformApp[] = [
     tagline: "Company equipment and who has it.",
     availability: "coming-soon",
   },
+  */
   {
     slug: "analytics",
     name: "Analytics",

@@ -23,32 +23,32 @@ same mechanism.
 
 ## Permissions
 
-| Code | Category |
-|------|----------|
-| `users.read`, `users.write`, `users.invite` | Users |
+| Code                                             | Category            |
+| ------------------------------------------------ | ------------------- |
+| `users.read`, `users.write`, `users.invite`      | Users               |
 | `roles.read`, `roles.manage`, `permissions.read` | Roles & permissions |
-| `audit.view`, `audit.archive` | Audit |
-| `notifications.read`, `notifications.send` | Notifications |
-| `settings.view`, `settings.manage` | Settings |
-| `dashboard.view` | Dashboard |
+| `audit.view`, `audit.archive`                    | Audit               |
+| `notifications.read`, `notifications.send`       | Notifications       |
+| `settings.view`, `settings.manage`               | Settings            |
+| `dashboard.view`                                 | Dashboard           |
 
 ## System roles (seeded)
 
-| Permission | Owner | Administrator | Member |
-|------------|:-----:|:-------------:|:------:|
-| users.read | ✓ | ✓ | |
-| users.write | ✓ | ✓ | |
-| users.invite | ✓ | ✓ | |
-| roles.read | ✓ | ✓ | |
-| roles.manage | ✓ | ✓ | |
-| permissions.read | ✓ | ✓ | |
-| audit.view | ✓ | ✓ | |
-| audit.archive | ✓ | | |
-| notifications.read | ✓ | ✓ | ✓ |
-| notifications.send | ✓ | ✓ | |
-| settings.view | ✓ | ✓ | ✓ |
-| settings.manage | ✓ | ✓ | |
-| dashboard.view | ✓ | ✓ | ✓ |
+| Permission         | Owner | Administrator | Member |
+| ------------------ | :---: | :-----------: | :----: |
+| users.read         |   ✓   |       ✓       |        |
+| users.write        |   ✓   |       ✓       |        |
+| users.invite       |   ✓   |       ✓       |        |
+| roles.read         |   ✓   |       ✓       |        |
+| roles.manage       |   ✓   |       ✓       |        |
+| permissions.read   |   ✓   |       ✓       |        |
+| audit.view         |   ✓   |       ✓       |        |
+| audit.archive      |   ✓   |               |        |
+| notifications.read |   ✓   |       ✓       |   ✓    |
+| notifications.send |   ✓   |       ✓       |        |
+| settings.view      |   ✓   |       ✓       |   ✓    |
+| settings.manage    |   ✓   |       ✓       |        |
+| dashboard.view     |   ✓   |       ✓       |   ✓    |
 
 Owner always receives the full catalog (kept in sync automatically). Tenants can
 create custom roles and set their permissions via `PUT /api/v1/roles/{id}/permissions/`.

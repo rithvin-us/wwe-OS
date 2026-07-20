@@ -14,6 +14,7 @@ identity record would link to the same `User`.
 ## Flows
 
 **Login** (`POST /api/v1/auth/login/`)
+
 1. Reject early if the account is locked (too many recent failures).
 2. Verify credentials (Argon2). Record a `LoginAttempt` either way.
 3. On success: clear the failure counter, issue an access/refresh pair, create a
