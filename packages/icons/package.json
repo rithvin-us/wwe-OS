@@ -1,0 +1,20 @@
+{
+  "name": "@bop/icons",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Icon system: Lucide, re-exported through one gate. No emoji, no ad-hoc icon imports.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^0.475.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

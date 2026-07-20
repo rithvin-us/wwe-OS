@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@bop/design-system/tokens.css";
+
+/* Monorepo packages are outside this app's root — include their sources. */
+@source "../../../../packages/ui/src";
+@source "../../../../packages/theme/src";
+@source "../../../../packages/charts/src";
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

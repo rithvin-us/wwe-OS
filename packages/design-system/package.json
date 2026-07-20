@@ -2,7 +2,11 @@
   "name": "@bop/design-system",
   "version": "0.0.0",
   "private": true,
-  "description": "Design tokens, themes, typography, spacing, primitives.",
-  "main": "src/index.ts",
-  "types": "src/index.ts"
+  "description": "Design tokens: color, typography, spacing, radius, shadow, layout metrics. CSS custom properties consumed by every app.",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tokens.css": "./src/tokens.css"
+  }
 }

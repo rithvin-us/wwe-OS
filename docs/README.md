@@ -9,3 +9,5 @@
 | `roadmap/`       | Module roadmap and milestones                                |
 | `adr/`           | Architecture Decision Records (template: `0000-template.md`) |
 | `meeting-notes/` | Decisions and discussion notes                               |
+| `design/`        | **Design Bible** — the law for every UI change               |
+| `modules/`       | Module intelligence blueprints, one per module               |
