@@ -17,6 +17,8 @@ api_v1 = [
     path("tenancy/", include("tenancy.urls")),
     path("audit/", include("audit.urls")),
     path("notifications/", include("notifications.urls")),
+    # --- Business modules ---
+    path("purchase/", include("purchase.backend.api.urls")),
 ]
 
 urlpatterns = [

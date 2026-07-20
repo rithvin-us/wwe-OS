@@ -8,6 +8,9 @@ class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
     phone = serializers.CharField(required=False, allow_blank=True)
+    # Only meaningful for the very first registration, which sets up the
+    # company. Ignored (a no-op) once a company already exists.
+    company_name = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
 
 class LoginSerializer(serializers.Serializer):

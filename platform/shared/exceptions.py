@@ -11,6 +11,7 @@ from typing import Any
 
 from rest_framework import status
 from rest_framework.exceptions import APIException
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
@@ -81,6 +82,16 @@ def standard_exception_handler(exc: Exception, context: dict[str, Any]) -> Respo
     code = getattr(exc, "default_code", "error")
     message = "Request failed."
     details: Any = None
+
+    if isinstance(exc, DRFValidationError) and not isinstance(exc, ValidationError):
+        # A plain serializer's `is_valid(raise_exception=True)` raises DRF's
+        # own ValidationError, which defaults to 400 — but the platform's
+        # documented contract (docs/api/platform-api.md) is 422 for field
+        # validation failures, matching the platform ValidationError above.
+        # Normalize so every validation failure looks the same over the API,
+        # regardless of which layer raised it.
+        response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        code = "validation_error"
 
     if isinstance(detail, dict) and "detail" in detail and len(detail) == 1:
         message = str(detail["detail"])

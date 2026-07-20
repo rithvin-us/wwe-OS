@@ -56,12 +56,37 @@
   --status-planned: oklch(0.55 0.02 250);
   --status-attention: oklch(0.55 0.2 25);
 
+  /* --- Semantic (business data state — success/warning, distinct from the
+     module-status language above; used by badges, alerts, form feedback).
+     Lightness values checked against real WCAG contrast math (not eyeballed)
+     — 0.58/0.66 read fine but measured 3.0-4.0:1 as small text on white,
+     short of the 4.5:1 body-text floor; darkened to clear ~4.6:1. --- */
+  --success: oklch(0.545 0.13 160);
+  --success-foreground: oklch(0.98 0.01 160);
+  --warning: oklch(0.565 0.14 75);
+  --warning-foreground: oklch(0.2 0.03 75);
+
   /* --- Shape --- */
   --radius: 0.5rem;
 
   /* --- Layout metrics (one sidebar, one header, everywhere) --- */
   --layout-sidebar-width: 16.5rem; /* 264px */
   --layout-header-height: 3.5rem; /* 56px */
+
+  /* --- Motion. Product register: 150-250ms, ease-out, state not decoration. --- */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+
+  /* --- Stacking. Never an arbitrary 999 — every layer has a name. --- */
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
 }
 
 .dark {
@@ -106,6 +131,11 @@
   --status-building: oklch(0.76 0.13 80);
   --status-planned: oklch(0.65 0.015 250);
   --status-attention: oklch(0.66 0.18 25);
+
+  --success: oklch(0.7 0.13 160);
+  --success-foreground: oklch(0.16 0.03 160);
+  --warning: oklch(0.76 0.13 80);
+  --warning-foreground: oklch(0.18 0.03 80);
 }
 
 @theme inline {
@@ -149,6 +179,11 @@
   --color-status-planned: var(--status-planned);
   --color-status-attention: var(--status-attention);
 
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
   /* Typography roles. Font variables are attached by the app via next/font. */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
@@ -159,9 +194,20 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Quiet, two-layer elevation. Nothing floats loudly in an ops tool. */
+  /* Quiet elevation. Nothing floats loudly in an ops tool — depth comes from
+     borders and background steps first; shadows only escalate for overlays
+     that are genuinely above the page (popovers, dialogs, dropdowns). */
   --shadow-xs: 0 1px 2px 0 oklch(0.19 0.015 250 / 0.05);
   --shadow-sm: 0 1px 2px 0 oklch(0.19 0.015 250 / 0.06), 0 1px 3px 0 oklch(0.19 0.015 250 / 0.04);
   --shadow-md: 0 2px 4px -1px oklch(0.19 0.015 250 / 0.06),
     0 4px 8px -2px oklch(0.19 0.015 250 / 0.06);
+  --shadow-lg: 0 4px 8px -2px oklch(0.19 0.015 250 / 0.08),
+    0 12px 24px -4px oklch(0.19 0.015 250 / 0.1);
+
+  /* Confirmed against Tailwind v4's own theme.css: --ease-* is a real
+     namespace (generates ease-out-quart etc). --duration-* is not — there's
+     no such namespace, only the numeric duration-<n> scale. Named durations
+     stay plain :root vars, used via duration-(--duration-base) instead. */
+  --ease-out-quart: var(--ease-out-quart);
+  --ease-out-expo: var(--ease-out-expo);
 }

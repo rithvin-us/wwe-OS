@@ -4,6 +4,7 @@ import { PanelLeft, Search } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 
 import { NotificationCenter } from "@/components/notification-center";
+import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
@@ -45,6 +46,7 @@ export function AppHeader({
       <div className="ml-auto flex items-center gap-1">
         <NotificationCenter />
         <ThemeToggle />
+        <SignOutButton />
       </div>
     </header>
   );

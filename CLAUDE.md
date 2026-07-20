@@ -22,8 +22,10 @@ The company is run by **one person who is HR + IT + Accounts**. Build for that:
 - **Task cockpit, not silos.** The dashboard leads with one "needs your attention"
   surface across all areas + quick actions.
 - **Automation first.** Each module ships self-service/automatic paths before
-  manual admin screens; the operator handles exceptions only. HR is built first
-  and fully automated.
+  manual admin screens; the operator handles exceptions only.
+- **HR already exists — do not build it.** An HR Automation app is already
+  deployed separately; WWE OS integrates with it (see
+  `docs/specs/hr-integration-strategy.md`), it never gets rebuilt here.
 - **Native mobile app** (`apps/mobile`, Expo/React Native) is a planned workstream;
   design every new feature mobile-first, reusing the design tokens and the API.
 
@@ -147,6 +149,23 @@ the command center live. Admin surfaces live in
 `docs/modules/*.md` — one per module (purpose, entities, APIs, KPIs,
 permissions, relationships). Implementation follows the blueprint; update the
 blueprint when scope changes.
+
+`docs/specs/*.md` — the technical layer underneath: 20-point engineering
+specs (schema, folder structure, API design, events, testing, deployment),
+honestly marked **Built** vs **Planned** per module. `docs/specs/
+_shared-conventions.md` documents platform-wide patterns once (error
+contract, auth schemes, testing/deployment gates) — specs reference it
+instead of repeating it. `docs/roadmap/development-roadmap.md` is the build
+order, dependency graph, risk/cost/time estimates, and production readiness
+checklist — read it before starting a new module or claiming something is
+"production ready."
+
+`modules/purchase/backend` is the reference implementation for a real,
+built, tested module (Purchase bill ingestion via Telegram OCR, Stage 2) —
+new modules should follow its layering, permission-registration pattern
+(`permissions/registry.py` + `apps.py` post_migrate sync), and event-
+subscription pattern (`events/registry.py` + `events/subscribers.py`)
+exactly, not reinvent them.
 
 ## Conventions
 

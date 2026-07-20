@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "@bop/theme";
+import { Toaster } from "@bop/ui/components/sonner";
 import { TooltipProvider } from "@bop/ui/components/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
@@ -18,7 +19,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        <TooltipProvider delayDuration={200}>
+          {children}
+          <Toaster position="bottom-right" />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

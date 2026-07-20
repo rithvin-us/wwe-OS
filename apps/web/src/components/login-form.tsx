@@ -1,9 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { Label } from "@bop/ui/components/label";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -15,10 +17,13 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 /**
- * The one login form. Validation is live; credential exchange activates when
- * platform/auth ships its API. Until then submission reports that honestly.
+ * The one login form. Talks to this app's own /api/auth/login route, never
+ * to Django directly — the token never reaches client-side JavaScript.
  */
 export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const {
     register,
     handleSubmit,
@@ -28,10 +33,26 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  function onSubmit(_values: LoginValues) {
-    setError("root", {
-      message: "Sign-in isn't available yet. Your account will work here soon.",
+  async function onSubmit(values: LoginValues) {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
     });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const message =
+        response.status === 429
+          ? "Too many attempts. Wait a few minutes before trying again."
+          : body?.message ?? "Incorrect email or password.";
+      setError("root", { message });
+      return;
+    }
+
+    const next = searchParams.get("next") || "/";
+    router.push(next);
+    router.refresh();
   }
 
   return (
@@ -64,12 +85,16 @@ export function LoginForm() {
       </div>
 
       {errors.root ? (
-        <p className="rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
           {errors.root.message}
         </p>
       ) : null}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? <Loader2 aria-hidden className="animate-spin" /> : null}
         Sign in
       </Button>
     </form>

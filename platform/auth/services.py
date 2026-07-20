@@ -27,6 +27,7 @@ from shared.exceptions import (
     ValidationError,
 )
 from shared.services import BaseService
+from tenancy.models import Tenant
 from users.models import User
 
 from auth.models import (
@@ -90,16 +91,44 @@ class AuthService(BaseService):
 
     # ---------------------------------------------------------------- register
     def register(
-        self, *, email: str, username: str, password: str, tenant=None, **extra: Any
+        self,
+        *,
+        email: str,
+        username: str,
+        password: str,
+        tenant=None,
+        company_name: str = "",
+        **extra: Any,
     ) -> User:
         if User.objects.filter(email__iexact=email).exists():
             raise ValidationError(detail={"email": ["This email is already registered."]})
         if User.objects.filter(username__iexact=username).exists():
             raise ValidationError(detail={"username": ["This username is taken."]})
         validate_password(password)
+
+        # Single-operator bootstrap: the first person to ever register sets
+        # up the company and becomes its Owner. Anyone registering after
+        # that joins the existing company as a Member. See
+        # platform/tenancy/services.py — this is the only place allowed to
+        # create a Tenant implicitly.
+        from tenancy.services import TenancyService
+
+        is_first_user = tenant is None and Tenant.objects.count() == 0
+        if tenant is None:
+            tenant = TenancyService().get_or_bootstrap_default_tenant(company_name=company_name)
+
         user = User.objects.create_user(
             email=email, username=username, password=password, tenant=tenant, **extra
         )
+
+        from roles.models import Role
+        from roles.services import RoleService
+
+        role_slug = "owner" if is_first_user else "member"
+        role = Role.objects.filter(tenant__isnull=True, slug=role_slug).first()
+        if role is not None:
+            RoleService().assign_role(user=user, role=role)
+
         publish(Events.USER_CREATED, instance=user, actor=None)
         self.send_email_verification(user)
         return user

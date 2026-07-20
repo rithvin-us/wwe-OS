@@ -1,11 +1,13 @@
 "use client";
 
 import { Sheet, SheetContent, SheetTitle } from "@bop/ui/components/sheet";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
+import { SessionRefresh } from "@/components/session-refresh";
 
 /**
  * The platform shell: one sidebar, one header, one command palette.
@@ -14,6 +16,7 @@ import { CommandPalette } from "@/components/command-palette";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -28,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-svh">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-(--layout-sidebar-width) border-r border-sidebar-border lg:block">
+      <aside className="fixed inset-y-0 left-0 z-(--z-sticky) hidden w-(--layout-sidebar-width) border-r border-sidebar-border lg:block">
         <AppSidebar />
       </aside>
 
@@ -38,7 +41,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 md:px-6 lg:px-8">
-          {children}
+          {/* Restrained crossfade between routes — sidebar nav is lateral,
+              not a drill-down, so a fade reads as "same place, new content"
+              rather than implying a navigation direction that isn't there.
+              Keyed remount + a mount-triggered animation, not the browser's
+              View Transitions API — that needs a canary React build this
+              app doesn't pin, so this is the reliable equivalent. */}
+          <div
+            key={pathname}
+            className="animate-in fade-in duration-(--duration-base) ease-out-quart"
+          >
+            {children}
+          </div>
         </main>
       </div>
 
@@ -50,6 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sheet>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <SessionRefresh />
     </div>
   );
 }

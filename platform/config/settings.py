@@ -7,6 +7,7 @@ Only platform capabilities live here — no business modules.
 
 from __future__ import annotations
 
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -15,6 +16,15 @@ import dj_database_url
 from config.env import env_bool, env_int, env_list, env_str
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+REPO_ROOT = BASE_DIR.parent
+
+# Business modules live in the repo-root `modules/` directory (their own
+# top-level package space, one Django app per module at `<slug>/backend`) —
+# never inside `platform/`. Adding this to sys.path is wiring, not a business
+# decision: it lets the single Django project load module apps declared in
+# MODULE_APPS below without moving their code into the kernel.
+if str(REPO_ROOT / "modules") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "modules"))
 
 # --------------------------------------------------------------------------- #
 # Core
@@ -23,6 +33,10 @@ SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY") or "insecure-
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")
+
+# Shared secrets for service-to-service ingestion (Telegram bot, email
+# service, …). Format: "name:token,name:token". See shared/service_auth.py.
+INGESTION_SERVICE_TOKENS = env_str("INGESTION_SERVICE_TOKENS", default="") or ""
 
 # --------------------------------------------------------------------------- #
 # Applications
@@ -42,19 +56,36 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
 ]
 
-# Platform capabilities only. Business modules are never installed here.
-LOCAL_APPS = [
-    "shared",
-    "tenancy",
-    "users",
-    "auth",
-    "permissions",
-    "roles",
-    "audit",
-    "notifications",
+# Platform capabilities. No business logic lives in these apps — see
+# CLAUDE.md rule 1. This boundary is architectural, enforced by code review
+# and the "modules never import each other" rule, not by process isolation.
+#
+# Split around MODULE_APPS on purpose: `permissions` must sync before any
+# module's own post_migrate permission sync runs, and `roles` (which grants
+# the Owner role every Permission row that exists at that point) must sync
+# AFTER every module's permissions are in the table — otherwise Owner would
+# miss whatever a module registers. Django fires post_migrate once per app,
+# in INSTALLED_APPS order, after all migrations are applied — so the only
+# way to guarantee this ordering is this list's order. If a future module's
+# owner-role coverage looks wrong, check this ordering first.
+PLATFORM_APPS_BEFORE_MODULES = ["shared", "tenancy", "users", "auth", "permissions"]
+PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
+
+# Business module apps. Each entry is "<module>.backend" — the module's
+# backend directory, loaded via the modules/ path above. A module is added
+# here only once its backend is actually implemented; see docs/modules/*.md
+# for the ones still unimplemented shells.
+MODULE_APPS = [
+    "purchase.backend",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = (
+    DJANGO_APPS
+    + THIRD_PARTY_APPS
+    + PLATFORM_APPS_BEFORE_MODULES
+    + MODULE_APPS
+    + PLATFORM_APPS_AFTER_MODULES
+)
 
 # --------------------------------------------------------------------------- #
 # Middleware
@@ -164,6 +195,7 @@ REST_FRAMEWORK = {
         "anon": env_str("THROTTLE_ANON", "100/hour"),
         "login": env_str("THROTTLE_LOGIN", "10/minute"),
         "password_reset": env_str("THROTTLE_PASSWORD_RESET", "5/hour"),
+        "ingestion": env_str("THROTTLE_INGESTION", "60/minute"),
     },
 }
 

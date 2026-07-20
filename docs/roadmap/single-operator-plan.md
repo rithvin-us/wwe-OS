@@ -12,12 +12,12 @@ first, minimal manual work. Everything that can run itself, should.
 
 ## Confirmed decisions
 
-| Area         | Decision                                                                          | What it means                                                                                                                                                                                                                     |
-| ------------ | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sign-in      | **Both**: Google Workspace SSO **and** email + password                           | One-tap "Sign in with Google" using company mail IDs, with email+password as a fallback. (Backend auth was designed to accept SSO without redesign.)                                                                              |
-| Access model | **Single-user; role/permission + multi-company plumbing kept dormant and hidden** | The operator is auto-assigned the "Owner" role and sees everything — no access gates. Users/Roles/Permissions/Audit screens are removed from the menu; the backend stays in place, ready to re-enable when a second person joins. |
-| Mobile       | **Separate native app** (App Store + Play Store)                                  | A true native app, mobile-first, reusing the same design system and API. Built for all the computations still to come.                                                                                                            |
-| HR           | **Fully automated, built first**                                                  | Employees self-serve; leave/attendance/onboarding run themselves; the operator only handles exceptions.                                                                                                                           |
+| Area         | Decision                                                                           | What it means                                                                                                                                                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in      | **Both**: Google Workspace SSO **and** email + password                            | One-tap "Sign in with Google" using company mail IDs, with email+password as a fallback. (Backend auth was designed to accept SSO without redesign.)                                                                                |
+| Access model | **Single-user; role/permission + multi-company plumbing kept dormant and hidden**  | The operator is auto-assigned the "Owner" role and sees everything — no access gates. Users/Roles/Permissions/Audit screens are removed from the menu; the backend stays in place, ready to re-enable when a second person joins.   |
+| Mobile       | **Separate native app** (App Store + Play Store)                                   | A true native app, mobile-first, reusing the same design system and API. Built for all the computations still to come.                                                                                                              |
+| HR           | **Already deployed separately — integrate, do not rebuild** (confirmed 2026-07-20) | An HR Automation app already exists and runs in production outside this repo. WWE OS does not build HR from scratch; `modules/hr` stays an empty shell until integration is scheduled. See `docs/specs/hr-integration-strategy.md`. |
 
 ## What changed already (web)
 
@@ -37,20 +37,32 @@ first, minimal manual work. Everything that can run itself, should.
   the operator runs the company from their pocket.
 - **One identity, everywhere.** Same account on web and mobile; sign in once.
 
-## Stage 2 build order
+## Stage 2 build order (superseded 2026-07-20 — see note)
 
-1. **Sign-in upgrade** — add "Sign in with Google" (and Microsoft if the mail is
+> **Note:** this list assumed WWE OS would build HR itself. That assumption was
+> wrong — HR already exists and runs in production separately; see the row
+> above and `docs/specs/hr-integration-strategy.md`. The real, in-progress
+> Stage 2 work turned out to be **Purchase bill ingestion via Telegram OCR**
+> (the operator was already building this by hand in parallel). Current order:
+
+1. **Purchase ingestion (in progress)** — Telegram → OCR → review queue for
+   purchase bills. Backend (`modules/purchase`) and the Telegram channel are
+   being built now; see `docs/specs/document-ingestion.md` and
+   `docs/specs/purchase.md`.
+2. **Sign-in upgrade** — add "Sign in with Google" (and Microsoft if the mail is
    Microsoft 365) alongside email/password. Auto-provision the operator as Owner
    on first sign-in.
-2. **HR module (automation-first)** — employee records, self-service leave and
-   attendance, automated onboarding, exception queue for the operator. Migrate
-   the existing HR Automation repo into `modules/hr`.
 3. **Dashboard cockpit** — wire the "needs attention" inbox + quick actions to
-   real HR data as it lands.
-4. **Native mobile app** — scaffold `apps/mobile` (Expo/React Native), reuse the
+   real data (purchases first, then whatever lands next) as it arrives.
+4. **HR integration** — connect to the existing, already-deployed HR app per
+   the phased plan in `docs/specs/hr-integration-strategy.md`. Not a rebuild.
+5. **Native mobile app** — scaffold `apps/mobile` (Expo/React Native), reuse the
    design tokens and the platform API, mobile-first screens.
-5. **Remaining apps**, one at a time (Purchases, Documents, …), each automation-
+6. **Remaining apps**, one at a time (Documents, Contracts, …), each automation-
    first, each feeding the dashboard.
+
+Full module-by-module detail, dependency order, and time/risk/cost estimates:
+`docs/roadmap/development-roadmap.md`.
 
 ## The door left open
 

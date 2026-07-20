@@ -1,0 +1,54 @@
+import "server-only";
+
+import { cookies } from "next/headers";
+
+import { ApiRequestError, type ApiEnvelope } from "@/lib/api/envelope";
+
+/**
+ * Server-only access to the Django platform API. The browser never calls
+ * Django directly and never sees a token — only this Next.js server does,
+ * via an httpOnly cookie set by the /api/auth/* route handlers. Server
+ * Components, Server Actions, and Route Handlers all go through this file.
+ */
+
+export const ACCESS_COOKIE = "access_token";
+export const REFRESH_COOKIE = "refresh_token";
+
+export function internalApiUrl(): string {
+  return process.env.INTERNAL_API_URL ?? "http://localhost:8000";
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(ACCESS_COOKIE)?.value ?? null;
+}
+
+export async function isAuthenticated(): Promise<boolean> {
+  return (await getAccessToken()) !== null;
+}
+
+/**
+ * Call the Django API with the current session's access token attached.
+ * Unwraps the `{success, data}` / `{success, error}` envelope; throws
+ * `ApiRequestError` on failure so callers can branch on `.status`/`.code`
+ * (see `isAuthError`) instead of re-parsing the envelope everywhere.
+ */
+export async function djangoFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await getAccessToken();
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${internalApiUrl()}${path}`, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
+
+  const envelope = (await response.json()) as ApiEnvelope<T>;
+
+  if (!envelope.success) {
+    throw new ApiRequestError(response.status, envelope.error);
+  }
+  return envelope.data;
+}

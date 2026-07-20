@@ -27,6 +27,66 @@ def test_register_creates_user_and_sends_verification(api):
     assert len(mail.outbox) == 1
 
 
+def test_first_registration_bootstraps_company_and_becomes_owner(api):
+    from tenancy.models import Tenant
+
+    assert Tenant.objects.count() == 0
+
+    resp = api.post(
+        REGISTER,
+        {
+            "email": "founder@acme.test",
+            "username": "founder",
+            "password": PASSWORD,
+            "company_name": "Acme Trading Co",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    tenant = Tenant.objects.get()
+    assert tenant.name == "Acme Trading Co"
+    user = User.objects.get(email="founder@acme.test")
+    assert user.tenant_id == tenant.id
+    assert user.has_platform_permission("settings.manage")  # owner-only permission
+
+
+def test_second_registration_joins_existing_company_as_member(api):
+    from tenancy.models import Tenant
+
+    api.post(
+        REGISTER,
+        {"email": "founder@acme.test", "username": "founder", "password": PASSWORD},
+        format="json",
+    )
+    assert Tenant.objects.count() == 1
+    first_tenant_id = Tenant.objects.get().id
+
+    api.post(
+        REGISTER,
+        {"email": "second@acme.test", "username": "second", "password": PASSWORD},
+        format="json",
+    )
+
+    # No second tenant was created — both users share the one company.
+    assert Tenant.objects.count() == 1
+    second_user = User.objects.get(email="second@acme.test")
+    assert second_user.tenant_id == first_tenant_id
+    assert second_user.has_platform_permission("dashboard.view")
+    assert not second_user.has_platform_permission("settings.manage")  # member, not owner
+
+
+def test_registration_without_company_name_gets_a_default(api):
+    from tenancy.models import Tenant
+
+    api.post(
+        REGISTER,
+        {"email": "founder@acme.test", "username": "founder", "password": PASSWORD},
+        format="json",
+    )
+    assert Tenant.objects.get().name == "My Company"
+
+
 def test_login_returns_token_pair(api, make_user):
     make_user(email="a@acme.test", username="a")
     resp = api.post(LOGIN, {"email": "a@acme.test", "password": PASSWORD}, format="json")

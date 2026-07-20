@@ -24,7 +24,13 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn("flex flex-col rounded-lg border border-border bg-card", className)}>
+    <section
+      className={cn(
+        "flex flex-col rounded-lg border border-border bg-card transition-shadow duration-(--duration-base)",
+        href && "hover:shadow-sm",
+        className,
+      )}
+    >
       <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
           <Icon aria-hidden className="size-4 text-muted-foreground/80" />

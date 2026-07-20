@@ -2,11 +2,9 @@ import {
   BarChart3,
   Bell,
   Bot,
-  Boxes,
   FileSearch,
   FileSignature,
   FileText,
-  Landmark,
   Mail,
   MonitorCog,
   ScanText,
@@ -45,8 +43,8 @@ export const APPS: PlatformApp[] = [
     slug: "purchase",
     name: "Purchases",
     icon: ShoppingCart,
-    tagline: "Request, approve, and track purchases.",
-    availability: "in-progress",
+    tagline: "Review bills sent in from the Telegram bot.",
+    availability: "ready",
   },
   /*
   {

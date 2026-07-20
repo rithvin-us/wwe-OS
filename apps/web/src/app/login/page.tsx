@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { LoginForm } from "@/components/login-form";
 import { COMPANY } from "@/config/company";
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="grid min-h-svh place-items-center bg-background px-4">
-      <div className="w-full max-w-sm">
+      <div className="animate-in fade-in slide-in-from-bottom-2 w-full max-w-sm duration-(--duration-slow) ease-out-quart">
         <div className="mb-8 flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-md bg-primary font-display text-sm font-semibold text-primary-foreground">
             {COMPANY.mark}
@@ -32,7 +33,9 @@ export default function LoginPage() {
           One account for everything you use here.
         </p>
 
-        <LoginForm />
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

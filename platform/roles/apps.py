@@ -31,7 +31,6 @@ SYSTEM_ROLES = {
 
 def _seed_system_roles(sender, **kwargs) -> None:
     from permissions.models import Permission
-    from permissions.registry import ALL_CODES
 
     from roles.models import Role
 
@@ -41,8 +40,15 @@ def _seed_system_roles(sender, **kwargs) -> None:
             tenant=None,
             defaults={"name": spec["name"], "is_system": True},
         )
-        codes = ALL_CODES if spec["permissions"] == "*" else spec["permissions"]
-        role.permissions.set(Permission.objects.filter(code__in=list(codes)))
+        if spec["permissions"] == "*":
+            # Every permission that exists at this point — platform's own
+            # plus every module's, whatever module apps are installed. This
+            # runs after all module permission syncs (see the MODULE_APPS
+            # ordering note in config/settings.py), so it stays current as
+            # modules are added.
+            role.permissions.set(Permission.objects.all())
+        else:
+            role.permissions.set(Permission.objects.filter(code__in=spec["permissions"]))
 
 
 class RolesConfig(AppConfig):

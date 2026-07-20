@@ -1,53 +1,56 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@bop/ui/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bop/ui/components/card";
-import { Send, FileText } from "@bop/icons";
+import { Send } from "@bop/icons";
+
+import { BillsTable } from "@/app/(platform)/purchase/bills-table";
+import { VendorsPanel } from "@/app/(platform)/purchase/vendors-panel";
+import { getPurchaseBills, getPurchaseBillStats, getVendors } from "@/lib/purchase";
 
 export const metadata: Metadata = {
   title: "Purchases",
 };
 
-export default function PurchasePage() {
+function StatTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <p className="font-mono text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+        {label}
+      </p>
+      <p className="mt-1 font-display text-xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+export default async function PurchasePage() {
+  const [bills, stats, vendors] = await Promise.all([
+    getPurchaseBills(),
+    getPurchaseBillStats(),
+    getVendors(),
+  ]);
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Purchases"
-        description="Request, approve, and track purchases across the company."
+        description="Bills sent to the Telegram bot land here for you to confirm or reject."
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="size-5 text-muted-foreground" />
-              Telegram Bot Integration
-            </CardTitle>
-            <CardDescription>Upload purchase bills directly from Telegram.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Once the Telegram bot is configured and running, you can send purchase bills to the
-              bot. The system will automatically extract the seller name, date, and rate using OCR
-              and link it here.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="size-5 text-muted-foreground" />
-              Recent Bills
-            </CardTitle>
-            <CardDescription>Waiting for incoming documents.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No bills have been uploaded yet. Send a bill via Telegram to see it appear here.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="Pending review" value={stats.pending_review} />
+        <StatTile label="Confirmed" value={stats.confirmed} />
+        <StatTile label="Rejected" value={stats.rejected} />
+        <StatTile label="Awaiting payment" value={stats.unpaid_confirmed} />
       </div>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Send aria-hidden className="size-3.5" />
+          Send a photo or PDF to the Telegram bot to add a bill here automatically.
+        </div>
+        <BillsTable bills={bills} />
+      </section>
+
+      <VendorsPanel vendors={vendors} />
     </div>
   );
 }

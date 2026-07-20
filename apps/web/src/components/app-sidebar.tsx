@@ -20,7 +20,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         href="/"
         onClick={onNavigate}
-        className="flex h-(--layout-header-height) shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4"
+        className="flex h-(--layout-header-height) shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4 focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none"
       >
         <span className="flex size-7 items-center justify-center rounded-md bg-primary font-display text-[11px] font-semibold text-primary-foreground">
           {COMPANY.mark}
@@ -57,6 +57,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                      "focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
                       active
                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
                         : item.subtle

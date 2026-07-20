@@ -36,62 +36,85 @@ export interface Kpi {
   source: string;
 }
 
-export const KPIS: Kpi[] = [
-  {
-    key: "revenue",
-    label: "Revenue",
-    icon: CircleDollarSign,
-    format: "currency",
-    value: null,
-    deltaPct: null,
-    source: "Sales & finance",
-  },
-  {
-    key: "expenses",
-    label: "Expenses",
-    icon: Wallet,
-    format: "currency",
-    value: null,
-    deltaPct: null,
-    source: "Purchases & finance",
-  },
-  {
-    key: "pending-approvals",
-    label: "Pending approvals",
-    icon: FileSignature,
-    format: "count",
-    value: 0,
-    deltaPct: null,
-    source: "Across the company",
-  },
-  {
-    key: "employees",
-    label: "Employees",
-    icon: Users,
-    format: "count",
-    value: 0,
-    deltaPct: null,
-    source: "HR",
-  },
-  {
-    key: "open-po",
-    label: "Open purchase orders",
-    icon: ShoppingCart,
-    format: "count",
-    value: 0,
-    deltaPct: null,
-    source: "Purchases",
-  },
-  {
-    key: "low-stock",
-    label: "Low-stock items",
-    icon: Boxes,
-    format: "count",
-    value: 0,
-    deltaPct: null,
-    source: "Inventory",
-  },
-];
+/**
+ * Live purchase figures, when available. `null` means "not fetched yet or
+ * the request failed" — every consumer below renders that as an honest
+ * blank, never a zero it doesn't actually know.
+ */
+export interface LivePurchaseStats {
+  pendingReview: number;
+  confirmed: number;
+  rejected: number;
+  total: number;
+  unpaidConfirmed: number;
+  overduePending: number;
+}
+
+/**
+ * The dashboard's KPI row. Two of the six are backed by real data today
+ * (Purchases is the only module with any) — the rest stay honest nulls
+ * until their module exists. Built as a function, not a constant, because
+ * "pending approvals" and "bills to review" need the live count injected
+ * by the page that fetches it.
+ */
+export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
+  return [
+    {
+      key: "revenue",
+      label: "Revenue",
+      icon: CircleDollarSign,
+      format: "currency",
+      value: null,
+      deltaPct: null,
+      source: "Sales & finance",
+    },
+    {
+      key: "expenses",
+      label: "Expenses",
+      icon: Wallet,
+      format: "currency",
+      value: null,
+      deltaPct: null,
+      source: "Purchases & finance",
+    },
+    {
+      key: "pending-approvals",
+      label: "Pending approvals",
+      icon: FileSignature,
+      format: "count",
+      value: purchase?.pendingReview ?? null,
+      deltaPct: null,
+      source: "Purchases (only area tracked so far)",
+    },
+    {
+      key: "employees",
+      label: "Employees",
+      icon: Users,
+      format: "count",
+      value: null,
+      deltaPct: null,
+      source: "HR",
+    },
+    {
+      key: "bills-to-review",
+      label: "Bills to review",
+      icon: ShoppingCart,
+      format: "count",
+      value: purchase?.pendingReview ?? null,
+      deltaPct: null,
+      source: "Purchases",
+    },
+    {
+      key: "low-stock",
+      label: "Low-stock items",
+      icon: Boxes,
+      format: "count",
+      value: null,
+      deltaPct: null,
+      source: "Inventory",
+    },
+  ];
+}
 
 /** A row in a summary panel (financials, people, inventory, procurement…). */
 export interface SummaryRow {
@@ -107,28 +130,33 @@ export const FINANCIAL_SUMMARY: SummaryRow[] = [
   { label: "Cash position", value: null, format: "currency" },
 ];
 
+// null, not 0 — these are genuinely unknown until HR/Inventory are
+// connected. A literal 0 would claim "no employees," which is false.
 export const PEOPLE_SUMMARY: SummaryRow[] = [
-  { label: "Total employees", value: 0, format: "count" },
-  { label: "On leave today", value: 0, format: "count" },
-  { label: "Joining this month", value: 0, format: "count" },
+  { label: "Total employees", value: null, format: "count" },
+  { label: "On leave today", value: null, format: "count" },
+  { label: "Joining this month", value: null, format: "count" },
 ];
 
 export const INVENTORY_SUMMARY: SummaryRow[] = [
-  { label: "Items tracked", value: 0, format: "count" },
-  { label: "Below reorder point", value: 0, format: "count" },
-  { label: "Out of stock", value: 0, format: "count" },
+  { label: "Items tracked", value: null, format: "count" },
+  { label: "Below reorder point", value: null, format: "count" },
+  { label: "Out of stock", value: null, format: "count" },
 ];
 
-export const PROCUREMENT_SUMMARY: SummaryRow[] = [
-  { label: "Open purchase orders", value: 0, format: "count" },
-  { label: "Awaiting approval", value: 0, format: "count" },
-  { label: "Awaiting delivery", value: 0, format: "count" },
-];
+/** Real, live bill counts — the one summary panel backed by actual data. */
+export function procurementSummary(purchase: LivePurchaseStats | null): SummaryRow[] {
+  return [
+    { label: "Bills pending review", value: purchase?.pendingReview ?? null, format: "count" },
+    { label: "Bills confirmed", value: purchase?.confirmed ?? null, format: "count" },
+    { label: "Bills rejected", value: purchase?.rejected ?? null, format: "count" },
+  ];
+}
 
 export const CONTRACTS_SUMMARY: SummaryRow[] = [
-  { label: "Active contracts", value: 0, format: "count" },
-  { label: "Expiring in 30 days", value: 0, format: "count" },
-  { label: "Awaiting signature", value: 0, format: "count" },
+  { label: "Active contracts", value: null, format: "count" },
+  { label: "Expiring in 30 days", value: null, format: "count" },
+  { label: "Awaiting signature", value: null, format: "count" },
 ];
 
 /** Live lists — empty until the relevant area is in use. */
@@ -137,8 +165,21 @@ export interface ApprovalItem {
   title: string;
   requestedBy: string;
   area: string;
+  href: string;
 }
-export const PENDING_APPROVALS: ApprovalItem[] = [];
+
+/** Real pending bills, shaped for the "needs your attention" panel. */
+export function pendingApprovals(
+  bills: { id: string; seller_name: string; currency: string; total_rate: string }[],
+): ApprovalItem[] {
+  return bills.slice(0, 5).map((bill) => ({
+    id: bill.id,
+    title: `${bill.seller_name} — ${bill.currency} ${bill.total_rate}`,
+    requestedBy: "Telegram bot",
+    area: "Purchases",
+    href: "/purchase",
+  }));
+}
 
 export interface AlertItem {
   id: string;
@@ -146,7 +187,34 @@ export interface AlertItem {
   severity: "info" | "warning" | "critical";
   area: string;
 }
-export const OPERATIONAL_ALERTS: AlertItem[] = [];
+
+/** Real alerts derived from live purchase figures — empty until something
+ * actually needs attention, never a placeholder list. */
+export function operationalAlerts(purchase: LivePurchaseStats | null): AlertItem[] {
+  if (purchase === null) return [];
+  const alerts: AlertItem[] = [];
+  if (purchase.overduePending > 0) {
+    alerts.push({
+      id: "purchase-overdue-pending",
+      message: `${purchase.overduePending} bill${
+        purchase.overduePending === 1 ? "" : "s"
+      } awaiting review for over 3 days`,
+      severity: "warning",
+      area: "Purchases",
+    });
+  }
+  if (purchase.unpaidConfirmed > 0) {
+    alerts.push({
+      id: "purchase-unpaid-confirmed",
+      message: `${purchase.unpaidConfirmed} confirmed bill${
+        purchase.unpaidConfirmed === 1 ? "" : "s"
+      } awaiting payment`,
+      severity: "info",
+      area: "Purchases",
+    });
+  }
+  return alerts;
+}
 
 export interface ActivityItem {
   id: string;
@@ -154,7 +222,50 @@ export interface ActivityItem {
   area: string;
   at: string;
 }
-export const RECENT_ACTIVITY: ActivityItem[] = [];
+
+const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+/** Short "2h ago" / "3d ago" label for an ISO timestamp. */
+function formatRelative(iso: string): string {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  const diffMinutes = Math.round(diffMs / 60_000);
+  if (Math.abs(diffMinutes) < 60) return RELATIVE_TIME.format(diffMinutes, "minute");
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) return RELATIVE_TIME.format(diffHours, "hour");
+  const diffDays = Math.round(diffHours / 24);
+  return RELATIVE_TIME.format(diffDays, "day");
+}
+
+/** Real recent activity from bills the operator has reviewed. */
+export function recentActivity(
+  bills: {
+    id: string;
+    seller_name: string;
+    currency: string;
+    total_rate: string;
+    status: "pending_review" | "confirmed" | "rejected";
+    payment_status: "unpaid" | "paid";
+    reviewed_at: string | null;
+  }[],
+): ActivityItem[] {
+  return bills
+    .filter((bill) => bill.reviewed_at !== null)
+    .map((bill) => {
+      const amount = `${bill.currency} ${bill.total_rate}`;
+      const summary =
+        bill.status === "confirmed"
+          ? `${bill.seller_name} confirmed — ${amount}${
+              bill.payment_status === "paid" ? " (paid)" : ""
+            }`
+          : `${bill.seller_name} rejected — ${amount}`;
+      return {
+        id: bill.id,
+        summary,
+        area: "Purchases",
+        at: formatRelative(bill.reviewed_at as string),
+      };
+    });
+}
 
 export interface Insight {
   id: string;

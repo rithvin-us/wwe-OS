@@ -8,13 +8,16 @@ import { formatValue, type Kpi } from "@/config/dashboard";
  * it comes from. When a figure isn't available yet it reads "—" with a quiet
  * note — never a placeholder number.
  */
-export function KpiTile({ kpi }: { kpi: Kpi }) {
+export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
   const display = formatValue(kpi.value, kpi.format);
   const hasValue = kpi.value !== null;
   const up = (kpi.deltaPct ?? 0) >= 0;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+    <div
+      className="animate-in fade-in slide-in-from-bottom-1 flex flex-col gap-3 rounded-lg border border-border bg-card p-4 fill-mode-backwards duration-(--duration-slow) ease-out-quart"
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
           {kpi.label}
@@ -35,7 +38,10 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
           <span
             className={cn(
               "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-              up ? "text-status-operational" : "text-status-attention",
+              // Semantic success/attention, not the module-status palette —
+              // a KPI trending up or down is a different kind of "state"
+              // than a module being operational or needing attention.
+              up ? "text-success" : "text-destructive",
             )}
           >
             {up ? (

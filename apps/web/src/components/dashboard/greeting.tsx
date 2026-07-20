@@ -12,6 +12,9 @@ export function Greeting() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    // Client's clock only — the server can't know it, so this is a real
+    // external-system read, not derived state the effect could avoid.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
   }, []);
 

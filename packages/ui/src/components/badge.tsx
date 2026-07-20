@@ -15,6 +15,11 @@ const badgeVariants = cva(
           "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
         outline:
           "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        // Soft/translucent style: the semantic hue itself as text, tinted
+        // background — --success-foreground/--warning-foreground are for
+        // text on a SOLID semantic surface, not this one.
+        success: "bg-success/15 text-success [a&]:hover:bg-success/25",
+        warning: "bg-warning/20 text-warning [a&]:hover:bg-warning/30",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
       },

@@ -61,6 +61,20 @@ Rules: brand petrol is for primary actions and active states only — not for
 status, not for illustration. Status colors are for status only. Charts use
 `--chart-1..5` exclusively.
 
+**Semantic colors** (business data state — a KPI trending up, a bill
+confirmed/rejected — distinct from the status language above, which is
+reserved for module lifecycle only):
+
+| Role    | Token       | Light                   | Dark                  |
+| ------- | ----------- | ----------------------- | --------------------- |
+| Success | `--success` | `oklch(0.545 0.13 160)` | `oklch(0.7 0.13 160)` |
+| Warning | `--warning` | `oklch(0.565 0.14 75)`  | `oklch(0.76 0.13 80)` |
+
+Light-mode values are darker than they look like they need to be — verified
+against real WCAG contrast math (`docs/design/contrast-notes.md` has the
+method), not eyeballed. The obvious `oklch(0.58 …)`/`oklch(0.66 …)` choices
+measured 3.0–4.0:1 as small text on white, short of the 4.5:1 floor.
+
 ## 4. Typography
 
 Three faces, three jobs. Loaded via `next/font` in the app root; exposed as
@@ -88,15 +102,29 @@ contexts always `tabular-nums`.
 
 Spacing rhythm: Tailwind scale only; section gaps `space-y-8/10`; card
 padding `px-5 py-5`. Radius: `--radius: 0.5rem`; cards/dialogs `lg`,
-inputs/buttons `md`. Shadows: `--shadow-xs/sm/md` only — elevation is quiet;
-hierarchy comes from borders and background steps, not depth.
+inputs/buttons `md`. Shadows: `--shadow-xs/sm/md` for resting elevation —
+depth is quiet, comes from borders and background steps first. `--shadow-lg`
+exists for genuine overlays only (a card's `hover:shadow-sm` when it links
+somewhere is as far as resting content ever escalates).
+
+**Stacking** — a named scale, never an arbitrary `z-40`/`z-999`:
+`--z-sticky` (20, header/sidebar) · `--z-dropdown` (30) ·
+`--z-modal-backdrop` (40) · `--z-modal` (50) · `--z-toast` (60) ·
+`--z-tooltip` (70). Radix's portaled components (Dialog, Popover, Sheet,
+DropdownMenu, Tooltip) manage their own stacking correctly by portaling to
+`body` — this scale is for the shell's own fixed/sticky chrome.
 
 ## 6. Components
 
 - Source: `@bop/ui` only. If a pattern appears twice, it becomes a component
   there. **No app-local copies of platform primitives, no duplicate CSS.**
 - Platform primitives beyond shadcn: `StatusChip`/`StatusDot`/`STATUS_META`
-  (status.tsx), `PageHeader`, `EmptyState`. Use them — never re-implement.
+  (status.tsx), `PageHeader`, `EmptyState`, `DataTable` (data-table.tsx —
+  sticky header, sortable, empty-state-first; the one table component).
+  Use them — never re-implement.
+- Toasts: `Toaster` (sonner.tsx), mounted once in `Providers`. Reserved for
+  async/global feedback on real mutations (e.g. confirming a bill) — never
+  for validation errors, which stay inline at the field.
 - Buttons: one primary action per view. `secondary` for the main card action,
   `ghost` for tertiary, `destructive` only for destruction.
 - Forms: React Hook Form + Zod, labels always visible, errors as
@@ -109,9 +137,33 @@ hierarchy comes from borders and background steps, not depth.
 
 ## 7. Motion
 
-`transition-colors` on interactive surfaces (~150ms default). No entrance
-animations, no parallax, no scroll effects. Radix handles overlay motion.
-Respect `prefers-reduced-motion` for anything beyond color transitions.
+**Source**: `tw-animate-css` (imported once in `apps/web/src/app/globals.css`)
+supplies `animate-in`/`animate-out`/`fade-in`/`slide-in-from-*`/`zoom-in-*`
+etc. — Radix's `data-[state=open]:animate-in` classes on Dialog/Sheet/
+Popover/DropdownMenu/Tooltip/Command only work because this is installed;
+without it those classes are silently inert. Don't remove it.
+
+**Tokens** (`packages/design-system/src/tokens.css`): `--duration-fast`
+(120ms) / `--duration-base` (180ms) / `--duration-slow` (260ms),
+`--ease-out-quart` / `--ease-out-expo`. Use via
+`duration-(--duration-base)` and the real Tailwind utilities `ease-out-quart`
+/ `ease-out-expo` (confirmed against Tailwind's own `theme.css`: `--ease-*`
+is a real namespace, `--duration-*` is not — named durations are always the
+parenthesis arbitrary-value form, never a bare `duration-base` class).
+
+**What actually moves**: `transition-colors` on hover/focus (~150ms, product
+default). Overlays use Radix's built-in open/close motion via the plugin
+above — don't hand-roll dialog/popover animation. Route changes crossfade
+(`AppShell`, a keyed remount + `fade-in`) — not React's `<ViewTransition>`,
+which needs a canary React build this app doesn't pin (confirmed by checking
+the installed package directly). Lists that benefit from it stagger in via
+`animationDelay` per index, capped around 40ms/item so five-plus items don't
+read as sluggish (`KpiTile` is the reference). No parallax, no scroll
+effects, no orchestrated page-load sequences — product register, not brand.
+
+**Reduced motion**: a global rule in `globals.css` collapses all animation/
+transition durations to near-zero under `prefers-reduced-motion: reduce`.
+Don't add a per-component override; the global rule is the contract.
 
 ## 8. Dark mode
 
@@ -126,8 +178,14 @@ dark value in `tokens.css` — components are theme-blind. Never use
   `outline-none` without replacement.
 - Active nav: `aria-current="page"`.
 - Contrast: body text ≥ 4.5:1 in both themes; status colors are labels with
-  text, never color-alone signals (chips carry words).
-- Keyboard: palette Ctrl/⌘K; every interactive element tabbable.
+  text, never color-alone signals (chips carry words). Verify with real
+  contrast math before shipping a new text color, not by eye —
+  `docs/design/contrast-notes.md` has the method and a real example of a
+  token pair that looked fine and measured short.
+- Keyboard: palette Ctrl/⌘K; every interactive element tabbable, including
+  the sidebar's nav links (explicit `focus-visible:ring-*` — don't rely on
+  the browser default outline, which is inconsistent with every other
+  focus state in the app).
 
 ## 10. Writing
 
