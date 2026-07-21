@@ -35,6 +35,10 @@ _MAX_POST_ATTEMPTS = 3
 _RETRY_BACKOFF_SECONDS = 1.5
 
 
+class DuplicateBillError(RuntimeError):
+    """The platform already has this document (matched by external_ref)."""
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
@@ -137,6 +141,8 @@ async def _post_to_platform(payload: dict) -> dict:
                 raise RuntimeError(
                     f"Platform rejected this bot's credentials ({response.status_code})."
                 )
+            if response.status_code == 409:
+                raise DuplicateBillError("This document was already saved.")
             if response.status_code == 422:
                 raise RuntimeError(f"Platform rejected the extracted data: {response.text}")
             if response.status_code >= 500:
@@ -164,10 +170,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     message = await update.message.reply_text("Received your document. Running OCR...")
 
     try:
-        if update.message.photo:
-            file_id = update.message.photo[-1].file_id
-        else:
-            file_id = update.message.document.file_id
+        attachment = update.message.photo[-1] if update.message.photo else update.message.document
+        file_id = attachment.file_id
+        # file_unique_id is stable across chats and re-forwards — the platform
+        # dedupes on it so resending the same bill never creates a duplicate.
+        file_unique_id = attachment.file_unique_id
 
         new_file = await context.bot.get_file(file_id)
         file_bytes = await new_file.download_as_bytearray()
@@ -201,6 +208,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "currency": extracted.get("currency", "USD"),
         "telegram_user_id": update.effective_user.id,
         "document_url": document_url,
+        "external_ref": file_unique_id,
     }
 
     await message.edit_text(
@@ -213,6 +221,9 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     try:
         result = await _post_to_platform(payload)
+    except DuplicateBillError:
+        await message.edit_text("This bill is already in the platform — no duplicate was created.")
+        return
     except Exception as exc:  # noqa: BLE001 - surfaced to the user below
         logger.error("Posting bill to platform failed: %s", exc)
         await message.edit_text(

@@ -23,6 +23,7 @@ class RequestContext:
     user: Any = None
     ip_address: str | None = None
     user_agent: str | None = None
+    request_id: str | None = None
 
 
 def get_context() -> RequestContext:
@@ -55,6 +56,10 @@ def current_tenant_id() -> Any:
 def current_user() -> Any:
     user = get_context().user
     return user if (user is not None and getattr(user, "is_authenticated", False)) else None
+
+
+def current_request_id() -> str | None:
+    return get_context().request_id
 
 
 @contextlib.contextmanager

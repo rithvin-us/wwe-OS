@@ -1,8 +1,20 @@
 # Workflow Engine
 
-**Status: not built.** `docs/modules/workflow.md` describes the full,
-enterprise-shaped design; this document narrows that to what should actually
-be built first, and why, given the confirmed single-operator direction
+**Status: core engine built (2026-07-21).** `platform/workflow` now implements
+the generic engine: versioned definitions with sequential permission-gated
+steps, one-running-instance-per-subject invariant (DB constraint), approve/
+reject/cancel with row locking, an immutable action trail, `workflow.*`
+events, approver notifications, audit wiring, and the REST API
+(`/api/v1/workflow/…` incl. the operator's `pending/` queue). 15 tests cover
+sync, lifecycle, authorization, and tenant isolation. Not yet built from the
+v2 list below: SLA timers, escalation, approver groups. Modules keep their own
+domain state machines (Purchase's `pending_review → confirmed/rejected` stays
+as-is); a module adopts the engine by declaring a definition and reacting to
+`WORKFLOW_COMPLETED`/`WORKFLOW_REJECTED` — see `platform/workflow/README.md`.
+
+`docs/modules/workflow.md` describes the full, enterprise-shaped design; this
+document narrows that to what should actually be built first, and why, given
+the confirmed single-operator direction
 (`docs/roadmap/single-operator-plan.md`).
 
 ## Why this is scoped down from the original brief

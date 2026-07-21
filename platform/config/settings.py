@@ -68,7 +68,18 @@ THIRD_PARTY_APPS = [
 # in INSTALLED_APPS order, after all migrations are applied — so the only
 # way to guarantee this ordering is this list's order. If a future module's
 # owner-role coverage looks wrong, check this ordering first.
-PLATFORM_APPS_BEFORE_MODULES = ["shared", "tenancy", "users", "auth", "permissions"]
+PLATFORM_APPS_BEFORE_MODULES = [
+    "shared",
+    "tenancy",
+    "users",
+    "auth",
+    "permissions",
+    "workflow",
+    "storage",
+    "ai",
+    "search",
+    "reporting",
+]
 PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 
 # Business module apps. Each entry is "<module>.backend" — the module's
@@ -100,6 +111,9 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "shared.middleware.RequestContextMiddleware",
     "tenancy.middleware.TenantMiddleware",
+    # Innermost on purpose: its access-log line runs before RequestContext
+    # clears the per-request context, so it can carry actor/tenant/request id.
+    "shared.middleware.ObservabilityMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -236,6 +250,8 @@ SPECTACULAR_SETTINGS = {
         "NotificationStatusEnum": "notifications.models.Status",
         "NotificationChannelEnum": "notifications.models.Channel",
         "NotificationPriorityEnum": "notifications.models.Priority",
+        "WorkflowInstanceStatusEnum": "workflow.models.InstanceStatus",
+        "WorkflowActionEnum": "workflow.models.ActionType",
     },
 }
 
@@ -313,22 +329,88 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --------------------------------------------------------------------------- #
-# Logging (structured, level via env)
+# Object storage (platform/storage)
 # --------------------------------------------------------------------------- #
+# "local" stores bytes under STORAGE_LOCAL_PATH (dev/tests); "s3" | "r2" |
+# "minio" use the S3 API via STORAGE_S3_* (Cloudflare R2 is S3-compatible —
+# endpoint https://<account-id>.r2.cloudflarestorage.com, region "auto").
+STORAGE_BACKEND = env_str("STORAGE_BACKEND", "local")
+STORAGE_LOCAL_PATH = env_str("STORAGE_LOCAL_PATH", str(BASE_DIR / ".storage"))
+STORAGE_MAX_UPLOAD_MB = env_int("STORAGE_MAX_UPLOAD_MB", 25)
+STORAGE_ALLOWED_TYPES = set(
+    env_list(
+        "STORAGE_ALLOWED_TYPES",
+        default=[
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "text/plain",
+            "text/csv",
+            "text/html",
+            "application/json",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+    )
+)
+STORAGE_S3_BUCKET = env_str("STORAGE_S3_BUCKET", "") or ""
+STORAGE_S3_ENDPOINT_URL = env_str("STORAGE_S3_ENDPOINT_URL", "") or ""
+STORAGE_S3_REGION = env_str("STORAGE_S3_REGION", "auto")
+STORAGE_S3_ACCESS_KEY_ID = env_str("STORAGE_S3_ACCESS_KEY_ID", "") or ""
+STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "") or ""
+
+# --------------------------------------------------------------------------- #
+# AI gateway (platform/ai)
+# --------------------------------------------------------------------------- #
+OPENAI_API_KEY = env_str("OPENAI_API_KEY", "") or ""
+ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
+# "mock" answers deterministically without keys — safe default for dev/tests.
+AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", "mock")
+AI_FALLBACK_MODEL = env_str("AI_FALLBACK_MODEL", "") or ""
+AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 30)
+AI_MAX_RETRIES = env_int("AI_MAX_RETRIES", 2)
+# Per-tenant calls per clock hour; 0 disables the limit.
+AI_TENANT_HOURLY_LIMIT = env_int("AI_TENANT_HOURLY_LIMIT", 200)
+
+# --------------------------------------------------------------------------- #
+# Observability (structured logging, request metrics)
+# --------------------------------------------------------------------------- #
+# LOG_FORMAT=json emits one JSON object per line (for log aggregators);
+# the default text format still carries the request id for correlation.
+LOG_FORMAT = env_str("LOG_FORMAT", "text")
+# Requests slower than this log at WARNING instead of INFO.
+SLOW_REQUEST_MS = env_int("SLOW_REQUEST_MS", 1000)
+# /metrics stays 404 until a scrape token is configured.
+METRICS_TOKEN = env_str("METRICS_TOKEN", "") or ""
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "request_context": {"()": "shared.logging_utils.RequestContextFilter"},
+    },
     "formatters": {
         "standard": {
-            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+            "format": "%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s",
         },
+        "json": {"()": "shared.logging_utils.JSONFormatter"},
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json" if LOG_FORMAT == "json" else "standard",
+            "filters": ["request_context"],
+        },
     },
     "root": {"handlers": ["console"], "level": env_str("LOG_LEVEL", "INFO")},
     "loggers": {
         "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
         "platform": {"handlers": ["console"], "level": env_str("LOG_LEVEL", "INFO")},
+        "platform.requests": {
+            "handlers": ["console"],
+            "level": env_str("LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
     },
 }

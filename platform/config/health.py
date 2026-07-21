@@ -1,10 +1,14 @@
-"""Liveness and readiness probes for orchestration."""
+"""Liveness and readiness probes for orchestration, plus metrics exposition."""
 
 from __future__ import annotations
 
+import hmac
+
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connections
 from django.db.utils import OperationalError
+from django.http import Http404, HttpRequest, HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.decorators import (
     api_view,
@@ -58,3 +62,18 @@ def readiness(_request) -> Response:
         {"status": "ready" if ready else "not-ready", "checks": checks},
         status=200 if ready else 503,
     )
+
+
+def metrics(request: HttpRequest) -> HttpResponse:
+    """Prometheus exposition. Disabled (404) until METRICS_TOKEN is set;
+    then requires `Authorization: Bearer <token>`. Plain Django view — the
+    scraper wants text/plain, not the API envelope."""
+    token = getattr(settings, "METRICS_TOKEN", "")
+    if not token:
+        raise Http404
+    supplied = request.headers.get("Authorization", "")
+    if not hmac.compare_digest(supplied, f"Bearer {token}"):
+        return HttpResponse(status=403)
+    from shared.metrics import prometheus_text
+
+    return HttpResponse(prometheus_text(), content_type="text/plain; version=0.0.4")

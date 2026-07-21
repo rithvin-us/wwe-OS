@@ -17,9 +17,21 @@ class IngestBillSerializer(serializers.Serializer):
     currency = serializers.CharField(max_length=3, min_length=3)
     telegram_user_id = serializers.IntegerField(required=False, allow_null=True)
     document_url = serializers.URLField(max_length=500)
+    external_ref = serializers.CharField(
+        max_length=128,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Stable source-document id (e.g. Telegram file_unique_id) used for dedupe.",
+    )
 
     def validate_currency(self, value: str) -> str:
         return value.upper()
+
+    def validate_document_url(self, value: str) -> str:
+        if not value.lower().startswith("https://"):
+            raise serializers.ValidationError("Document URL must use https.")
+        return value
 
     def validate_purchase_date(self, value: date) -> date:
         if value > date.today():

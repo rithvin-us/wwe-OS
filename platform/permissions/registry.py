@@ -35,6 +35,22 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     # Settings & tenancy
     PermissionDef("settings.view", "View settings", "Settings"),
     PermissionDef("settings.manage", "Manage settings", "Settings"),
+    # Workflow
+    PermissionDef("workflow.view", "View workflows", "Workflow"),
+    PermissionDef("workflow.act", "Act on workflow approvals", "Workflow"),
+    PermissionDef("workflow.manage", "Manage workflows", "Workflow"),
+    # Storage
+    PermissionDef("storage.read", "View and download files", "Storage"),
+    PermissionDef("storage.write", "Upload files", "Storage"),
+    PermissionDef("storage.manage", "Delete files", "Storage"),
+    # AI
+    PermissionDef("ai.use", "Use AI features", "AI"),
+    PermissionDef("ai.manage", "View AI usage and manage AI settings", "AI"),
+    # Search
+    PermissionDef("search.use", "Search across the platform", "Search"),
+    # Reporting
+    PermissionDef("reporting.export", "Export reports", "Reporting"),
+    PermissionDef("reporting.view", "View export history", "Reporting"),
     # Dashboard
     PermissionDef("dashboard.view", "View dashboard", "Dashboard"),
 ]

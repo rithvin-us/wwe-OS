@@ -62,3 +62,23 @@ def test_ingest_notifies_the_owner(service_client, tenant, owner):
     from notifications.models import Notification
 
     assert Notification.objects.filter(recipient=owner, category="purchase").exists()
+
+
+def test_ingest_deduplicates_by_external_ref(service_client, tenant):
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-file-abc123"}
+    assert service_client.post(INGEST_URL, payload, format="json").status_code == 201
+
+    duplicate = service_client.post(INGEST_URL, payload, format="json")
+    assert duplicate.status_code == 409
+    assert PurchaseBill.objects.count() == 1
+
+
+def test_ingest_without_external_ref_never_deduplicates(service_client, tenant):
+    assert service_client.post(INGEST_URL, VALID_PAYLOAD, format="json").status_code == 201
+    assert service_client.post(INGEST_URL, VALID_PAYLOAD, format="json").status_code == 201
+    assert PurchaseBill.objects.count() == 2
+
+
+def test_ingest_rejects_non_https_document_url(service_client, tenant):
+    payload = {**VALID_PAYLOAD, "document_url": "http://insecure.example/file.pdf"}
+    assert service_client.post(INGEST_URL, payload, format="json").status_code == 422

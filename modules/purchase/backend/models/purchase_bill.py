@@ -45,6 +45,15 @@ class PurchaseBill(TenantOwnedModel):
     currency = models.CharField(max_length=3, default="USD")
     document_url = models.URLField(max_length=500)
     telegram_user_id = models.BigIntegerField(null=True, blank=True)
+    external_ref = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text=(
+            "Stable id of the source document (e.g. Telegram file_unique_id). "
+            "Ingestion dedupes on it; blank means the channel had none."
+        ),
+    )
 
     # --- Ingestion metadata ---
     source_channel = models.CharField(
@@ -81,6 +90,13 @@ class PurchaseBill(TenantOwnedModel):
         indexes = [
             models.Index(fields=["tenant", "status"]),
             models.Index(fields=["tenant", "payment_status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "source_channel", "external_ref"],
+                name="uniq_bill_external_ref_per_channel",
+                condition=~models.Q(external_ref=""),
+            ),
         ]
 
     def __str__(self) -> str:

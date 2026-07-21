@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ spec.title }}</title>
+    <style>
+      :root { color-scheme: light; }
+      body { font-family: "Segoe UI", Arial, sans-serif; margin: 32px; color: #111827; }
+      header { border-bottom: 2px solid #1f2937; padding-bottom: 12px; margin-bottom: 20px; }
+      h1 { margin: 0 0 4px; font-size: 22px; }
+      .meta { color: #6b7280; font-size: 12px; }
+      table { border-collapse: collapse; width: 100%; font-size: 13px; }
+      th { background: #1f2937; color: #fff; text-align: left; padding: 6px 10px; }
+      td { border-bottom: 1px solid #e5e7eb; padding: 6px 10px; }
+      tr:nth-child(even) td { background: #f9fafb; }
+      .align-right { text-align: right; }
+      .align-center { text-align: center; }
+      footer { margin-top: 24px; color: #6b7280; font-size: 11px; }
+      .watermark {
+        position: fixed; top: 40%; left: 15%; transform: rotate(-30deg);
+        font-size: 90px; color: rgba(17, 24, 39, 0.06); font-weight: 700;
+        pointer-events: none; z-index: 0;
+      }
+      @media print {
+        body { margin: 12mm; }
+        thead { display: table-header-group; }
+        tr { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    {% if spec.watermark %}<div class="watermark">{{ spec.watermark }}</div>{% endif %}
+    <header>
+      <h1>{{ spec.title }}</h1>
+      {% if spec.subtitle %}<div>{{ spec.subtitle }}</div>{% endif %}
+      <div class="meta">
+        {{ branding.company }} · Generated {{ branding.generated_at }} by {{ branding.generated_by }}
+        {% if spec.filters %}
+          · Filters:
+          {% for key, value in spec.filters.items %}{{ key }}={{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        {% endif %}
+      </div>
+    </header>
+    <table>
+      <thead>
+        <tr>
+          {% for column in spec.columns %}<th class="align-{{ column.align }}">{{ column.label }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rendered_rows %}
+          <tr>
+            {% for cell in row %}<td class="align-{{ cell.align }}">{{ cell.value }}</td>{% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <footer>{{ branding.company }} — {{ spec.title }} — {{ spec.rows|length }} rows</footer>
+  </body>
+</html>

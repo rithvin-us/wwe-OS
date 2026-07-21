@@ -152,23 +152,23 @@ Real gaps found or already known, stated plainly:
 
 ## 7. Production readiness checklist
 
-| Item                                                                                            | Status                                                                                 |
-| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `ruff check` clean (frontend + backend)                                                         | ✅ Pass                                                                                |
-| `manage.py check` clean                                                                         | ✅ Pass                                                                                |
-| `makemigrations --check --dry-run` clean                                                        | ✅ Pass                                                                                |
-| `pytest` — 56/56 passing                                                                        | ✅ Pass                                                                                |
-| `manage.py spectacular` — 0 warnings/errors                                                     | ✅ Pass                                                                                |
-| `manage.py check --deploy` — 0 issues                                                           | ✅ Pass                                                                                |
-| `pnpm build` (frontend)                                                                         | ✅ Pass (verified earlier this session)                                                |
-| `docker compose config --quiet`                                                                 | ✅ Pass                                                                                |
-| Live `docker compose up` + container smoke test                                                 | ⬜ **Not run** (Docker daemon unavailable this session)                                |
-| Tenant/company bootstrap flow                                                                   | ✅ **Done** — first registration auto-bootstraps the tenant and becomes Owner          |
-| Durable document storage                                                                        | ⬜ **Missing** (§ 6.1)                                                                 |
-| CI pipeline running these checks automatically                                                  | ⬜ **Missing** (§ 6.2)                                                                 |
-| Production deployment executed (Render/Vercel/DB provisioned)                                   | ⬜ **Not done** (§ 6.3)                                                                |
-| Real domain, HTTPS, `DJANGO_ALLOWED_HOSTS`/`CORS_ALLOWED_ORIGINS` set for it                    | ⬜ **Not done** — depends on the above                                                 |
-| Secrets rotated from local-dev defaults (`INGESTION_SERVICE_TOKENS`, `DJANGO_SECRET_KEY`, etc.) | ⬜ **Not done** — `.env.example` defaults are for local dev only, never for production |
+| Item                                                                                            | Status                                                                                  |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `ruff check` clean (frontend + backend)                                                         | ✅ Pass                                                                                 |
+| `manage.py check` clean                                                                         | ✅ Pass                                                                                 |
+| `makemigrations --check --dry-run` clean                                                        | ✅ Pass                                                                                 |
+| `pytest` — 82/82 passing (incl. workflow engine, observability, ingest dedupe)                  | ✅ Pass                                                                                 |
+| `manage.py spectacular` — 0 warnings/errors                                                     | ✅ Pass                                                                                 |
+| `manage.py check --deploy` — 0 issues                                                           | ✅ Pass                                                                                 |
+| `pnpm build` (frontend)                                                                         | ✅ Pass (verified earlier this session)                                                 |
+| `docker compose config --quiet`                                                                 | ✅ Pass                                                                                 |
+| Live `docker compose up` + container smoke test                                                 | ⬜ **Not run** (Docker daemon unavailable this session)                                 |
+| Tenant/company bootstrap flow                                                                   | ✅ **Done** — first registration auto-bootstraps the tenant and becomes Owner           |
+| Durable document storage                                                                        | 🟡 **Capability built** (`platform/storage`, local + R2/S3) — bot/module wiring pending |
+| CI pipeline running these checks automatically                                                  | ✅ **Done** — `test-backend` job runs `manage.py check` + pytest on every push/PR       |
+| Production deployment executed (Render/Vercel/DB provisioned)                                   | ⬜ **Not done** (§ 6.3)                                                                 |
+| Real domain, HTTPS, `DJANGO_ALLOWED_HOSTS`/`CORS_ALLOWED_ORIGINS` set for it                    | ⬜ **Not done** — depends on the above                                                  |
+| Secrets rotated from local-dev defaults (`INGESTION_SERVICE_TOKENS`, `DJANGO_SECRET_KEY`, etc.) | ⬜ **Not done** — `.env.example` defaults are for local dev only, never for production  |
 
 **This platform is not production-ready today.** It is a verified,
 tested foundation with one working end-to-end feature (Purchase ingestion).

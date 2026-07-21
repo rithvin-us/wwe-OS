@@ -36,6 +36,15 @@ class Events:
     TENANT_CREATED = "tenant.created"
     NOTIFICATION_CREATED = "notification.created"
     AUDIT_RECORDED = "audit.recorded"
+    WORKFLOW_STARTED = "workflow.started"
+    WORKFLOW_STEP_APPROVED = "workflow.step_approved"
+    WORKFLOW_COMPLETED = "workflow.completed"
+    WORKFLOW_REJECTED = "workflow.rejected"
+    WORKFLOW_CANCELLED = "workflow.cancelled"
+    FILE_STORED = "storage.file_stored"
+    FILE_DELETED = "storage.file_deleted"
+    REPORT_EXPORTED = "reporting.exported"
+    SEARCH_REINDEXED = "search.reindexed"
 
 
 def subscribe(event: str, handler: EventHandler) -> None:

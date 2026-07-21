@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from shared.events import publish
 from shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -46,12 +47,29 @@ class PurchaseBillService(BaseService):
         raw_extraction: dict | None = None,
     ) -> PurchaseBill:
         tenant = _resolve_ingest_tenant()
-        bill = PurchaseBill.objects.create(
-            tenant=tenant,
-            source_channel=source_channel,
-            raw_extraction=raw_extraction or {},
-            **data,
-        )
+
+        # Dedupe: a channel resending the same document (Telegram re-forward,
+        # retry after a timeout) must not create a second review item. The
+        # partial unique constraint backs this check against races.
+        data["external_ref"] = (data.get("external_ref") or "").strip()
+        if (
+            data["external_ref"]
+            and PurchaseBill.objects.filter(
+                tenant=tenant, source_channel=source_channel, external_ref=data["external_ref"]
+            ).exists()
+        ):
+            raise ConflictError("This document was already ingested.")
+
+        try:
+            with transaction.atomic():
+                bill = PurchaseBill.objects.create(
+                    tenant=tenant,
+                    source_channel=source_channel,
+                    raw_extraction=raw_extraction or {},
+                    **data,
+                )
+        except IntegrityError as exc:  # concurrent resend lost the race
+            raise ConflictError("This document was already ingested.") from exc
         publish(PURCHASE_BILL_INGESTED, instance=bill)
         self._notify_operator(bill)
         return bill
