@@ -57,10 +57,6 @@ export async function attachContractFileAction(
   }
 }
 
-export async function submitContractAction(id: string): Promise<ActionResult> {
-  return post(`${BASE}/${id}/submit/`, "Contract submitted for approval.", id);
-}
-
 export async function summarizeContractAction(id: string): Promise<ActionResult> {
   return post(`${BASE}/${id}/summarize/`, "Summary regenerated.", id);
 }

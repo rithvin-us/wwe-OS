@@ -34,7 +34,6 @@ export function CreateItemDialog() {
         sku: String(form.get("sku") ?? "").trim(),
         category: String(form.get("category") ?? ""),
         unit: String(form.get("unit") ?? "unit").trim() || "unit",
-        reorder_level: String(form.get("reorder_level") ?? "0") || "0",
         unit_cost: cost === "" ? null : cost,
         currency:
           String(form.get("currency") ?? "USD")
@@ -80,21 +79,10 @@ export function CreateItemDialog() {
               <Input id="item-sku" name="sku" placeholder="e.g. PAP-A4" required />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="item-unit">Unit</Label>
               <Input id="item-unit" name="unit" defaultValue="unit" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="item-reorder">Reorder at</Label>
-              <Input
-                id="item-reorder"
-                name="reorder_level"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue="0"
-              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="item-category">Category</Label>

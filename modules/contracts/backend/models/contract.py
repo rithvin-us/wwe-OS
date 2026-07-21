@@ -29,7 +29,6 @@ class ContractCategory(models.TextChoices):
 
 class ContractStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
-    IN_REVIEW = "in_review", "In review"
     ACTIVE = "active", "Active"
     EXPIRED = "expired", "Expired"
     TERMINATED = "terminated", "Terminated"
@@ -85,14 +84,6 @@ class Contract(TenantOwnedModel):
         blank=True,
         related_name="contracts",
     )
-    approval = models.ForeignKey(
-        "workflow.WorkflowInstance",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="+",
-    )
-    reviewed_at = models.DateTimeField(null=True, blank=True)
     terminated_at = models.DateTimeField(null=True, blank=True)
     termination_reason = models.CharField(max_length=300, blank=True, default="")
 

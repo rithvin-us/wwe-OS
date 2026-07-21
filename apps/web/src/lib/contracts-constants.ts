@@ -2,7 +2,7 @@
 // imports — client components import from here; server fetchers live in
 // ./contracts and re-export everything below.
 
-export type ContractStatus = "draft" | "in_review" | "active" | "expired" | "terminated";
+export type ContractStatus = "draft" | "active" | "expired" | "terminated";
 export type ContractCategory =
   | "service"
   | "lease"
@@ -34,7 +34,6 @@ export interface ContractRecord {
   owner_email: string | null;
   days_to_expiry: number | null;
   is_expiring_soon: boolean;
-  reviewed_at: string | null;
   terminated_at: string | null;
   termination_reason: string;
   created_at: string;
@@ -43,7 +42,6 @@ export interface ContractRecord {
 
 export interface ContractStats {
   draft: number;
-  in_review: number;
   active: number;
   expired: number;
   terminated: number;

@@ -9,7 +9,6 @@ import {
   Users,
 } from "@bop/icons";
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Greeting } from "@/components/dashboard/greeting";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
@@ -57,7 +56,7 @@ async function loadPurchaseData() {
 }
 
 export default async function DashboardPage() {
-  const { stats: purchaseStats, pending, recent } = await loadPurchaseData();
+  const { stats: purchaseStats, recent } = await loadPurchaseData();
   const kpis = buildKpis(purchaseStats);
   const alerts = operationalAlerts(purchaseStats);
   const activity = recentActivity(recent);

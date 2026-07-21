@@ -27,14 +27,14 @@ export default async function ContractsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Contracts"
-        description="Track agreements, route them for approval, and get reminded before they expire."
+        description="Track agreements, and get reminded before they expire."
         actions={<CreateContractDialog />}
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Active" value={stats.active} />
         <StatTile label="Expiring soon" value={stats.expiring_soon} />
-        <StatTile label="In review" value={stats.in_review} />
+
         <StatTile label="Draft" value={stats.draft} />
       </div>
 

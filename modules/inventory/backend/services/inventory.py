@@ -15,7 +15,6 @@ from django.db import IntegrityError, transaction
 from inventory.backend.events.registry import (
     ITEM_CREATED,
     ITEM_UPDATED,
-    LOW_STOCK,
     STOCK_MOVED,
 )
 from inventory.backend.models import InventoryItem, MovementType, StockMovement
@@ -42,8 +41,6 @@ class InventoryService(BaseService):
             raise ConflictError("An item with this SKU already exists.") from exc
         publish(ITEM_CREATED, instance=item, actor=actor)
         self._index(item)
-        if item.is_low_stock:
-            self._notify_low_stock(item)
         return item
 
     def update_item(self, *, item: InventoryItem, actor, data: dict[str, Any]) -> InventoryItem:
@@ -121,8 +118,6 @@ class InventoryService(BaseService):
 
         publish(STOCK_MOVED, instance=movement, actor=actor, item=locked)
         self._index(locked)
-        if locked.is_low_stock:
-            self._notify_low_stock(locked)
         return movement
 
     @staticmethod
@@ -152,11 +147,9 @@ class InventoryService(BaseService):
                 "sku": item.sku,
                 "name": item.name,
                 "on_hand": f"{item.quantity_on_hand} {item.unit}",
-                "reorder": str(item.reorder_level),
                 "value": (
                     f"{item.currency} {item.stock_value}" if item.stock_value is not None else "—"
                 ),
-                "status": "Low" if item.is_low_stock else "OK",
             }
             for item in items
         ]
@@ -168,9 +161,7 @@ class InventoryService(BaseService):
                 ReportColumn("sku", "SKU"),
                 ReportColumn("name", "Item"),
                 ReportColumn("on_hand", "On hand", align="right"),
-                ReportColumn("reorder", "Reorder", align="right"),
                 ReportColumn("value", "Value", align="right"),
-                ReportColumn("status", "Status"),
             ],
             rows=rows,
         )
@@ -182,26 +173,3 @@ class InventoryService(BaseService):
         if not item.is_active:
             return
         SearchService().upsert(index=INDEX, tenant=item.tenant, **to_document(item))
-
-    def _notify_low_stock(self, item: InventoryItem) -> None:
-        publish(LOW_STOCK, instance=item, actor=None)
-        from notifications.services import NotificationService
-        from roles.models import Role
-        from users.models import User
-
-        owner_role = Role.objects.filter(tenant__isnull=True, slug="owner").first()
-        if owner_role is None:
-            return
-        recipient_ids = owner_role.assignments.filter(user__tenant=item.tenant).values_list(
-            "user", flat=True
-        )
-        notifier = NotificationService()
-        for user in User.objects.filter(id__in=recipient_ids):
-            notifier.create(
-                recipient=user,
-                tenant=item.tenant,
-                title="Low stock",
-                body=f"{item.name} ({item.sku}) is at {item.quantity_on_hand} {item.unit}.",
-                category="inventory",
-                data={"item_id": str(item.id)},
-            )

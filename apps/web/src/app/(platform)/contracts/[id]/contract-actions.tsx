@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import {
   attachContractFileAction,
   deleteContractAction,
-  submitContractAction,
   summarizeContractAction,
   terminateContractAction,
 } from "@/app/(platform)/contracts/actions";
@@ -97,21 +96,7 @@ export function ContractActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {status === "draft" ? (
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run(() => submitContractAction(id))}
-        >
-          <Send aria-hidden />
-          Submit for approval
-        </Button>
-      ) : null}
-      {status === "in_review" ? (
-        <span className="text-xs text-muted-foreground">Waiting for approval</span>
-      ) : null}
-
+      {" "}
       {!isFinal ? (
         <>
           <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
@@ -153,7 +138,6 @@ export function ContractActions({
           </Button>
         </>
       ) : null}
-
       {status === "active" ? (
         <Dialog open={terminateOpen} onOpenChange={setTerminateOpen}>
           <DialogTrigger asChild>
@@ -187,7 +171,6 @@ export function ContractActions({
           </DialogContent>
         </Dialog>
       ) : null}
-
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogTrigger asChild>
           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">

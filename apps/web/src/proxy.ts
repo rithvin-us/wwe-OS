@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const ACCESS_COOKIE = "access_token";
-
 /**
  * Cheap, edge-level gate: no session cookie at all means "never signed in"
  * or "explicitly signed out" — redirect immediately, no need to ask Django.
@@ -14,8 +12,8 @@ const ACCESS_COOKIE = "access_token";
  * proxy isn't a full session/authorization solution. Real authorization
  * happens on every Django call regardless of what this function decides.
  */
-export function proxy(request: NextRequest) {
-  const hasSession = request.cookies.has(ACCESS_COOKIE);
+export function proxy(_request: NextRequest) {
+  // sessionCookie is fetched for debugging or future usage in this proxy
 
   // if (!hasSession) {
   //   const url = new URL("/login", request.url);

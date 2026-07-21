@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Send, Sparkles, Trash2 } from "@bop/icons";
+import { Archive, Sparkles, Trash2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,

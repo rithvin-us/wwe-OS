@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('storage', '0001_initial'),
         ('tenancy', '0001_initial'),
-        ('workflow', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -29,12 +28,11 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=200)),
                 ('description', models.TextField(blank=True, default='')),
                 ('category', models.CharField(choices=[('contract', 'Contract'), ('invoice', 'Invoice'), ('policy', 'Policy'), ('report', 'Report'), ('correspondence', 'Correspondence'), ('other', 'Other')], db_index=True, default='other', max_length=20)),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('in_review', 'In review'), ('approved', 'Approved'), ('archived', 'Archived')], db_index=True, default='draft', max_length=20)),
+                ('status', models.CharField(choices=[('active', 'Active'), ('archived', 'Archived')], db_index=True, default='active', max_length=20)),
                 ('tags', models.JSONField(blank=True, default=list)),
                 ('ai_summary', models.TextField(blank=True, default='')),
                 ('summary_status', models.CharField(choices=[('none', 'Not generated'), ('ready', 'Ready'), ('failed', 'Failed')], default='none', max_length=20)),
                 ('reviewed_at', models.DateTimeField(blank=True, null=True)),
-                ('approval', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='workflow.workflowinstance')),
                 ('file', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='documents', to='storage.storedfile')),
                 ('owner', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='documents', to=settings.AUTH_USER_MODEL)),
                 ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(app_label)s_%(class)s_set', to='tenancy.tenant')),

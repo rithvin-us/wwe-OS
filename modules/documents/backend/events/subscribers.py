@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from documents.backend.events.registry import ALL_EVENTS
-from shared.events import Events, subscribe
+from shared.events import subscribe
 
 
 def _record_audit(event: str, instance: Any = None, actor: Any = None, **_extra: Any) -> None:
@@ -34,44 +34,6 @@ def _record_audit(event: str, instance: Any = None, actor: Any = None, **_extra:
     )
 
 
-def _on_workflow_finished(
-    event: str, instance: Any = None, actor: Any = None, **_extra: Any
-) -> None:
-    """React only to approvals whose subject is one of our documents."""
-    if instance is None or instance.subject_type != "documents.document":
-        return
-    from documents.backend.models import Document
-    from documents.backend.services.document import DocumentService
-    from notifications.services import NotificationService
-
-    # Scope by the instance's own tenant, not the ambient request context —
-    # correct today and still correct if event dispatch becomes async, where
-    # no tenant context is set.
-    document = Document.objects.filter(id=instance.subject_id, tenant=instance.tenant).first()
-    if document is None:
-        return
-
-    service = DocumentService()
-    if event == Events.WORKFLOW_COMPLETED:
-        service.mark_approved(document)
-        title, body = "Document approved", f"'{document.title}' was approved."
-    else:  # WORKFLOW_REJECTED
-        service.mark_rejected(document)
-        title, body = "Document returned", f"'{document.title}' was returned for revision."
-
-    if document.owner is not None:
-        NotificationService().create(
-            recipient=document.owner,
-            tenant=document.tenant,
-            title=title,
-            body=body,
-            category="documents",
-            data={"document_id": str(document.id)},
-        )
-
-
 def register_subscribers() -> None:
     for event in ALL_EVENTS:
         subscribe(event, _record_audit)
-    subscribe(Events.WORKFLOW_COMPLETED, _on_workflow_finished)
-    subscribe(Events.WORKFLOW_REJECTED, _on_workflow_finished)

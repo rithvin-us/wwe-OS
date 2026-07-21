@@ -16,27 +16,6 @@ def _sync_permissions(sender, **kwargs) -> None:
         )
 
 
-def _ensure_workflow(sender, **kwargs) -> None:
-    """Declare the document-approval workflow (idempotent; safe in post_migrate).
-    A single operator-review step, gated by the documents.approve permission —
-    the same reviewable-item shape purchase uses, expressed on the reusable
-    engine so multi-step approval is a config change later, not a rebuild."""
-    from workflow.services import WorkflowService
-
-    WorkflowService().ensure_definition(
-        key="document-approval",
-        name="Document approval",
-        module="documents",
-        steps=[
-            {
-                "key": "review",
-                "name": "Document review",
-                "required_permission": "documents.approve",
-            }
-        ],
-    )
-
-
 class DocumentsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "documents.backend"
@@ -45,7 +24,6 @@ class DocumentsConfig(AppConfig):
 
     def ready(self) -> None:
         post_migrate.connect(_sync_permissions, sender=self)
-        post_migrate.connect(_ensure_workflow, sender=self)
 
         # In-memory registrations (safe at import; no DB access).
         from documents.backend.events.subscribers import register_subscribers

@@ -66,6 +66,7 @@ export const NAVIGATION: NavGroup[] = [
   {
     label: null,
     items: [
+      { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true }, // Using Settings icon, or maybe Wrench
       { name: "Services", href: "/services", icon: Layers, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
     ],

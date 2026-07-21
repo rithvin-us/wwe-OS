@@ -9,7 +9,7 @@ WORKDIR /app
 
 # System deps kept minimal; psycopg[binary] ships its own libpq.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl libreoffice-core libreoffice-writer default-jre \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

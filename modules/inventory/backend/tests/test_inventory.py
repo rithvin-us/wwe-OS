@@ -8,7 +8,6 @@ import pytest
 from audit.models import AuditLog
 from inventory.backend.models import MovementType, StockMovement
 from inventory.backend.services.inventory import InventoryService
-from notifications.models import Notification
 from search.services import SearchService
 from shared.exceptions import ConflictError, ValidationError
 
@@ -23,7 +22,6 @@ def _item(tenant, **overrides):
         "sku": "PAP-A4",
         "category": "office",
         "unit": "box",
-        "reorder_level": Decimal("5"),
         "unit_cost": Decimal("20.00"),
         "currency": "USD",
         "supplier": "Office Supplies Co",
@@ -85,15 +83,6 @@ def test_receipt_must_be_positive(tenant):
 
 # --------------------------------------------------------------------------- #
 # Low stock → notification + audit + search
-# --------------------------------------------------------------------------- #
-
-
-def test_low_stock_notifies_owner(tenant, owner):
-    item = _item(tenant, reorder_level=Decimal("10"))
-    _move(item, MovementType.RECEIPT, "8")  # 8 <= 10 → low
-    item.refresh_from_db()
-    assert item.is_low_stock is True
-    assert Notification.objects.filter(recipient=owner, category="inventory").exists()
 
 
 def test_movement_is_audited_and_indexed(tenant, owner):
@@ -131,7 +120,7 @@ def test_api_create_receive_issue_flow(tenant, owner, auth_client):
     client = auth_client(owner)
     created = client.post(
         ITEMS_URL,
-        {"name": "Widget", "sku": "WID-1", "unit": "pcs", "reorder_level": "5"},
+        {"name": "Widget", "sku": "WID-1", "unit": "pcs"},
         format="json",
     )
     assert created.status_code == 201
@@ -145,23 +134,18 @@ def test_api_create_receive_issue_flow(tenant, owner, auth_client):
         f"{ITEMS_URL}{item_id}/issue/", {"quantity": "18", "reason": "used"}, format="json"
     )
     assert issued.data["item"]["quantity_on_hand"] == "2.00"
-    assert issued.data["item"]["is_low_stock"] is True
 
     movements = client.get(f"{ITEMS_URL}{item_id}/movements/")
     assert len(movements.data) == 2
 
 
 def test_api_stats_low_stock_export(tenant, owner, auth_client):
-    item = _item(tenant, reorder_level=Decimal("10"))
+    item = _item(tenant)
     _move(item, MovementType.RECEIPT, "4")
     client = auth_client(owner)
 
     stats = client.get(f"{ITEMS_URL}stats/")
     assert stats.data["active"] == 1
-    assert stats.data["low_stock"] == 1
-
-    low = client.get(f"{ITEMS_URL}low-stock/")
-    assert len(low.data) == 1
 
     export = client.post(f"{ITEMS_URL}export/", {"format": "csv"}, format="json")
     assert export.status_code == 200

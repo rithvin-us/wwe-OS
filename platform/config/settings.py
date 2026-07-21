@@ -74,7 +74,6 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "users",
     "auth",
     "permissions",
-    "workflow",
     "storage",
     "ai",
     "search",
@@ -254,8 +253,6 @@ SPECTACULAR_SETTINGS = {
         "NotificationStatusEnum": "notifications.models.Status",
         "NotificationChannelEnum": "notifications.models.Channel",
         "NotificationPriorityEnum": "notifications.models.Priority",
-        "WorkflowInstanceStatusEnum": "workflow.models.InstanceStatus",
-        "WorkflowActionEnum": "workflow.models.ActionType",
     },
 }
 

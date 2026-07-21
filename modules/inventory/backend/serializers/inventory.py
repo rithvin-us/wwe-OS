@@ -7,7 +7,6 @@ from rest_framework import serializers
 
 
 class InventoryItemSerializer(serializers.ModelSerializer):
-    is_low_stock = serializers.BooleanField(read_only=True)
     stock_value = serializers.DecimalField(
         max_digits=16, decimal_places=2, read_only=True, allow_null=True
     )
@@ -21,14 +20,12 @@ class InventoryItemSerializer(serializers.ModelSerializer):
             "category",
             "unit",
             "quantity_on_hand",
-            "reorder_level",
             "unit_cost",
             "currency",
             "location",
             "supplier",
             "is_active",
             "notes",
-            "is_low_stock",
             "stock_value",
             "created_at",
             "updated_at",
@@ -36,7 +33,6 @@ class InventoryItemSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "quantity_on_hand",
-            "is_low_stock",
             "stock_value",
             "created_at",
             "updated_at",
@@ -48,9 +44,6 @@ class CreateItemSerializer(serializers.Serializer):
     sku = serializers.CharField(max_length=60)
     category = serializers.CharField(max_length=60, required=False, allow_blank=True, default="")
     unit = serializers.CharField(max_length=20, required=False, default="unit")
-    reorder_level = serializers.DecimalField(
-        max_digits=14, decimal_places=2, required=False, default=0, min_value=0
-    )
     unit_cost = serializers.DecimalField(
         max_digits=14, decimal_places=2, required=False, allow_null=True, min_value=0
     )

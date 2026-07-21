@@ -31,7 +31,6 @@ class DocumentSerializer(serializers.ModelSerializer):
             "file_size",
             "content_type",
             "owner_email",
-            "reviewed_at",
             "created_at",
             "updated_at",
         )

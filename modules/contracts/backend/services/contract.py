@@ -14,11 +14,9 @@ from __future__ import annotations
 from typing import Any
 
 from contracts.backend.events.registry import (
-    CONTRACT_ACTIVATED,
     CONTRACT_CREATED,
     CONTRACT_EXPIRED,
     CONTRACT_EXPIRING,
-    CONTRACT_SUBMITTED,
     CONTRACT_SUMMARIZED,
     CONTRACT_TERMINATED,
     CONTRACT_UPDATED,
@@ -33,7 +31,6 @@ from shared.exceptions import ConflictError, ValidationError
 from shared.services import BaseService
 from storage.services import StorageService
 
-WORKFLOW_KEY = "contract-approval"
 TEXT_CONTENT_TYPES = ("text/plain", "text/csv", "text/html", "application/json")
 SUMMARY_INPUT_LIMIT = 6000
 
@@ -131,45 +128,11 @@ class ContractService(BaseService):
         return meta[:SUMMARY_INPUT_LIMIT]
 
     # ------------------------------------------------------------------ #
-    # Approval lifecycle (platform workflow engine)
+    # Termination
     # ------------------------------------------------------------------ #
-    def submit_for_approval(self, *, contract: Contract, actor) -> Contract:
-        from workflow.services import WorkflowService
-
-        if contract.status != ContractStatus.DRAFT:
-            raise ConflictError(f"Only a draft can be submitted (this one is {contract.status}).")
-        instance = WorkflowService().start(
-            definition_key=WORKFLOW_KEY,
-            subject=contract,
-            started_by=actor,
-            tenant=contract.tenant,
-        )
-        contract.status = ContractStatus.IN_REVIEW
-        contract.approval = instance
-        contract.save(update_fields=["status", "approval", "updated_at"])
-        publish(CONTRACT_SUBMITTED, instance=contract, actor=actor)
-        self._index(contract)
-        return contract
-
-    def mark_active(self, contract: Contract) -> Contract:
-        """Called by the workflow-completion subscriber."""
-        contract.status = ContractStatus.ACTIVE
-        contract.reviewed_at = timezone.now()
-        contract.save(update_fields=["status", "reviewed_at", "updated_at"])
-        publish(CONTRACT_ACTIVATED, instance=contract, actor=None)
-        self._index(contract)
-        return contract
-
-    def mark_rejected(self, contract: Contract) -> Contract:
-        contract.status = ContractStatus.DRAFT
-        contract.approval = None
-        contract.reviewed_at = timezone.now()
-        contract.save(update_fields=["status", "approval", "reviewed_at", "updated_at"])
-        self._index(contract)
-        return contract
 
     def terminate(self, *, contract: Contract, actor, reason: str) -> Contract:
-        if contract.status not in (ContractStatus.ACTIVE, ContractStatus.IN_REVIEW):
+        if contract.status not in (ContractStatus.ACTIVE,):
             raise ConflictError(f"A {contract.status} contract cannot be terminated.")
         if not reason.strip():
             raise ValidationError(detail={"reason": ["A termination reason is required."]})

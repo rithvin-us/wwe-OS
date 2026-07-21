@@ -26,3 +26,21 @@ export async function getAssetMaintenance(id: string) {
 export async function getAssetStats() {
   return djangoFetch<AssetStats>("/api/v1/assets/assets/stats/");
 }
+
+export async function getSites() {
+  return djangoFetch<{ id: string; name: string }[]>("/api/v1/assets/sites/");
+}
+
+export async function getDCs() {
+  return djangoFetch<
+    {
+      id: string;
+      dc_number: string;
+      dc_type: string;
+      site: { name: string };
+      generated_by: string;
+      created_at: string;
+      pdf_url: string;
+    }[]
+  >("/api/v1/assets/dcs/");
+}

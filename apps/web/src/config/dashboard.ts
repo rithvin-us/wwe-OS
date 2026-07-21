@@ -2,7 +2,6 @@ import {
   Boxes,
   CircleDollarSign,
   FilePlus2,
-  FileSignature,
   ShoppingCart,
   UserPlus,
   Users,
@@ -253,6 +252,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { label: "Add employee", href: "/hr", icon: UserPlus },
   { label: "New purchase", href: "/purchase", icon: ShoppingCart },
   { label: "Upload document", href: "/dms", icon: FilePlus2 },
+  { label: "New site", href: "/assets/dcs", icon: Boxes },
   // { label: "New contract", href: "/contracts", icon: FileSignature },
 ];
 

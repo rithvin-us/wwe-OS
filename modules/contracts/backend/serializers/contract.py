@@ -37,7 +37,6 @@ class ContractSerializer(serializers.ModelSerializer):
             "owner_email",
             "days_to_expiry",
             "is_expiring_soon",
-            "reviewed_at",
             "terminated_at",
             "termination_reason",
             "created_at",

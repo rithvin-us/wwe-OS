@@ -4,11 +4,9 @@ import {
   Bot,
   Boxes,
   FileSearch,
-  FileSignature,
   FileText,
   Landmark,
   Mail,
-  MonitorCog,
   ScanText,
   Send,
   ShoppingCart,
@@ -71,9 +69,9 @@ export const APPS: PlatformApp[] = [
   // },
   {
     slug: "assets",
-    name: "Assets",
+    name: "Delivery Challans",
     icon: Landmark,
-    tagline: "Company equipment and who has it.",
+    tagline: "Generate and track Delivery Challans.",
     availability: "ready",
   },
   {

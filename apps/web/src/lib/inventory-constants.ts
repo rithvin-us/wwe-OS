@@ -11,14 +11,12 @@ export interface InventoryItemRecord {
   category: string;
   unit: string;
   quantity_on_hand: string;
-  reorder_level: string;
   unit_cost: string | null;
   currency: string;
   location: string;
   supplier: string;
   is_active: boolean;
   notes: string;
-  is_low_stock: boolean;
   stock_value: string | null;
   created_at: string;
   updated_at: string;
@@ -40,7 +38,6 @@ export interface InventoryStats {
   total_items: number;
   active: number;
   inactive: number;
-  low_stock: number;
   stock_value: string;
 }
 
@@ -49,7 +46,6 @@ export interface ItemCreateInput {
   sku: string;
   category: string;
   unit: string;
-  reorder_level: string;
   unit_cost: string | null;
   currency: string;
   location: string;

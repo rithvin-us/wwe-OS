@@ -17,7 +17,6 @@ api_v1 = [
     path("tenancy/", include("tenancy.urls")),
     path("audit/", include("audit.urls")),
     path("notifications/", include("notifications.urls")),
-    path("workflow/", include("workflow.urls")),
     path("storage/", include("storage.urls")),
     path("ai/", include("ai.urls")),
     path("search/", include("search.urls")),

@@ -12,7 +12,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from notifications.models import Notification
 from search.services import SearchService
 from storage.models import StoredFile
-from workflow.models import InstanceStatus
 
 pytestmark = pytest.mark.django_db
 
@@ -102,37 +101,6 @@ def test_attach_replaces_previous_file(tenant, owner):
 
 
 # --------------------------------------------------------------------------- #
-# Approval via the platform workflow engine
-# --------------------------------------------------------------------------- #
-
-
-def test_submit_and_approve_activates_contract(tenant, owner, auth_client):
-    contract = _create(tenant, owner)
-    contract = ContractService().submit_for_approval(contract=contract, actor=owner)
-    assert contract.status == ContractStatus.IN_REVIEW
-    assert contract.approval.status == InstanceStatus.RUNNING
-    assert Notification.objects.filter(recipient=owner, category="workflow").exists()
-
-    response = auth_client(owner).post(
-        f"/api/v1/workflow/instances/{contract.approval_id}/approve/", {}
-    )
-    assert response.status_code == 200
-    contract.refresh_from_db()
-    assert contract.status == ContractStatus.ACTIVE
-    assert Notification.objects.filter(recipient=owner, title="Contract approved").exists()
-
-
-def test_reject_returns_contract_to_draft(tenant, owner, auth_client):
-    contract = _create(tenant, owner)
-    contract = ContractService().submit_for_approval(contract=contract, actor=owner)
-    auth_client(owner).post(
-        f"/api/v1/workflow/instances/{contract.approval_id}/reject/", {"reason": "wrong party"}
-    )
-    contract.refresh_from_db()
-    assert contract.status == ContractStatus.DRAFT
-
-
-# --------------------------------------------------------------------------- #
 # Termination + expiry scan (notifications)
 # --------------------------------------------------------------------------- #
 
@@ -141,7 +109,8 @@ def test_terminate_requires_reason_and_finishes(tenant, owner):
     from shared.exceptions import ValidationError
 
     contract = _create(tenant, owner)
-    ContractService().mark_active(contract)
+    contract.status = ContractStatus.ACTIVE
+    contract.save()
     with pytest.raises(ValidationError):
         ContractService().terminate(contract=contract, actor=owner, reason="  ")
     contract = ContractService().terminate(contract=contract, actor=owner, reason="breach")
@@ -152,7 +121,8 @@ def test_terminate_requires_reason_and_finishes(tenant, owner):
 def test_expiry_scan_expires_and_reminds(tenant, owner):
     today = date.today()
     past = _create(tenant, owner, title="Old lease", end_date=today - timedelta(days=1))
-    ContractService().mark_active(past)
+    past.status = ContractStatus.ACTIVE
+    past.save()
     soon = _create(
         tenant,
         owner,
@@ -160,7 +130,8 @@ def test_expiry_scan_expires_and_reminds(tenant, owner):
         end_date=today + timedelta(days=10),
         renewal_notice_days=30,
     )
-    ContractService().mark_active(soon)
+    soon.status = ContractStatus.ACTIVE
+    soon.save()
 
     result = ContractService().run_expiry_scan(tenant=tenant)
     assert result == {"expired": 1, "reminded": 1}
@@ -178,7 +149,8 @@ def test_expiry_scan_expires_and_reminds(tenant, owner):
 
 def test_api_stats_and_expiring(tenant, owner, auth_client):
     active = _create(tenant, owner, end_date=date.today() + timedelta(days=5), value="1200.00")
-    ContractService().mark_active(active)
+    active.status = ContractStatus.ACTIVE
+    active.save()
     _create(tenant, owner, title="A draft")
 
     client = auth_client(owner)

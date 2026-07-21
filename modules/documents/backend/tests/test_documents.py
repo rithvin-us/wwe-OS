@@ -11,10 +11,8 @@ from audit.models import AuditLog
 from django.core.files.uploadedfile import SimpleUploadedFile
 from documents.backend.models import Document, DocumentStatus, SummaryStatus
 from documents.backend.services.document import DocumentService
-from notifications.models import Notification
 from search.services import SearchService
 from storage.models import StoredFile
-from workflow.models import InstanceStatus
 
 pytestmark = pytest.mark.django_db
 
@@ -86,64 +84,6 @@ def test_create_rejects_disallowed_file_type(tenant, owner):
 
     with pytest.raises(ValidationError):
         _create(tenant, owner, content_type="application/x-msdownload", filename="x.exe")
-
-
-# --------------------------------------------------------------------------- #
-# Approval — the platform workflow engine drives document status
-# --------------------------------------------------------------------------- #
-
-
-def test_submit_starts_workflow_and_notifies_approver(tenant, owner):
-    document = _create(tenant, owner, summarize=False)
-    document = DocumentService().submit_for_approval(document=document, actor=owner)
-
-    assert document.status == DocumentStatus.IN_REVIEW
-    assert document.approval is not None
-    assert document.approval.status == InstanceStatus.RUNNING
-    # Owner holds documents.approve, so the workflow engine notified them.
-    assert Notification.objects.filter(recipient=owner, category="workflow").exists()
-    assert AuditLog.objects.filter(action="documents.submitted").exists()
-
-
-def test_workflow_approval_marks_document_approved_and_notifies_owner(tenant, owner, auth_client):
-    document = _create(tenant, owner, summarize=False)
-    document = DocumentService().submit_for_approval(document=document, actor=owner)
-
-    # Approve through the real platform workflow API — proves the module
-    # reacts to workflow.completed without the engine knowing about documents.
-    response = auth_client(owner).post(
-        f"/api/v1/workflow/instances/{document.approval_id}/approve/", {}
-    )
-    assert response.status_code == 200
-
-    document.refresh_from_db()
-    assert document.status == DocumentStatus.APPROVED
-    assert document.reviewed_at is not None
-    assert Notification.objects.filter(recipient=owner, title="Document approved").exists()
-
-
-def test_workflow_rejection_returns_document_to_draft(tenant, owner, auth_client):
-    document = _create(tenant, owner, summarize=False)
-    document = DocumentService().submit_for_approval(document=document, actor=owner)
-
-    response = auth_client(owner).post(
-        f"/api/v1/workflow/instances/{document.approval_id}/reject/",
-        {"reason": "needs the FY26 figures"},
-    )
-    assert response.status_code == 200
-
-    document.refresh_from_db()
-    assert document.status == DocumentStatus.DRAFT
-    assert Notification.objects.filter(recipient=owner, title="Document returned").exists()
-
-
-def test_submit_requires_draft(tenant, owner):
-    from shared.exceptions import ConflictError
-
-    document = _create(tenant, owner, summarize=False)
-    DocumentService().submit_for_approval(document=document, actor=owner)
-    with pytest.raises(ConflictError):
-        DocumentService().submit_for_approval(document=document, actor=owner)
 
 
 # --------------------------------------------------------------------------- #

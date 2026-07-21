@@ -7,7 +7,7 @@ always change together in the service, never by editing a quantity field.
 
 from __future__ import annotations
 
-from django.db.models import Count, F, Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from inventory.backend.models import InventoryItem, MovementType
@@ -37,7 +37,6 @@ class InventoryItemViewSet(BaseModelViewSet):
         "list": "inventory.read",
         "retrieve": "inventory.read",
         "movements": "inventory.read",
-        "low_stock": "inventory.read",
         "stats": "inventory.read",
         "export": "inventory.read",
         "create": "inventory.write",
@@ -117,22 +116,10 @@ class InventoryItemViewSet(BaseModelViewSet):
         return Response(StockMovementSerializer(rows, many=True).data)
 
     # --- rollups -------------------------------------------------------- #
-    @action(detail=False, methods=["get"], url_path="low-stock")
-    def low_stock(self, request: Request) -> Response:
-        # Built from the tenant-scoped queryset (not the raw repo) so scoping is
-        # identical to every other endpoint on this viewset.
-        rows = self.get_queryset().filter(
-            is_active=True,
-            reorder_level__gt=0,
-            quantity_on_hand__lte=F("reorder_level"),
-        )
-        return Response(InventoryItemSerializer(rows, many=True).data)
-
     @action(detail=False, methods=["get"])
     def stats(self, request: Request) -> Response:
         qs = self.get_queryset()
         active = qs.filter(is_active=True)
-        low = sum(1 for item in active if item.is_low_stock)
         value = sum((item.stock_value or 0) for item in active.exclude(unit_cost__isnull=True))
         agg = qs.aggregate(total=Count("id"), inactive=Count("id", filter=Q(is_active=False)))
         return Response(
@@ -140,7 +127,6 @@ class InventoryItemViewSet(BaseModelViewSet):
                 "total_items": agg["total"],
                 "active": active.count(),
                 "inactive": agg["inactive"],
-                "low_stock": low,
                 "stock_value": f"{value:.2f}",
             }
         )

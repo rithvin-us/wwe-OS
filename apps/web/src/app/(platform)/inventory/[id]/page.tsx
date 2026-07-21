@@ -1,4 +1,4 @@
-import { ArrowLeft, TriangleAlert } from "@bop/icons";
+import { ArrowLeft } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
@@ -74,16 +74,7 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
         <PageHeader
           title={item.name}
           description={`SKU ${item.sku}${item.category ? ` · ${item.category}` : ""}`}
-          meta={
-            item.is_low_stock ? (
-              <Badge variant="warning">
-                <TriangleAlert aria-hidden className="size-3" />
-                Low stock
-              </Badge>
-            ) : !item.is_active ? (
-              <Badge variant="secondary">Inactive</Badge>
-            ) : null
-          }
+          meta={!item.is_active ? <Badge variant="secondary">Inactive</Badge> : null}
           actions={<StockActions id={item.id} unit={item.unit} hasHistory={movements.length > 0} />}
         />
       </div>
@@ -98,9 +89,6 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
               {formatQty(item.quantity_on_hand, item.unit)}
             </p>
             <div className="divide-y divide-border">
-              <MetaRow label="Reorder at">
-                {item.reorder_level} {item.unit}
-              </MetaRow>
               <MetaRow label="Unit cost">{formatMoney(item.unit_cost, item.currency)}</MetaRow>
               <MetaRow label="Stock value">{formatMoney(item.stock_value, item.currency)}</MetaRow>
               <MetaRow label="Location">{item.location || "—"}</MetaRow>

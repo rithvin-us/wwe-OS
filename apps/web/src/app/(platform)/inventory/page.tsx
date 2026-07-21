@@ -33,7 +33,6 @@ export default async function InventoryPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Active items" value={stats.active} />
-        <StatTile label="Low stock" value={stats.low_stock} />
         <StatTile label="Inactive" value={stats.inactive} />
         <StatTile label="Total items" value={stats.total_items} />
       </div>

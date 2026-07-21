@@ -49,7 +49,6 @@ class ContractViewSet(BaseModelViewSet):
         "partial_update": "contracts.write",
         "attach": "contracts.write",
         "summarize": "contracts.write",
-        "submit": "contracts.write",
         "terminate": "contracts.manage",
         "destroy": "contracts.manage",
     }
@@ -103,13 +102,6 @@ class ContractViewSet(BaseModelViewSet):
         return Response(ContractSerializer(contract).data)
 
     @action(detail=True, methods=["post"])
-    def submit(self, request: Request, pk=None) -> Response:
-        contract = ContractService().submit_for_approval(
-            contract=self.get_object(), actor=request.user
-        )
-        return Response(ContractSerializer(contract).data)
-
-    @action(detail=True, methods=["post"])
     def terminate(self, request: Request, pk=None) -> Response:
         data = TerminateContractSerializer(data=request.data)
         data.is_valid(raise_exception=True)
@@ -157,11 +149,10 @@ class ContractViewSet(BaseModelViewSet):
         expiring = sum(1 for c in qs.filter(status=ContractStatus.ACTIVE) if c.is_expiring_soon)
         return Response(
             {
-                "draft": counts[ContractStatus.DRAFT],
-                "in_review": counts[ContractStatus.IN_REVIEW],
-                "active": counts[ContractStatus.ACTIVE],
-                "expired": counts[ContractStatus.EXPIRED],
-                "terminated": counts[ContractStatus.TERMINATED],
+                "draft": counts.get(ContractStatus.DRAFT, 0),
+                "active": counts.get(ContractStatus.ACTIVE, 0),
+                "expired": counts.get(ContractStatus.EXPIRED, 0),
+                "terminated": counts.get(ContractStatus.TERMINATED, 0),
                 "total": sum(counts.values()),
                 "expiring_soon": expiring,
                 "active_value": f"{Decimal(active_value):.2f}",

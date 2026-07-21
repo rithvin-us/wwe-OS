@@ -18,7 +18,7 @@ import {
 const STATUS_FILTERS: { value: ContractStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
-  { value: "in_review", label: "In review" },
+
   { value: "active", label: "Active" },
   { value: "expired", label: "Expired" },
   { value: "terminated", label: "Terminated" },
@@ -26,8 +26,7 @@ const STATUS_FILTERS: { value: ContractStatus | "all"; label: string }[] = [
 
 function StatusBadge({ contract }: { contract: ContractRecord }) {
   if (contract.status === "active") return <Badge variant="success">{contract.status_label}</Badge>;
-  if (contract.status === "in_review")
-    return <Badge variant="warning">{contract.status_label}</Badge>;
+
   if (contract.status === "expired")
     return <Badge variant="destructive">{contract.status_label}</Badge>;
   if (contract.status === "terminated")

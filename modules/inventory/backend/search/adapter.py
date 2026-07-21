@@ -19,7 +19,7 @@ def to_document(item: InventoryItem) -> dict:
         "extra": {
             "category": item.category,
             "is_active": "yes" if item.is_active else "no",
-            "low_stock": "yes" if item.is_low_stock else "no",
+            "unit": item.unit,
         },
         "url": f"/inventory/{item.id}",
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, TriangleAlert } from "@bop/icons";
+import { Boxes } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { DataTable } from "@bop/ui/components/data-table";
@@ -10,18 +10,14 @@ import { useState } from "react";
 
 import { formatMoney, formatQty, type InventoryItemRecord } from "@/lib/inventory-constants";
 
-type Filter = "all" | "low" | "active" | "inactive";
-
+type Filter = "all" | "active" | "inactive";
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "low", label: "Low stock" },
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
 ];
 
 function match(item: InventoryItemRecord, filter: Filter): boolean {
-  if (filter === "low") return item.is_low_stock;
-  if (filter === "active") return item.is_active;
   if (filter === "inactive") return !item.is_active;
   return true;
 }
@@ -52,19 +48,10 @@ const columns: ColumnDef<InventoryItemRecord, unknown>[] = [
     cell: ({ row }) => (
       <span className="inline-flex items-center gap-1.5 tabular-nums">
         {formatQty(row.original.quantity_on_hand, row.original.unit)}
-        {row.original.is_low_stock ? (
-          <TriangleAlert aria-hidden className="size-3.5 text-warning" />
-        ) : null}
       </span>
     ),
   },
-  {
-    accessorKey: "reorder_level",
-    header: "Reorder at",
-    cell: ({ row }) => (
-      <span className="tabular-nums text-muted-foreground">{row.original.reorder_level}</span>
-    ),
-  },
+
   {
     id: "value",
     header: "Value",

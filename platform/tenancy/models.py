@@ -30,6 +30,7 @@ class Tenant(BaseModel):
     currency = models.CharField(max_length=3, default="USD")
     locale = models.CharField(max_length=10, default="en-us")
     is_active = models.BooleanField(default=True)
+    config = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "tenancy_tenant"

@@ -13,8 +13,7 @@ import { type ContractRecord, formatDate, formatMoney, getContract } from "@/lib
 
 function StatusBadge({ contract }: { contract: ContractRecord }) {
   if (contract.status === "active") return <Badge variant="success">{contract.status_label}</Badge>;
-  if (contract.status === "in_review")
-    return <Badge variant="warning">{contract.status_label}</Badge>;
+
   if (contract.status === "expired")
     return <Badge variant="destructive">{contract.status_label}</Badge>;
   if (contract.status === "terminated")

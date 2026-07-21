@@ -35,10 +35,6 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     # Settings & tenancy
     PermissionDef("settings.view", "View settings", "Settings"),
     PermissionDef("settings.manage", "Manage settings", "Settings"),
-    # Workflow
-    PermissionDef("workflow.view", "View workflows", "Workflow"),
-    PermissionDef("workflow.act", "Act on workflow approvals", "Workflow"),
-    PermissionDef("workflow.manage", "Manage workflows", "Workflow"),
     # Storage
     PermissionDef("storage.read", "View and download files", "Storage"),
     PermissionDef("storage.write", "Upload files", "Storage"),

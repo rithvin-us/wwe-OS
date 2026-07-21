@@ -12,11 +12,3 @@ class InventoryRepository:
 
     def get(self, *, item_id, tenant) -> InventoryItem | None:
         return InventoryItem.objects.filter(id=item_id, tenant=tenant).first()
-
-    def low_stock(self, tenant) -> models.QuerySet[InventoryItem]:
-        # reorder_level > 0 AND quantity_on_hand <= reorder_level, active only.
-        return self.for_tenant(tenant).filter(
-            is_active=True,
-            reorder_level__gt=0,
-            quantity_on_hand__lte=models.F("reorder_level"),
-        )

@@ -13,23 +13,6 @@ def _sync_permissions(sender, **kwargs) -> None:
         )
 
 
-def _ensure_workflow(sender, **kwargs) -> None:
-    from workflow.services import WorkflowService
-
-    WorkflowService().ensure_definition(
-        key="contract-approval",
-        name="Contract approval",
-        module="contracts",
-        steps=[
-            {
-                "key": "review",
-                "name": "Contract review",
-                "required_permission": "contracts.approve",
-            }
-        ],
-    )
-
-
 class ContractsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "contracts.backend"
@@ -38,7 +21,6 @@ class ContractsConfig(AppConfig):
 
     def ready(self) -> None:
         post_migrate.connect(_sync_permissions, sender=self)
-        post_migrate.connect(_ensure_workflow, sender=self)
 
         from contracts.backend.events.subscribers import register_subscribers
         from contracts.backend.prompts import register_prompts

@@ -44,7 +44,7 @@ class TenantSettingsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tenant
-        fields = ("id", "name", "timezone", "currency", "locale", "status", "created_at")
+        fields = ("id", "name", "timezone", "currency", "locale", "status", "created_at", "config")
         read_only_fields = ("id", "status", "created_at")
 
 

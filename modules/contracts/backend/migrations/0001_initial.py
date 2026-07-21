@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('storage', '0001_initial'),
         ('tenancy', '0001_initial'),
-        ('workflow', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -29,7 +28,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=200)),
                 ('counterparty', models.CharField(help_text='The other party / supplier.', max_length=200)),
                 ('category', models.CharField(choices=[('service', 'Service agreement'), ('lease', 'Lease'), ('nda', 'NDA'), ('employment', 'Employment'), ('supply', 'Supply'), ('license', 'License'), ('other', 'Other')], db_index=True, default='other', max_length=20)),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('in_review', 'In review'), ('active', 'Active'), ('expired', 'Expired'), ('terminated', 'Terminated')], db_index=True, default='draft', max_length=20)),
+                ('status', models.CharField(choices=[('draft', 'Draft'), ('active', 'Active'), ('expired', 'Expired'), ('terminated', 'Terminated')], db_index=True, default='draft', max_length=20)),
                 ('value', models.DecimalField(blank=True, decimal_places=2, max_digits=14, null=True)),
                 ('currency', models.CharField(default='USD', max_length=3)),
                 ('start_date', models.DateField(blank=True, null=True)),
@@ -42,7 +41,6 @@ class Migration(migrations.Migration):
                 ('reviewed_at', models.DateTimeField(blank=True, null=True)),
                 ('terminated_at', models.DateTimeField(blank=True, null=True)),
                 ('termination_reason', models.CharField(blank=True, default='', max_length=300)),
-                ('approval', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='workflow.workflowinstance')),
                 ('file', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contracts', to='storage.storedfile')),
                 ('owner', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contracts', to=settings.AUTH_USER_MODEL)),
                 ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(app_label)s_%(class)s_set', to='tenancy.tenant')),

@@ -34,7 +34,6 @@ class InventoryItem(TenantOwnedModel):
     unit = models.CharField(max_length=20, default="unit", help_text="e.g. pcs, kg, litre, box.")
 
     quantity_on_hand = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    reorder_level = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
     unit_cost = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default="USD")
@@ -56,14 +55,6 @@ class InventoryItem(TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.sku} · {self.name}"
-
-    @property
-    def is_low_stock(self) -> bool:
-        return (
-            self.is_active
-            and self.reorder_level > 0
-            and self.quantity_on_hand <= self.reorder_level
-        )
 
     @property
     def stock_value(self):
