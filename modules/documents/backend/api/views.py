@@ -44,7 +44,6 @@ class DocumentViewSet(BaseModelViewSet):
         "create": "documents.write",
         "partial_update": "documents.write",
         "summarize": "documents.write",
-        "submit": "documents.write",
         "archive": "documents.manage",
         "destroy": "documents.manage",
     }
@@ -98,13 +97,6 @@ class DocumentViewSet(BaseModelViewSet):
     @action(detail=True, methods=["post"])
     def summarize(self, request: Request, pk=None) -> Response:
         document = DocumentService().generate_summary(self.get_object())
-        return Response(DocumentSerializer(document).data)
-
-    @action(detail=True, methods=["post"])
-    def submit(self, request: Request, pk=None) -> Response:
-        document = DocumentService().submit_for_approval(
-            document=self.get_object(), actor=request.user
-        )
         return Response(DocumentSerializer(document).data)
 
     @action(detail=True, methods=["post"])

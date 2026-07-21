@@ -26,9 +26,7 @@ class DocumentCategory(models.TextChoices):
 
 
 class DocumentStatus(models.TextChoices):
-    DRAFT = "draft", "Draft"
-    IN_REVIEW = "in_review", "In review"
-    APPROVED = "approved", "Approved"
+    ACTIVE = "active", "Active"
     ARCHIVED = "archived", "Archived"
 
 
@@ -48,7 +46,7 @@ class Document(TenantOwnedModel):
         db_index=True,
     )
     status = models.CharField(
-        max_length=20, choices=DocumentStatus.choices, default=DocumentStatus.DRAFT, db_index=True
+        max_length=20, choices=DocumentStatus.choices, default=DocumentStatus.ACTIVE, db_index=True
     )
     tags = models.JSONField(default=list, blank=True)
 
@@ -70,17 +68,6 @@ class Document(TenantOwnedModel):
         blank=True,
         related_name="documents",
     )
-    # Set when the document enters review; points at the platform workflow
-    # instance driving its approval. SET_NULL so a purged workflow never
-    # cascades into losing the document.
-    approval = models.ForeignKey(
-        "workflow.WorkflowInstance",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="+",
-    )
-    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta(TenantOwnedModel.Meta):
         db_table = "documents_document"

@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import {
   archiveDocumentAction,
   deleteDocumentAction,
-  submitDocumentAction,
   summarizeDocumentAction,
 } from "@/app/(platform)/dms/actions";
 import type { DocumentStatus } from "@/lib/dms-constants";
@@ -51,22 +50,6 @@ export function DocumentActions({ id, status }: { id: string; status: DocumentSt
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {status === "draft" ? (
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run(() => submitDocumentAction(id))}
-        >
-          <Send aria-hidden />
-          Submit for approval
-        </Button>
-      ) : null}
-
-      {status === "in_review" ? (
-        <span className="text-xs text-muted-foreground">Waiting for approval</span>
-      ) : null}
-
       {status !== "archived" ? (
         <>
           <Button

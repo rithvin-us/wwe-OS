@@ -77,15 +77,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       deltaPct: null,
       source: "Purchases & finance",
     },
-    {
-      key: "pending-approvals",
-      label: "Pending approvals",
-      icon: FileSignature,
-      format: "count",
-      value: purchase?.pendingReview ?? null,
-      deltaPct: null,
-      source: "Purchases (only area tracked so far)",
-    },
+    // Removed pending approvals tile
     {
       key: "employees",
       label: "Employees",
@@ -158,28 +150,6 @@ export const CONTRACTS_SUMMARY: SummaryRow[] = [
   { label: "Expiring in 30 days", value: null, format: "count" },
   { label: "Awaiting signature", value: null, format: "count" },
 ];
-
-/** Live lists — empty until the relevant area is in use. */
-export interface ApprovalItem {
-  id: string;
-  title: string;
-  requestedBy: string;
-  area: string;
-  href: string;
-}
-
-/** Real pending bills, shaped for the "needs your attention" panel. */
-export function pendingApprovals(
-  bills: { id: string; seller_name: string; currency: string; total_rate: string }[],
-): ApprovalItem[] {
-  return bills.slice(0, 5).map((bill) => ({
-    id: bill.id,
-    title: `${bill.seller_name} — ${bill.currency} ${bill.total_rate}`,
-    requestedBy: "Telegram bot",
-    area: "Purchases",
-    href: "/purchase",
-  }));
-}
 
 export interface AlertItem {
   id: string;
@@ -283,7 +253,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { label: "Add employee", href: "/hr", icon: UserPlus },
   { label: "New purchase", href: "/purchase", icon: ShoppingCart },
   { label: "Upload document", href: "/dms", icon: FilePlus2 },
-  { label: "New contract", href: "/contracts", icon: FileSignature },
+  // { label: "New contract", href: "/contracts", icon: FileSignature },
 ];
 
 /** Format a value for display, or an em dash when it isn't available yet. */

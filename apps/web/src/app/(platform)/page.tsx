@@ -22,7 +22,6 @@ import {
   FINANCIAL_SUMMARY,
   INVENTORY_SUMMARY,
   operationalAlerts,
-  pendingApprovals,
   PEOPLE_SUMMARY,
   procurementSummary,
   recentActivity,
@@ -60,7 +59,6 @@ async function loadPurchaseData() {
 export default async function DashboardPage() {
   const { stats: purchaseStats, pending, recent } = await loadPurchaseData();
   const kpis = buildKpis(purchaseStats);
-  const approvals = pendingApprovals(pending);
   const alerts = operationalAlerts(purchaseStats);
   const activity = recentActivity(recent);
 
@@ -124,30 +122,6 @@ export default async function DashboardPage() {
 
         {/* Attention column */}
         <div className="space-y-4 lg:col-span-4">
-          <SectionCard title="Pending approvals" icon={FileSignature}>
-            {approvals.length === 0 ? (
-              <PanelEmpty>
-                No approvals waiting on you. Requests that need a decision show up here.
-              </PanelEmpty>
-            ) : (
-              <ul className="space-y-3">
-                {approvals.map((item) => (
-                  <li key={item.id}>
-                    <Link
-                      href={item.href}
-                      className="block space-y-0.5 rounded-md -mx-1.5 px-1.5 py-1 transition-colors hover:bg-accent/60"
-                    >
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.area} · {item.requestedBy}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-
           <SectionCard title="Operational alerts" icon={TriangleAlert}>
             {alerts.length === 0 ? (
               <PanelEmpty>

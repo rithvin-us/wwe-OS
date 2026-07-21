@@ -12,17 +12,11 @@ import type { DocumentRecord, DocumentStatus } from "@/lib/dms-constants";
 
 const STATUS_FILTERS: { value: DocumentStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "draft", label: "Draft" },
-  { value: "in_review", label: "In review" },
-  { value: "approved", label: "Approved" },
+  { value: "active", label: "Active" },
   { value: "archived", label: "Archived" },
 ];
 
 function StatusBadge({ document }: { document: DocumentRecord }) {
-  if (document.status === "approved")
-    return <Badge variant="success">{document.status_label}</Badge>;
-  if (document.status === "in_review")
-    return <Badge variant="warning">{document.status_label}</Badge>;
   if (document.status === "archived")
     return <Badge variant="secondary">{document.status_label}</Badge>;
   return <Badge variant="outline">{document.status_label}</Badge>;

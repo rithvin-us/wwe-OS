@@ -2,7 +2,7 @@
 // imports here — client components (upload form, table) import from this file;
 // the server fetchers live in ./dms and re-export everything below.
 
-export type DocumentStatus = "draft" | "in_review" | "approved" | "archived";
+export type DocumentStatus = "active" | "archived";
 export type DocumentCategory =
   | "contract"
   | "invoice"

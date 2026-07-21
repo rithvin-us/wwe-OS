@@ -50,10 +50,6 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
   }
 }
 
-export async function submitDocumentAction(id: string): Promise<ActionResult> {
-  return post(`${BASE}/${id}/submit/`, "Document submitted for approval.", id);
-}
-
 export async function summarizeDocumentAction(id: string): Promise<ActionResult> {
   return post(`${BASE}/${id}/summarize/`, "Summary regenerated.", id);
 }

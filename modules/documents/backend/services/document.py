@@ -18,11 +18,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.utils import timezone
 from documents.backend.events.registry import (
     DOCUMENT_ARCHIVED,
     DOCUMENT_CREATED,
-    DOCUMENT_SUBMITTED,
     DOCUMENT_SUMMARIZED,
     DOCUMENT_UPDATED,
 )
@@ -153,49 +151,9 @@ class DocumentService(BaseService):
         return (document.description or document.title)[:SUMMARY_INPUT_LIMIT]
 
     # ------------------------------------------------------------------ #
-    # Approval (through the platform workflow engine)
-    # ------------------------------------------------------------------ #
-    def submit_for_approval(self, *, document: Document, actor) -> Document:
-        from workflow.services import WorkflowService
-
-        if document.status != DocumentStatus.DRAFT:
-            raise ConflictError(f"Only a draft can be submitted (this one is {document.status}).")
-        instance = WorkflowService().start(
-            definition_key=WORKFLOW_KEY,
-            subject=document,
-            started_by=actor,
-            tenant=document.tenant,
-        )
-        document.status = DocumentStatus.IN_REVIEW
-        document.approval = instance
-        document.save(update_fields=["status", "approval", "updated_at"])
-        publish(DOCUMENT_SUBMITTED, instance=document, actor=actor)
-        self._index(document)
-        return document
-
-    def mark_approved(self, document: Document) -> Document:
-        """Called by the workflow-completion subscriber — not the API."""
-        document.status = DocumentStatus.APPROVED
-        document.reviewed_at = timezone.now()
-        document.save(update_fields=["status", "reviewed_at", "updated_at"])
-        self._index(document)
-        return document
-
-    def mark_rejected(self, document: Document) -> Document:
-        """Rejected documents return to draft so the owner can revise + resubmit."""
-        document.status = DocumentStatus.DRAFT
-        document.approval = None
-        document.reviewed_at = timezone.now()
-        document.save(update_fields=["status", "approval", "reviewed_at", "updated_at"])
-        self._index(document)
-        return document
-
-    # ------------------------------------------------------------------ #
     # Lifecycle
     # ------------------------------------------------------------------ #
     def archive(self, *, document: Document, actor) -> Document:
-        if document.status == DocumentStatus.IN_REVIEW:
-            raise ConflictError("Cancel the approval before archiving.")
         document.status = DocumentStatus.ARCHIVED
         document.save(update_fields=["status", "updated_at"])
         publish(DOCUMENT_ARCHIVED, instance=document, actor=actor)

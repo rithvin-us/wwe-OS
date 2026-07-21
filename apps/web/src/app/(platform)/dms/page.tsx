@@ -24,9 +24,7 @@ export default async function DmsPage() {
   const documents = await getDocuments();
   const counts = {
     total: documents.length,
-    draft: documents.filter((d) => d.status === "draft").length,
-    in_review: documents.filter((d) => d.status === "in_review").length,
-    approved: documents.filter((d) => d.status === "approved").length,
+    active: documents.filter((d) => d.status === "active").length,
   };
 
   return (
@@ -39,9 +37,7 @@ export default async function DmsPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="All documents" value={counts.total} />
-        <StatTile label="Draft" value={counts.draft} />
-        <StatTile label="In review" value={counts.in_review} />
-        <StatTile label="Approved" value={counts.approved} />
+        <StatTile label="Active" value={counts.active} />
       </div>
 
       <DocumentsTable documents={documents} />
