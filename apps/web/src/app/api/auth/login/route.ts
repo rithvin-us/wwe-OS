@@ -25,7 +25,16 @@ export async function POST(request: Request) {
     cache: "no-store",
   });
 
-  const envelope = (await upstream.json()) as ApiEnvelope<TokenPair>;
+  const text = await upstream.text();
+  let envelope: ApiEnvelope<TokenPair>;
+  try {
+    envelope = JSON.parse(text) as ApiEnvelope<TokenPair>;
+  } catch {
+    return NextResponse.json(
+      { message: `Backend returned non-JSON response (${upstream.status})`, code: "invalid_response" },
+      { status: upstream.status || 500 },
+    );
+  }
 
   if (!envelope.success) {
     const error = new ApiRequestError(upstream.status, envelope.error);

@@ -26,7 +26,16 @@ export async function POST() {
     cache: "no-store",
   });
 
-  const envelope = (await upstream.json()) as ApiEnvelope<{ access: string }>;
+  const text = await upstream.text();
+  let envelope: ApiEnvelope<{ access: string }>;
+  try {
+    envelope = JSON.parse(text) as ApiEnvelope<{ access: string }>;
+  } catch {
+    const response = NextResponse.json({ success: false }, { status: upstream.status || 500 });
+    response.cookies.delete(ACCESS_COOKIE);
+    response.cookies.delete(REFRESH_COOKIE);
+    return response;
+  }
 
   if (!envelope.success) {
     const response = NextResponse.json({ success: false }, { status: upstream.status });

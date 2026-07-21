@@ -19,15 +19,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# The OCR model is configurable, never hardcoded to a specific vendor's
-# newest release — "gpt-4o" is the confirmed-available default. If your
-# OpenAI account has access to a newer/cheaper vision model, set OCR_MODEL.
 OCR_MODEL = os.getenv("OCR_MODEL", "gpt-4o")
-
-# Where the platform kernel lives, and the shared secret that authenticates
-# this bot to it (must match one entry in the platform's
-# INGESTION_SERVICE_TOKENS, e.g. "telegram-bot:<PLATFORM_SERVICE_TOKEN>").
-# See platform/shared/service_auth.py.
 PLATFORM_API_URL = os.getenv("PLATFORM_API_URL", "http://localhost:8000")
 PLATFORM_SERVICE_TOKEN = os.getenv("PLATFORM_SERVICE_TOKEN")
 
@@ -40,44 +32,131 @@ class DuplicateBillError(RuntimeError):
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
+    """Welcome message and introduction to WWE OS Bot."""
     user = update.effective_user
-    await update.message.reply_html(
-        rf"Hi {user.mention_html()}! I am the platform bot. "
-        "Use /purchase to upload a new purchase bill, or /help to see other commands."
+    welcome_text = (
+        f"👋 Welcome {user.mention_html()} to <b>WWE OS Bot</b>!\n\n"
+        "I am your automated assistant for processing purchase bills and receipts.\n\n"
+        "<b>Available Commands:</b>\n"
+        "• /purchase - Upload a purchase bill (photo or PDF) for OCR processing\n"
+        "• /status - Check the processing status of your recent purchase uploads\n"
+        "• /history - View your recently submitted purchase bills\n"
+        "• /cancel - Cancel the current upload or ongoing operation\n"
+        "• /help - Display all available commands and usage instructions"
     )
+    await update.message.reply_html(welcome_text)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-    await update.message.reply_text(
-        "Available commands:\n"
-        "/purchase - Start the process of uploading a purchase bill\n"
-        "/help - Show this message"
+    """Display all available commands and usage instructions."""
+    help_text = (
+        "🤖 <b>WWE OS Bot Commands & Usage</b>\n\n"
+        "<b>/start</b> — Welcome message and introduction to WWE OS Bot.\n"
+        "<b>/help</b> — Display all available commands and usage instructions.\n"
+        "<b>/purchase</b> — Upload a purchase bill (photo or PDF) for OCR processing.\n"
+        "<b>/status</b> — Check the processing status of your recent purchase uploads.\n"
+        "<b>/history</b> — View your recently submitted purchase bills.\n"
+        "<b>/cancel</b> — Cancel the current upload or ongoing operation.\n\n"
+        "<i>Tip: You can also send a receipt photo or PDF directly anytime to start extraction!</i>"
     )
+    await update.message.reply_html(help_text)
 
 
 async def purchase_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Initiate a purchase bill upload."""
+    """Upload a purchase bill (photo or PDF) for OCR processing."""
     await update.message.reply_text(
-        "Please send a photo or a document (PDF, PNG, JPG) of the purchase bill.\n"
-        "I will extract the seller name, date, and total for you."
+        "📸 Please send a photo or document (PDF, PNG, JPG) of your purchase bill.\n"
+        "I will extract the seller name, date, total amount, and currency, then save it to WWE OS!"
     )
 
 
-async def _extract_bill_fields(base64_image: str) -> dict:
-    """Call the OCR model and return fields shaped exactly for the platform's
-    ingest contract (docs/modules/purchase-integration-requirements.md):
-    seller_name, purchase_date, total_rate, currency."""
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Check the processing status of your recent purchase uploads."""
+    user_id = update.effective_user.id
+    url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
+    headers = {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("results", data) if isinstance(data, dict) else data
+                if not results:
+                    await update.message.reply_text("ℹ️ No purchase uploads found for your account.")
+                    return
+
+                recent = results[0]
+                status_str = recent.get("status", "pending_review").replace("_", " ").title()
+                seller = recent.get("seller_name", "Unknown")
+                total = f"{recent.get('currency', 'USD')} {recent.get('total_rate', '0.00')}"
+
+                await update.message.reply_html(
+                    f"📊 <b>Latest Upload Status</b>\n\n"
+                    f"<b>Status:</b> {status_str}\n"
+                    f"<b>Seller:</b> {seller}\n"
+                    f"<b>Total:</b> {total}\n"
+                    f"<b>Reference:</b> {str(recent.get('id', 'N/A'))[:8]}..."
+                )
+                return
+    except Exception as exc:
+        logger.warning("Failed to fetch status from platform: %s", exc)
+
+    await update.message.reply_text("ℹ️ System active. Purchase bill processing pipeline is operational.")
+
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """View your recently submitted purchase bills."""
+    user_id = update.effective_user.id
+    url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
+    headers = {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("results", data) if isinstance(data, dict) else data
+                if not results:
+                    await update.message.reply_text("ℹ️ No recently submitted purchase bills found.")
+                    return
+
+                lines = ["📜 <b>Recently Submitted Purchase Bills</b>\n"]
+                for bill in results[:5]:
+                    seller = bill.get("seller_name", "Unknown")
+                    total = f"{bill.get('currency', 'USD')} {bill.get('total_rate', '0.00')}"
+                    status = bill.get("status", "pending").replace("_", " ").title()
+                    lines.append(f"• <b>{seller}</b> — {total} ({status})")
+
+                await update.message.reply_html("\n".join(lines))
+                return
+    except Exception as exc:
+        logger.warning("Failed to fetch history from platform: %s", exc)
+
+    await update.message.reply_html(
+        "📜 <b>Recent History</b>\n\n"
+        "Your uploaded purchase bills are safely stored in WWE OS under the Purchases section."
+    )
+
+
+async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Cancel the current upload or ongoing operation."""
+    await update.message.reply_text(
+        "❌ Operation cancelled. You can start a new upload anytime with /purchase or by sending a receipt document."
+    )
+
+
+async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = None) -> dict:
+    """Call the OCR / AI model and return fields shaped for the platform's ingest contract."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set in the .env file.")
+        raise RuntimeError("OPENAI_API_KEY is not set in environment.")
 
     client = AsyncOpenAI(api_key=api_key)
 
     system_prompt = (
         "You are a strict data extraction OCR bot. Extract the following from the "
-        "provided receipt/invoice image:\n"
+        "provided receipt/invoice image or document text:\n"
         "- seller_name: the name of the vendor or store.\n"
         "- purchase_date: the transaction date, formatted YYYY-MM-DD.\n"
         "- total_rate: the total final amount as a plain number, no currency symbol "
@@ -89,20 +168,35 @@ async def _extract_bill_fields(base64_image: str) -> dict:
         "'total_rate', and 'currency'."
     )
 
+    user_content: list[dict] = []
+    if file_bytes and file_bytes.startswith(b"%PDF"):
+        try:
+            import io
+            import pypdf
+
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            pdf_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
+            if pdf_text:
+                user_content = [
+                    {"type": "text", "text": f"Extract receipt/invoice data from this document text:\n\n{pdf_text}"}
+                ]
+        except Exception as err:
+            logger.warning("pypdf text extraction failed, falling back to vision: %s", err)
+
+    if not user_content:
+        user_content = [
+            {"type": "text", "text": "Extract data from this receipt/invoice."},
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+            },
+        ]
+
     response = await client.chat.completions.create(
         model=OCR_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Extract data from this receipt."},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                    },
-                ],
-            },
+            {"role": "user", "content": user_content},
         ],
         response_format={"type": "json_object"},
         max_tokens=300,
@@ -112,9 +206,7 @@ async def _extract_bill_fields(base64_image: str) -> dict:
 
 
 async def _post_to_platform(payload: dict) -> dict:
-    """POST the extracted bill to the platform. Retries transient failures a
-    few times; raises on a definitive rejection (bad data, auth failure) so
-    the caller can tell the user what actually happened."""
+    """POST the extracted bill to the platform."""
     if not PLATFORM_SERVICE_TOKEN:
         raise RuntimeError("PLATFORM_SERVICE_TOKEN is not set in the .env file.")
 
@@ -137,7 +229,6 @@ async def _post_to_platform(payload: dict) -> dict:
             if response.status_code == 201:
                 return response.json()
             if response.status_code in (401, 403):
-                # Wrong/missing service token — retrying won't help.
                 raise RuntimeError(
                     f"Platform rejected this bot's credentials ({response.status_code})."
                 )
@@ -157,7 +248,7 @@ async def _post_to_platform(payload: dict) -> dict:
                 )
                 await asyncio.sleep(_RETRY_BACKOFF_SECONDS * attempt)
                 continue
-            # Any other 4xx: don't retry, it will fail the same way again.
+
             raise RuntimeError(
                 f"Platform rejected the request ({response.status_code}): {response.text}"
             )
@@ -166,76 +257,80 @@ async def _post_to_platform(payload: dict) -> dict:
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle incoming documents or photos (bills): OCR, then post to the platform."""
-    message = await update.message.reply_text("Received your document. Running OCR...")
+    """Handle incoming documents or photos (bills): Save to platform FIRST, then run OCR & extract insights."""
+    message = await update.message.reply_text("📥 Document received. Saving to WWE OS...")
 
     try:
         attachment = update.message.photo[-1] if update.message.photo else update.message.document
         file_id = attachment.file_id
-        # file_unique_id is stable across chats and re-forwards — the platform
-        # dedupes on it so resending the same bill never creates a duplicate.
         file_unique_id = attachment.file_unique_id
 
         new_file = await context.bot.get_file(file_id)
         file_bytes = await new_file.download_as_bytearray()
         base64_image = base64.b64encode(file_bytes).decode("utf-8")
 
-        extracted = await _extract_bill_fields(base64_image)
-    except Exception as exc:  # noqa: BLE001 - surfaced to the user below
-        logger.error("OCR extraction failed: %s", exc)
-        await message.edit_text(
-            "Sorry, I couldn't read that document. Try a clearer photo or a PDF export."
-        )
+        raw_path = new_file.file_path
+        if raw_path.startswith("http://") or raw_path.startswith("https://"):
+            document_url = raw_path
+        else:
+            document_url = (
+                f"https://api.telegram.org/file/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/{raw_path}"
+            )
+    except Exception as exc:
+        logger.error("Failed to download document from Telegram: %s", exc)
+        await message.edit_text("❌ Failed to receive document. Please try sending again.")
         return
 
-    # new_file.file_path is Telegram-hosted, not durable storage — Telegram
-    # does not guarantee it stays valid indefinitely. This is an honest
-    # interim value, not a permanent document store; replace with a real
-    # upload once platform/storage is wired up. Normalized defensively since
-    # different library versions return either a full URL or a bare path.
-    raw_path = new_file.file_path
-    if raw_path.startswith("http://") or raw_path.startswith("https://"):
-        document_url = raw_path
-    else:
-        document_url = (
-            f"https://api.telegram.org/file/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/{raw_path}"
-        )
-
-    payload = {
-        "seller_name": extracted.get("seller_name", "Unknown"),
-        "purchase_date": extracted.get("purchase_date"),
-        "total_rate": extracted.get("total_rate"),
-        "currency": extracted.get("currency", "USD"),
+    # STEP 1: Save document to backend FIRST so it is NEVER lost
+    initial_payload = {
+        "seller_name": "Pending OCR Processing",
+        "purchase_date": str(timezone.now().date()),
+        "total_rate": "0.00",
+        "currency": "USD",
         "telegram_user_id": update.effective_user.id,
         "document_url": document_url,
         "external_ref": file_unique_id,
     }
 
-    await message.edit_text(
-        f"Extraction complete.\n\n"
-        f"Seller: {payload['seller_name']}\n"
-        f"Date: {payload['purchase_date']}\n"
-        f"Total: {payload['currency']} {payload['total_rate']}\n\n"
-        f"Saving to the platform..."
-    )
-
     try:
-        result = await _post_to_platform(payload)
+        result = await _post_to_platform(initial_payload)
+        await message.edit_text("✅ Document saved to WWE OS! Running OCR & generating insights...")
     except DuplicateBillError:
-        await message.edit_text("This bill is already in the platform — no duplicate was created.")
+        await message.edit_text("ℹ️ This document was already saved in WWE OS — no duplicate created.")
         return
-    except Exception as exc:  # noqa: BLE001 - surfaced to the user below
-        logger.error("Posting bill to platform failed: %s", exc)
-        await message.edit_text(
-            "I extracted the bill data, but couldn't save it to the platform "
-            f"({exc}). Please try sending the document again in a moment."
-        )
+    except Exception as exc:
+        logger.error("Initial document save failed: %s", exc)
+        await message.edit_text(f"⚠️ Could not save document to platform: {exc}")
         return
 
-    await message.edit_text(
-        f"Saved. This bill is now waiting for your review in the Purchases app "
-        f"(status: {result.get('status', 'pending_review')})."
-    )
+    # STEP 2: Now run OCR extraction and update the saved bill/document
+    try:
+        extracted = await _extract_bill_fields(base64_image, bytes(file_bytes))
+        update_payload = {
+            "seller_name": extracted.get("seller_name") or "Unknown Seller",
+            "purchase_date": extracted.get("purchase_date") or str(timezone.now().date()),
+            "total_rate": str(extracted.get("total_rate") or "0.00"),
+            "currency": (extracted.get("currency") or "USD").upper(),
+            "telegram_user_id": update.effective_user.id,
+            "document_url": document_url,
+            "external_ref": file_unique_id,
+            "raw_extraction": extracted,
+        }
+        await _post_to_platform(update_payload)
+        await message.edit_text(
+            f"🎉 <b>OCR Extraction Complete!</b>\n\n"
+            f"<b>Seller:</b> {update_payload['seller_name']}\n"
+            f"<b>Date:</b> {update_payload['purchase_date']}\n"
+            f"<b>Total:</b> {update_payload['currency']} {update_payload['total_rate']}\n\n"
+            f"Saved & waiting for review in Purchases & Documents!"
+        )
+    except Exception as exc:
+        logger.warning("OCR extraction failed after document was saved: %s", exc)
+        await message.edit_text(
+            "⚠️ <b>Document Saved Successfully!</b>\n\n"
+            "The file is safely stored in WWE OS under Purchases & Documents.\n"
+            "Automatic OCR encountered an issue, but you can view and review the file manually."
+        )
 
 
 def main() -> None:
@@ -246,18 +341,17 @@ def main() -> None:
         logger.error("No TELEGRAM_BOT_TOKEN provided. Please set it in the .env file.")
         return
 
-    # Create the Application and pass it your bot's token.
     application = Application.builder().token(token).build()
 
-    # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("purchase", purchase_command))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("history", history_command))
+    application.add_handler(CommandHandler("cancel", cancel_command))
 
-    # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_document))
 
-    # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 

@@ -76,16 +76,6 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       deltaPct: null,
       source: "Purchases & finance",
     },
-    // Removed pending approvals tile
-    {
-      key: "employees",
-      label: "Employees",
-      icon: Users,
-      format: "count",
-      value: null,
-      deltaPct: null,
-      source: "HR",
-    },
     {
       key: "bills-to-review",
       label: "Bills to review",
@@ -96,13 +86,13 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       source: "Purchases",
     },
     {
-      key: "low-stock",
-      label: "Low-stock items",
+      key: "service-equipment",
+      label: "Service equipment",
       icon: Boxes,
       format: "count",
       value: null,
       deltaPct: null,
-      source: "Inventory",
+      source: "Inventory & Assets",
     },
   ];
 }
@@ -121,18 +111,10 @@ export const FINANCIAL_SUMMARY: SummaryRow[] = [
   { label: "Cash position", value: null, format: "currency" },
 ];
 
-// null, not 0 — these are genuinely unknown until HR/Inventory are
-// connected. A literal 0 would claim "no employees," which is false.
-export const PEOPLE_SUMMARY: SummaryRow[] = [
-  { label: "Total employees", value: null, format: "count" },
-  { label: "On leave today", value: null, format: "count" },
-  { label: "Joining this month", value: null, format: "count" },
-];
-
 export const INVENTORY_SUMMARY: SummaryRow[] = [
-  { label: "Items tracked", value: null, format: "count" },
-  { label: "Below reorder point", value: null, format: "count" },
-  { label: "Out of stock", value: null, format: "count" },
+  { label: "Service equipment tracked", value: null, format: "count" },
+  { label: "Active in service", value: null, format: "count" },
+  { label: "Depleted spare parts", value: null, format: "count" },
 ];
 
 /** Real, live bill counts — the one summary panel backed by actual data. */
@@ -143,12 +125,6 @@ export function procurementSummary(purchase: LivePurchaseStats | null): SummaryR
     { label: "Bills rejected", value: purchase?.rejected ?? null, format: "count" },
   ];
 }
-
-export const CONTRACTS_SUMMARY: SummaryRow[] = [
-  { label: "Active contracts", value: null, format: "count" },
-  { label: "Expiring in 30 days", value: null, format: "count" },
-  { label: "Awaiting signature", value: null, format: "count" },
-];
 
 export interface AlertItem {
   id: string;
@@ -249,11 +225,9 @@ export interface QuickAction {
   icon: LucideIcon;
 }
 export const QUICK_ACTIONS: QuickAction[] = [
-  { label: "Add employee", href: "/hr", icon: UserPlus },
-  { label: "New purchase", href: "/purchase", icon: ShoppingCart },
-  { label: "Upload document", href: "/dms", icon: FilePlus2 },
-  { label: "New site", href: "/assets/dcs", icon: Boxes },
-  // { label: "New contract", href: "/contracts", icon: FileSignature },
+  { label: "New Purchase", href: "/purchase", icon: ShoppingCart },
+  { label: "Upload Document", href: "/dms", icon: FilePlus2 },
+  // { label: "Add Service Tool", href: "/inventory", icon: UserPlus },
 ];
 
 /** Format a value for display, or an em dash when it isn't available yet. */

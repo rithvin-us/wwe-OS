@@ -1,17 +1,23 @@
 "use client";
 
-import { Download, FileText, Sparkles } from "@bop/icons";
+import { Download, FileText, Search, Sparkles } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
+import { Input } from "@bop/ui/components/input";
 import { DataTable } from "@bop/ui/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useState } from "react";
 
-import type { DocumentRecord, DocumentStatus } from "@/lib/dms-constants";
+import {
+  DOCUMENT_CATEGORIES,
+  type DocumentCategory,
+  type DocumentRecord,
+  type DocumentStatus,
+} from "@/lib/dms-constants";
 
 const STATUS_FILTERS: { value: DocumentStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All Status" },
   { value: "active", label: "Active" },
   { value: "archived", label: "Archived" },
 ];
@@ -63,7 +69,7 @@ const columns: ColumnDef<DocumentRecord, unknown>[] = [
     enableSorting: false,
     cell: ({ row }) =>
       row.original.summary_status === "ready" ? (
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
           <Sparkles aria-hidden className="size-3" />
           Ready
         </span>
@@ -96,23 +102,87 @@ const columns: ColumnDef<DocumentRecord, unknown>[] = [
 ];
 
 export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
-  const [filter, setFilter] = useState<DocumentStatus | "all">("all");
-  const rows = filter === "all" ? documents : documents.filter((d) => d.status === filter);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
+  const [aiFilter, setAiFilter] = useState<"all" | "ready" | "pending">("all");
+
+  const rows = documents.filter((d) => {
+    if (statusFilter !== "all" && d.status !== statusFilter) return false;
+    if (categoryFilter !== "all" && d.category !== categoryFilter) return false;
+    if (aiFilter === "ready" && d.summary_status !== "ready") return false;
+    if (aiFilter === "pending" && d.summary_status === "ready") return false;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchTitle = d.title.toLowerCase().includes(q);
+      const matchDesc = (d.description || "").toLowerCase().includes(q);
+      const matchFile = (d.file_name || "").toLowerCase().includes(q);
+      const matchSummary = (d.ai_summary || "").toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchFile && !matchSummary) return false;
+    }
+
+    return true;
+  });
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap gap-1.5">
-        {STATUS_FILTERS.map((option) => (
-          <Button
-            key={option.value}
-            size="sm"
-            variant={filter === option.value ? "secondary" : "ghost"}
-            onClick={() => setFilter(option.value)}
+    <section className="space-y-4">
+      {/* Interactive Filters Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-xs">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents by title, tags, or text..."
+            className="pl-9 h-9 text-xs"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Category Dropdown */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as any)}
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            {option.label}
-          </Button>
-        ))}
+            <option value="all">All Categories</option>
+            {DOCUMENT_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+
+          {/* AI Filter */}
+          <select
+            value={aiFilter}
+            onChange={(e) => setAiFilter(e.target.value as any)}
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="all">All AI States</option>
+            <option value="ready">AI Summarized Only</option>
+            <option value="pending">Pending AI Summary</option>
+          </select>
+
+          {/* Status Buttons */}
+          <div className="flex items-center gap-1 border-l border-border pl-2">
+            {STATUS_FILTERS.map((option) => (
+              <Button
+                key={option.value}
+                size="sm"
+                variant={statusFilter === option.value ? "secondary" : "ghost"}
+                className="h-8 text-xs px-2.5"
+                onClick={() => setStatusFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
+
       <DataTable
         columns={columns}
         data={rows}
@@ -122,8 +192,8 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
           title: documents.length === 0 ? "No documents yet" : "Nothing in this view",
           description:
             documents.length === 0
-              ? "Upload a file to store it, summarize it, and route it for approval."
-              : "No documents match this filter. Try another.",
+              ? "Upload a file to store it, summarize it, and track company documents."
+              : "No documents match your search or filters. Try clearing some filters.",
         }}
       />
     </section>

@@ -54,10 +54,10 @@ flowchart LR
 ## 3. Inventory (`modules/inventory`, `apps/web/src/app/(platform)/inventory`)
 
 ### Purpose
-Tracks stock items, stock receiving, and stock issuance.
+Repurposed for a **Service Provider Company** model to track internal service tools, spare parts, and service equipment (rather than saleable retail stock).
 
 ### Streamlined Scope
-- Low-stock threshold checks (`reorder_level`) and low-stock warning banners have been removed to keep single-operator management lightweight.
+- Retail stock selling and low-stock threshold checks (`reorder_level`) have been removed to keep single-operator management lightweight. Focuses on tracking internal service equipment, spare parts, and tools on hand.
 
 ---
 

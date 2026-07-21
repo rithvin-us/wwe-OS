@@ -4,10 +4,10 @@
 
 **WWE OS** is an Enterprise Business Operations Platform tailored for single-operator business workflows (service providers, asset maintenance, and equipment logistics).
 
-The platform combines multi-tenant infrastructure with modular business domain contexts:
+The platform combines multi-tenant infrastructure with modular business domain contexts tailored for a service provider:
 - Equipment & Asset Movement via **Delivery Challans (DC)**.
 - Automated **Purchase Bill Ingestion** via Telegram bot & OCR.
-- **Inventory Tracking** for stock items.
+- **Service Equipment & Tools Tracking** for internal tools, spare parts, and equipment.
 - **Document Management System (DMS)** with AI-powered summarization.
 
 ---
@@ -19,7 +19,7 @@ To keep operations frictionless for a single-operator environment, specific ente
 ### In-Scope Features
 - **Delivery Challan Engine:** Custom Word template rendering (`DC 26.docx`), free-text product inputs, customizable measurement units (Kg, Litre, Lot, Nos, Mtr, Set), free-text delivery site addresses, PDF generation, tamper-proof SHA-256 document hashing (`verification_hash`), deletion, and downloadable history.
 - **Telegram Receipt Ingestion:** Automated purchase bill capture via Telegram bot, AI OCR processing via OpenAI Vision, and backend purchase record staging.
-- **Inventory Tracking:** Stock item registration, stock receiving, and stock issuance.
+- **Service Tools & Equipment Tracking:** Internal spare parts, tools, and equipment tracking (no saleable product stock).
 - **DMS Storage:** Document upload, categorization, local/cloud storage provider abstraction, and AI document summarization.
 - **System Maintenance & Health:** Real-time `/healthz` diagnostics, API usage tracking, and system configuration metrics.
 - **Dark/Light Theming:** Custom color palette with light mode (`t` key shortcut toggle).

@@ -16,16 +16,20 @@ export function ConfigForm({ config }: { config: Record<string, any> }) {
     setLoading(true);
     const fd = new FormData(e.currentTarget);
     try {
-      await updateTenantConfigAction({
+      const res = await updateTenantConfigAction({
         config: {
           ...config,
           openai_api_key: fd.get("openai_api_key") as string,
         },
       });
-      router.refresh();
-      alert("Configuration saved.");
-    } catch {
-      alert("Failed to save configuration.");
+      if (res.success) {
+        router.refresh();
+        alert("Configuration saved successfully.");
+      } else {
+        alert(`Failed to save configuration: ${res.error}`);
+      }
+    } catch (err: any) {
+      alert(`Failed to save configuration: ${err.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

@@ -45,7 +45,17 @@ export async function djangoFetch<T>(path: string, init: RequestInit = {}): Prom
     cache: "no-store",
   });
 
-  const envelope = (await response.json()) as ApiEnvelope<T>;
+  const text = await response.text();
+  let envelope: ApiEnvelope<T>;
+  try {
+    envelope = JSON.parse(text) as ApiEnvelope<T>;
+  } catch {
+    throw new ApiRequestError(response.status, {
+      code: "invalid_response",
+      message: `Backend returned non-JSON response (${response.status}): ${text.slice(0, 150)}`,
+      details: text,
+    });
+  }
 
   if (!envelope.success) {
     throw new ApiRequestError(response.status, envelope.error);

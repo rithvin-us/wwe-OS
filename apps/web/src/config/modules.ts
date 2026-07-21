@@ -46,13 +46,13 @@ export const APPS: PlatformApp[] = [
     tagline: "Review bills sent in from the Telegram bot.",
     availability: "ready",
   },
-  {
-    slug: "inventory",
-    name: "Inventory",
-    icon: Boxes,
-    tagline: "Stock, items, and where things are.",
-    availability: "ready",
-  },
+  // {
+  //   slug: "inventory",
+  //   name: "Inventory",
+  //   icon: Boxes,
+  //   tagline: "Service tools, spare parts, and equipment.",
+  //   availability: "ready",
+  // },
   {
     slug: "dms",
     name: "Documents",
@@ -60,13 +60,6 @@ export const APPS: PlatformApp[] = [
     tagline: "Store, find, and share company documents.",
     availability: "ready",
   },
-  // {
-  //   slug: "contracts",
-  //   name: "Contracts",
-  //   icon: FileSignature,
-  //   tagline: "Agreements, renewals, and expiry reminders.",
-  //   availability: "ready",
-  // },
   {
     slug: "assets",
     name: "Delivery Challans",
@@ -118,13 +111,6 @@ export const SERVICES: PlatformService[] = [
     plain: "Makes sure the right person is alerted — in the app, by email, or in chat.",
     availability: "in-progress",
   },
-  // {
-  //   slug: "workflow",
-  //   name: "Approvals",
-  //   icon: MonitorCog,
-  //   plain: "Moves requests — leave, purchases, documents — to the right approver automatically.",
-  //   availability: "in-progress",
-  // },
   {
     slug: "ai-assistant",
     name: "AI Assistant",

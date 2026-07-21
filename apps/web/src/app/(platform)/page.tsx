@@ -2,11 +2,9 @@ import {
   Activity,
   Boxes,
   CircleDollarSign,
-  FileSignature,
   ShoppingCart,
   Sparkles,
   TriangleAlert,
-  Users,
 } from "@bop/icons";
 import type { Metadata } from "next";
 
@@ -17,11 +15,9 @@ import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/sec
 import {
   AI_INSIGHTS,
   buildKpis,
-  CONTRACTS_SUMMARY,
   FINANCIAL_SUMMARY,
   INVENTORY_SUMMARY,
   operationalAlerts,
-  PEOPLE_SUMMARY,
   procurementSummary,
   recentActivity,
   type LivePurchaseStats,
@@ -49,8 +45,6 @@ async function loadPurchaseData() {
     };
     return { stats: live, pending, recent };
   } catch {
-    // The dashboard must never go down because one module's API did —
-    // every panel it feeds renders its honest, un-fetched empty state.
     return { stats: null, pending: [], recent: [] };
   }
 }
@@ -62,15 +56,15 @@ export default async function DashboardPage() {
   const activity = recentActivity(recent);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-4 md:space-y-6 pb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <Greeting />
         <QuickActions />
       </div>
 
-      {/* Company pulse */}
+      {/* Operational pulse */}
       <section aria-label="Key figures">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {kpis.map((kpi, index) => (
             <KpiTile key={kpi.key} kpi={kpi} index={index} />
           ))}
@@ -85,18 +79,12 @@ export default async function DashboardPage() {
           </SectionCard>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <SectionCard title="Procurement" icon={ShoppingCart} href="/purchase">
+            <SectionCard title="Procurement & Bills" icon={ShoppingCart} href="/purchase">
               <SummaryRows rows={procurementSummary(purchaseStats)} />
             </SectionCard>
-            <SectionCard title="Inventory" icon={Boxes} href="/inventory">
+            {/* <SectionCard title="Service Equipment & Tools" icon={Boxes} href="/inventory">
               <SummaryRows rows={INVENTORY_SUMMARY} />
-            </SectionCard>
-            <SectionCard title="People" icon={Users} href="/hr">
-              <SummaryRows rows={PEOPLE_SUMMARY} />
-            </SectionCard>
-            <SectionCard title="Contracts" icon={FileSignature} href="/contracts">
-              <SummaryRows rows={CONTRACTS_SUMMARY} />
-            </SectionCard>
+            </SectionCard> */}
           </div>
 
           <SectionCard title="Recent activity" icon={Activity}>
@@ -124,7 +112,7 @@ export default async function DashboardPage() {
           <SectionCard title="Operational alerts" icon={TriangleAlert}>
             {alerts.length === 0 ? (
               <PanelEmpty>
-                All clear. Low stock, overdue items, and expiring contracts are flagged here.
+                All clear. Overdue bills and pending reviews are flagged here.
               </PanelEmpty>
             ) : (
               <ul className="space-y-3">

@@ -52,13 +52,20 @@ class PurchaseBillService(BaseService):
         # retry after a timeout) must not create a second review item. The
         # partial unique constraint backs this check against races.
         data["external_ref"] = (data.get("external_ref") or "").strip()
-        if (
-            data["external_ref"]
-            and PurchaseBill.objects.filter(
+        if data["external_ref"]:
+            existing = PurchaseBill.objects.filter(
                 tenant=tenant, source_channel=source_channel, external_ref=data["external_ref"]
-            ).exists()
-        ):
-            raise ConflictError("This document was already ingested.")
+            ).first()
+            if existing:
+                if existing.status == BillStatus.PENDING_REVIEW:
+                    for field, value in data.items():
+                        if value is not None and hasattr(existing, field):
+                            setattr(existing, field, value)
+                    if raw_extraction:
+                        existing.raw_extraction = raw_extraction
+                    existing.save()
+                    return existing
+                raise ConflictError("This document was already ingested.")
 
         try:
             with transaction.atomic():
@@ -68,6 +75,23 @@ class PurchaseBillService(BaseService):
                     raw_extraction=raw_extraction or {},
                     **data,
                 )
+                # Auto-register document in Documents App (DMS)
+                try:
+                    from documents.backend.models import Document, DocumentCategory
+                    from users.models import User
+
+                    owner = User.objects.filter(tenant=tenant).first()
+                    Document.objects.get_or_create(
+                        tenant=tenant,
+                        title=f"Receipt - {bill.seller_name} ({bill.purchase_date})",
+                        defaults={
+                            "owner": owner,
+                            "category": DocumentCategory.FINANCIAL,
+                            "description": f"Source: {source_channel.title()} Bot. Total: {bill.currency} {bill.total_rate}. URL: {bill.document_url}",
+                        },
+                    )
+                except Exception:
+                    pass
         except IntegrityError as exc:  # concurrent resend lost the race
             raise ConflictError("This document was already ingested.") from exc
         publish(PURCHASE_BILL_INGESTED, instance=bill)

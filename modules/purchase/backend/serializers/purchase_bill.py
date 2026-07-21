@@ -11,10 +11,12 @@ class IngestBillSerializer(serializers.Serializer):
     """What an ingestion channel (Telegram bot today) posts. Field names and
     shape match docs/modules/purchase-integration-requirements.md exactly."""
 
-    seller_name = serializers.CharField(max_length=200, allow_blank=False)
-    purchase_date = serializers.DateField()
-    total_rate = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
-    currency = serializers.CharField(max_length=3, min_length=3)
+    seller_name = serializers.CharField(max_length=200, required=False, default="Pending OCR")
+    purchase_date = serializers.DateField(required=False, default=date.today)
+    total_rate = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
+    )
+    currency = serializers.CharField(max_length=3, min_length=3, required=False, default="USD")
     telegram_user_id = serializers.IntegerField(required=False, allow_null=True)
     document_url = serializers.URLField(max_length=500)
     external_ref = serializers.CharField(
