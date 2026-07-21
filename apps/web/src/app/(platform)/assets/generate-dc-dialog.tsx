@@ -41,22 +41,31 @@ export function GenerateDCDialog({
         return;
       }
 
-      const res = await generateDCAction({
+      const result = await generateDCAction({
         dc_number: fd.get("dc_number") as string,
         dc_type: fd.get("dc_type") as string,
         site_id: fd.get("site_id") as string,
         date: fd.get("date") as string,
         items: validItems,
       });
+
+      if (!result.success) {
+        const detailsMsg = (result as any).details
+          ? JSON.stringify((result as any).details)
+          : (result as any).error;
+        alert("Failed to generate DC: " + detailsMsg);
+        return;
+      }
+
       setOpen(false);
       setItems([{ id: "", qty: 1 }]);
       router.refresh();
       // Automatically trigger download
-      if ((res as any).pdf_url) {
-        window.location.href = (res as any).pdf_url;
+      if ((result.res as any)?.pdf_url) {
+        window.location.href = (result.res as any).pdf_url;
       }
-    } catch {
-      alert("Failed to generate DC");
+    } catch (err: any) {
+      alert("Failed to generate DC: " + (err.message || JSON.stringify(err)));
     } finally {
       setLoading(false);
     }
@@ -118,22 +127,19 @@ export function GenerateDCDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="site_id">Site</Label>
+              <Label htmlFor="site_id">Site (Optional)</Label>
               <select
                 id="site_id"
                 name="site_id"
-                required
                 className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
+                <option value="">Select site (optional)...</option>
                 {sites.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-              {sites.length === 0 && (
-                <p className="text-xs text-destructive">You must create a site first (via API).</p>
-              )}
             </div>
           </div>
 
@@ -147,21 +153,13 @@ export function GenerateDCDialog({
             <div className="max-h-48 overflow-y-auto space-y-2 p-1">
               {items.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                  <Input
+                    className="w-full"
+                    placeholder="Enter product..."
                     value={item.id}
                     onChange={(e) => updateItem(index, "id", e.target.value)}
                     required
-                  >
-                    <option value="" disabled>
-                      Select product...
-                    </option>
-                    {inventoryItems.map((inv) => (
-                      <option key={inv.id} value={inv.id}>
-                        {inv.name} ({inv.sku})
-                      </option>
-                    ))}
-                  </select>
+                  />
                   <Input
                     type="number"
                     min="1"
@@ -188,7 +186,7 @@ export function GenerateDCDialog({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || sites.length === 0}>
+            <Button type="submit" disabled={loading}>
               {loading ? "Generating..." : "Generate & Download"}
             </Button>
           </DialogFooter>

@@ -40,7 +40,9 @@ class DeliveryChallan(TenantOwnedModel):
     dc_type = models.CharField(
         max_length=20, choices=ChallanType.choices, default=ChallanType.NON_RETURNABLE
     )
-    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name="delivery_challans")
+    site = models.ForeignKey(
+        Site, on_delete=models.SET_NULL, null=True, blank=True, related_name="delivery_challans"
+    )
 
     # Store the actual generated PDF document so it's never lost
     file = models.ForeignKey(
@@ -63,4 +65,5 @@ class DeliveryChallan(TenantOwnedModel):
         ordering = ("-created_at",)
 
     def __str__(self) -> str:
-        return f"DC {self.dc_number} to {self.site.name}"
+        site_name = self.site.name if self.site else "N/A"
+        return f"DC {self.dc_number} to {site_name}"

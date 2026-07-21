@@ -65,8 +65,9 @@ class DeliveryChallanViewSet(BaseModelViewSet):
         data = GenerateDCSerializer(data=request.data)
         data.is_valid(raise_exception=True)
 
+        tenant = getattr(request.user, "tenant", None)
         dc = DeliveryChallanService().generate_dc(
-            tenant=request.user.tenant, actor=request.user, **data.validated_data
+            tenant=tenant, actor=request.user, **data.validated_data
         )
         return Response(DeliveryChallanSerializer(dc).data, status=status.HTTP_201_CREATED)
 

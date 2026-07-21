@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 
 from assets.backend.models.dc import ChallanType, DeliveryChallan, Site
-from django.core.files.base import ContentFile
 from docxtpl import DocxTemplate
 from storage.services import StorageService
 
@@ -24,44 +23,34 @@ class DeliveryChallanService:
         date: str,
         items: list[dict],
     ) -> DeliveryChallan:
-        from inventory.backend.models import InventoryItem
+        if tenant is None and actor:
+            tenant = getattr(actor, "tenant", None)
+        if tenant is None:
+            from tenancy.models import Tenant
 
-        site = Site.objects.get(id=site_id, tenant=tenant)
+            tenant = Tenant.objects.first()
 
-        # 1. Fill the Word template
-        template_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "templates",
-            "dc_template.docx",
-        )
-
-        doc = DocxTemplate(template_path)
-
-        deliver_to = f"{site.name}\n{site.address}"
-        if site.contact_person:
-            deliver_to += f"\nAttn: {site.contact_person} ({site.contact_phone})"
+        site = None
+        deliver_to = ""
+        if site_id:
+            try:
+                site = Site.objects.get(id=site_id, tenant=tenant)
+                deliver_to = f"{site.name}\n{site.address}"
+                if site.contact_person:
+                    deliver_to += f"\nAttn: {site.contact_person} ({site.contact_phone})"
+            except Exception:
+                site = None
 
         rendered_items = []
-        # Store items json to save in DB later
         stored_items = []
-
-        # Find all referenced inventory items at once
-        item_ids = [i["id"] for i in items]
-        inventory_items = {
-            str(item.id): item
-            for item in InventoryItem.objects.filter(id__in=item_ids, tenant=tenant)
-        }
 
         for req_item in items:
             item_id = str(req_item["id"])
             qty = req_item.get("qty", 1)
-            if item_id in inventory_items:
-                inv_item = inventory_items[item_id]
-                description = f"{inv_item.name} ({inv_item.sku})"
-                rendered_items.append({"description": description, "qty": qty})
-                stored_items.append(
-                    {"id": item_id, "description": description, "qty": qty, "unit": inv_item.unit}
-                )
+
+            # Treat all inputs as custom text items
+            rendered_items.append({"description": item_id, "qty": qty})
+            stored_items.append({"id": None, "description": item_id, "qty": qty, "unit": "Nos"})
 
         dc_title = (
             "RETURNABLE DELIVERY CHALLAN"
@@ -77,6 +66,14 @@ class DeliveryChallanService:
             "items": rendered_items,
         }
 
+        # 1. Fill the Word template
+        template_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "templates",
+            "dc_template.docx",
+        )
+
+        doc = DocxTemplate(template_path)
         doc.render(context)
 
         # 2. Convert to PDF using LibreOffice headless
@@ -98,11 +95,12 @@ class DeliveryChallanService:
         # 3. Store the PDF
         file_name = f"DC_{dc_number.replace('/', '_')}.pdf"
         stored_file = StorageService().store(
-            content=ContentFile(pdf_data, name=file_name),
+            data=pdf_data,
             filename=file_name,
-            mime_type="application/pdf",
+            content_type="application/pdf",
+            module="assets",
             tenant=tenant,
-            actor=actor,
+            uploaded_by=actor,
         )
 
         # 4. Create the DeliveryChallan record

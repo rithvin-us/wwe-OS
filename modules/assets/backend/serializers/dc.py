@@ -32,13 +32,13 @@ class DeliveryChallanSerializer(serializers.ModelSerializer):
 
     def get_pdf_url(self, obj):
         if obj.file:
-            return f"/api/v1/assets/dcs/{obj.id}/download/"
+            return f"/api/assets/dcs/{obj.id}/download/"
         return None
 
 
 class GenerateDCSerializer(serializers.Serializer):
-    site_id = serializers.CharField()
-    dc_type = serializers.CharField()
+    site_id = serializers.CharField(required=False, allow_blank=True, allow_null=True, default="")
+    dc_type = serializers.CharField(required=False, allow_blank=True, default="non_returnable")
     dc_number = serializers.CharField()
     date = serializers.CharField()
     items = serializers.ListField(
