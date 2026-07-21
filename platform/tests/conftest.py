@@ -20,6 +20,13 @@ def _clear_cache():
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def _storage_root(settings, tmp_path):
+    # Keep any file a test stores (e.g. a rendered report) inside the temp dir,
+    # never in the repo's local .storage.
+    settings.STORAGE_LOCAL_PATH = str(tmp_path / "objects")
+
+
 @pytest.fixture
 def api() -> APIClient:
     return APIClient()

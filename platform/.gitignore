@@ -6,4 +6,5 @@ dev.sqlite3
 .pytest_cache/
 .ruff_cache/
 staticfiles/
+.storage/
 .env
