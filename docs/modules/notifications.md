@@ -1,10 +1,36 @@
 # Module Intelligence · Notifications
 
-Route `/notifications` · Domain: Insight & decisions · Status: In development (platform capability with a center UI)
+Route `/notifications` · Domain: Platform capability · Status: **Built (v1) — 2026-07-21**
 
 ## 1. Business purpose
 
-Route every platform event to the right person on the right channel — in-app, email, Telegram — with user preferences, digests, and delivery tracking.
+Route every platform event to the right person and surface it in one place.
+
+## Built (v1) — shipped surface
+
+Notifications is a **platform capability** (`platform/notifications`), not a
+business module — and there is exactly **one** notification center, per the
+design bible. v1 wires the real data end to end:
+
+- **Backend** (already existed; extended this session): per-recipient list,
+  `unread-count`, `read`, `archive`, and a new **`read-all`** bulk action.
+  Every module publishes into it via `NotificationService` — workflow
+  approvals, document/contract outcomes, contract-renewal reminders, low-stock
+  alerts, and asset disposals all land here.
+- **The one bell** (`components/notification-center.tsx`): now live — an unread
+  badge, the recent list, click-to-open (routed from the publishing module's
+  category + ids), mark-one/mark-all read, and a "View all" link. No app ships
+  its own bell.
+- **`/notifications` page**: the fuller view of the _same_ center — full
+  history with All/Unread/Read/Archived filters, per-item read/archive, and
+  mark-all-read. Reached from the bell; not a second surface.
+- **BFF**: the client bell reads through `/api/notifications*` route handlers
+  (the token stays in the httpOnly cookie); the page uses server components +
+  server actions.
+
+**Not in v1** (roadmap below): per-user channel preferences and quiet hours,
+email/Telegram delivery of in-app notifications (channels are declared;
+delivery services land later), digests, and delivery-status tracking.
 
 ## 2. Problems it solves
 

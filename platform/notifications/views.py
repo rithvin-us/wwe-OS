@@ -39,7 +39,11 @@ class NotificationViewSet(BaseModelViewSet):
         data.is_valid(raise_exception=True)
         payload = data.validated_data
         recipient = User.objects.filter(id=payload.pop("recipient")).first()
-        if recipient is None:
+        # Never send across tenants — treat an out-of-tenant recipient as
+        # not-found so the sender learns nothing about other tenants' users.
+        if recipient is None or (
+            not request.user.is_superuser and recipient.tenant_id != request.user.tenant_id
+        ):
             raise NotFoundError("Recipient not found.")
         notification = NotificationService().create(recipient=recipient, **payload)
         return Response(NotificationSerializer(notification).data, status=201)
@@ -60,3 +64,8 @@ class NotificationViewSet(BaseModelViewSet):
     def unread_count(self, request: Request) -> Response:
         count = self.get_queryset().filter(status=Status.UNREAD).count()
         return Response({"unread": count})
+
+    @action(detail=False, methods=["post"], url_path="read-all")
+    def read_all(self, request: Request) -> Response:
+        updated = NotificationService().mark_all_read(request.user)
+        return Response({"updated": updated})

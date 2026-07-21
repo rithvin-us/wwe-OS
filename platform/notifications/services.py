@@ -65,6 +65,15 @@ class NotificationService(BaseService):
         notification.save(update_fields=["status", "read_at", "updated_at"])
         return notification
 
+    def mark_all_read(self, recipient) -> int:
+        """Mark every unread notification for a recipient as read. Returns the
+        number updated. Bulk update, so `updated_at` is set explicitly (auto_now
+        does not fire on `.update()`)."""
+        now = timezone.now()
+        return Notification.objects.filter(recipient=recipient, status=Status.UNREAD).update(
+            status=Status.READ, read_at=now, updated_at=now
+        )
+
     def mark_archived(self, notification: Notification) -> Notification:
         notification.status = Status.ARCHIVED
         notification.save(update_fields=["status", "updated_at"])
