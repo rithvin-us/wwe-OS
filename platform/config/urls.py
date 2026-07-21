@@ -24,6 +24,7 @@ api_v1 = [
     path("reporting/", include("reporting.urls")),
     # --- Business modules ---
     path("purchase/", include("purchase.backend.api.urls")),
+    path("documents/", include("documents.backend.api.urls")),
 ]
 
 urlpatterns = [

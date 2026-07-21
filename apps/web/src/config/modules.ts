@@ -60,7 +60,7 @@ export const APPS: PlatformApp[] = [
     name: "Documents",
     icon: FileText,
     tagline: "Store, find, and share company documents.",
-    availability: "coming-soon",
+    availability: "ready",
   },
   {
     slug: "contracts",

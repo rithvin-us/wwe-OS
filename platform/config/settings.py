@@ -88,6 +88,7 @@ PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 # for the ones still unimplemented shells.
 MODULE_APPS = [
     "purchase.backend",
+    "documents.backend",
 ]
 
 INSTALLED_APPS = (

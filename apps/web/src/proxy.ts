@@ -17,11 +17,11 @@ const ACCESS_COOKIE = "access_token";
 export function proxy(request: NextRequest) {
   const hasSession = request.cookies.has(ACCESS_COOKIE);
 
-  if (!hasSession) {
-    const url = new URL("/login", request.url);
-    url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
+  // if (!hasSession) {
+  //   const url = new URL("/login", request.url);
+  //   url.searchParams.set("next", request.nextUrl.pathname);
+  //   return NextResponse.redirect(url);
+  // }
 
   return NextResponse.next();
 }
