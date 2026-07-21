@@ -80,3 +80,16 @@ class ReportService(BaseService):
         )
         publish(Events.REPORT_EXPORTED, instance=export, actor=actor)
         return export
+
+    def run(self, *, key: str, format: str, tenant=None, actor=None) -> ReportExport:
+        """Run a registered report by key: build its spec through the owning
+        module's callable, then export. The Reports catalog uses this so no
+        module has to expose its own run endpoint."""
+        from reporting.registry import get_report
+
+        tenant = tenant or context.current_tenant()
+        if tenant is None:
+            raise ConflictError("A tenant is required to run reports.")
+        definition = get_report(key)
+        spec = definition.build_spec(tenant)
+        return self.export(spec, format, tenant=tenant, actor=actor)

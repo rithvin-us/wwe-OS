@@ -23,7 +23,9 @@ class InventoryConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         from inventory.backend.events.subscribers import register_subscribers
+        from inventory.backend.reports import register_reports
         from inventory.backend.search.adapter import register_search
 
         register_search()
+        register_reports()
         register_subscribers()

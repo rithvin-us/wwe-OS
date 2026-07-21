@@ -88,7 +88,7 @@ export const APPS: PlatformApp[] = [
     name: "Reports",
     icon: FileSearch,
     tagline: "Ready-made reports, on demand or on schedule.",
-    availability: "coming-soon",
+    availability: "ready",
   },
 ];
 

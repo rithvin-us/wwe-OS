@@ -1,10 +1,45 @@
 # Module Intelligence · Reports
 
-Route `/reports` · Domain: Insight & decisions · Status: Planned
+Route `/reports` · Domain: Insight & decisions · Status: **Built (v1) — 2026-07-21**
 
 ## 1. Business purpose
 
-Define reports once — content, format, audience, schedule — then generate on demand or automatically and deliver where people work.
+One place to run ready-made reports across the company and download them on demand.
+
+## Built (v1) — shipped surface
+
+Reports is a **thin surface over the platform reporting engine**, not a
+data-owning module — so it adds no `modules/reports/backend`. Instead it uses a
+**report registry** in `platform/reporting` (the same pattern as the search
+adapter registry): each data-owning module registers a `ReportDefinition` from
+its `AppConfig.ready()`, and a catalog/run API + the `/reports` UI consume it.
+No module imports another; the platform never imports a module. Backend: 7 tests
+in `platform/tests/test_reports_catalog.py`. Frontend:
+`apps/web/src/app/(platform)/reports` (build-verified).
+
+- **Registry** (`platform/reporting/registry.py`): `ReportDefinition(key, label,
+module, permission, build_spec(tenant) -> ReportSpec)`. Registered so far:
+  Document register, Contract register, Stock on hand, Asset register.
+- **Catalog** — `GET /api/v1/reporting/catalog/` lists the reports whose
+  permission the caller holds (a user who can only read inventory sees only the
+  stock report).
+- **Run** — `POST /api/v1/reporting/run/ {key, format}` builds the spec through
+  the owning module's callable, renders CSV/XLSX/PDF/HTML via `ReportService`,
+  stores it (as any export), and returns a signed download URL. Running requires
+  `reporting.export` **and** the report's own module permission.
+- **History** — every run is a `ReportExport` row, listed on the page from
+  `/api/v1/reporting/exports/`.
+- **Download** — a generic `/api/storage/download` BFF proxy forwards the signed
+  storage token to the backend so the browser can fetch the file.
+- **Permissions**: `reporting.view` (see the catalog + history) / `reporting.export`
+  (run), plus each report's module permission.
+
+**Adding a report**: a module registers a `ReportDefinition` in its `ready()`
+(see `modules/*/backend/reports.py`) — it appears in the catalog automatically.
+
+**Not in v1** (roadmap below): scheduled/emailed reports (the engine's
+`export()` is ready for a future scheduler to call), custom report builder,
+parameterized filters in the run UI, charts in rendered reports.
 
 ## 2. Problems it solves
 

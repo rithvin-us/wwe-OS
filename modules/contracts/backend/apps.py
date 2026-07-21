@@ -42,8 +42,10 @@ class ContractsConfig(AppConfig):
 
         from contracts.backend.events.subscribers import register_subscribers
         from contracts.backend.prompts import register_prompts
+        from contracts.backend.reports import register_reports
         from contracts.backend.search.adapter import register_search
 
         register_prompts()
         register_search()
+        register_reports()
         register_subscribers()
