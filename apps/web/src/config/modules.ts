@@ -6,6 +6,7 @@ import {
   FileSearch,
   FileSignature,
   FileText,
+  Landmark,
   Mail,
   MonitorCog,
   ScanText,
@@ -68,15 +69,13 @@ export const APPS: PlatformApp[] = [
     tagline: "Agreements, renewals, and expiry reminders.",
     availability: "ready",
   },
-  /*
   {
     slug: "assets",
     name: "Assets",
     icon: Landmark,
     tagline: "Company equipment and who has it.",
-    availability: "coming-soon",
+    availability: "ready",
   },
-  */
   {
     slug: "analytics",
     name: "Analytics",

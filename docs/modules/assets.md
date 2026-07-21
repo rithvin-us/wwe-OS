@@ -1,10 +1,44 @@
 # Module Intelligence · Assets
 
-Route `/assets` · Domain: Documents & records · Status: Planned
+Route `/assets` · Domain: Operations · Status: **Built (v1) — 2026-07-21**
 
 ## 1. Business purpose
 
-Register company assets, assign them to people and places, and track condition, custody, and lifecycle from acquisition to disposal.
+Register company equipment, track who holds it and its servicing, and record its disposal.
+
+## Built (v1) — shipped surface
+
+Live end to end. Backend: `modules/assets/backend` (12 tests). Frontend:
+`apps/web/src/app/(platform)/assets` (register + detail with maintenance log +
+lifecycle actions, build-verified).
+
+- **Entities**: `Asset` (UUID, tenant-scoped, soft-delete; asset tag unique per
+  tenant; category, purchase cost/date, supplier & assignee as free text,
+  optional warranty/invoice file) and a `MaintenanceRecord` log.
+- **Lifecycle state machine**: in stock → assigned → (return) → in stock; in
+  stock/assigned → in maintenance → (complete, logs a record) → in stock; any
+  active state → disposed (terminal). Every transition validates the current
+  state so an asset can't be assigned while in maintenance or edited once
+  disposed.
+- **Storage** (platform): warranty/invoice attached/replaced via `StorageService`.
+- **Search / Reporting / Notifications / Audit** (platform): assets indexed via a
+  `SearchAdapter` (disposed ones drop out); asset-register export through
+  `ReportService`; owners notified on disposal; every transition audited.
+- **API**: `GET/POST …/assets/`, `{id}/` (GET/PATCH/DELETE), actions `assign`,
+  `return`, `maintenance/start`, `maintenance/complete`, `dispose`, `attach`,
+  `maintenance` (log), `download`, `stats`, `export`.
+- **Permissions**: `assets.read` / `.write` / `.manage` (dispose + delete are
+  manage-gated).
+
+**Platform services deliberately not used in v1**: **AI** (no genuine language
+task) and the **workflow engine** — disposal is a manage-gated direct action;
+in a multi-user setup a high-value-asset disposal approval is exactly where the
+workflow engine would slot in, but a single operator approving their own
+disposal adds no control. The module reuses only what it needs.
+
+**Not in v1** (roadmap below): depreciation schedules, assignment to platform
+User/Employee records (assignee is free text — there is no Employees module),
+barcode/QR tagging, warranty-expiry reminders, audit/stock-take workflows.
 
 ## 2. Problems it solves
 

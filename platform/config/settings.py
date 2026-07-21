@@ -91,6 +91,7 @@ MODULE_APPS = [
     "documents.backend",
     "contracts.backend",
     "inventory.backend",
+    "assets.backend",
 ]
 
 INSTALLED_APPS = (
