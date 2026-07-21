@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 from rest_framework.decorators import action
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from shared.views import BaseModelViewSet
 
 from users.models import User
-from users.serializers import UserCreateSerializer, UserSerializer
+from users.serializers import MeProfileSerializer, UserCreateSerializer, UserSerializer
+
+
+class MeProfileView(RetrieveUpdateAPIView):
+    """Any authenticated user reads and edits their OWN profile — this is a
+    baseline capability, not an admin action, so it needs no platform
+    permission (unlike UserViewSet, which manages other people)."""
+
+    serializer_class = MeProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_object(self) -> User:
+        return self.request.user
 
 
 class UserViewSet(BaseModelViewSet):
@@ -40,6 +55,15 @@ class UserViewSet(BaseModelViewSet):
         if self.action == "create":
             return UserCreateSerializer
         return UserSerializer
+
+    def perform_create(self, serializer) -> None:
+        # A non-superuser can only ever create users inside their own tenant —
+        # any `tenant` in the request body is overridden, not trusted.
+        user = self.request.user
+        if user.is_superuser:
+            serializer.save()
+        else:
+            serializer.save(tenant=user.tenant)
 
     @action(detail=False, methods=["get"])
     def me(self, request: Request) -> Response:

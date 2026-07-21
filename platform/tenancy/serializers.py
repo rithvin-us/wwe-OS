@@ -38,6 +38,16 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
 
+class TenantSettingsSerializer(serializers.ModelSerializer):
+    """The company basics the operator may edit — never slug/status/is_active,
+    which are lifecycle-controlled."""
+
+    class Meta:
+        model = Tenant
+        fields = ("id", "name", "timezone", "currency", "locale", "status", "created_at")
+        read_only_fields = ("id", "status", "created_at")
+
+
 class CompanyProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyProfile
@@ -56,4 +66,6 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
             "country",
             "branding",
         )
-        read_only_fields = ("id",)
+        # tenant is fixed by the view (the caller's own) — never reassignable
+        # through the request body.
+        read_only_fields = ("id", "tenant")

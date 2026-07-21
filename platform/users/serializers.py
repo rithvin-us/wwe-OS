@@ -37,6 +37,25 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
+class MeProfileSerializer(serializers.ModelSerializer):
+    """What a user may edit about their own profile — never their identity
+    (username/email) or account state (status/is_active)."""
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "phone",
+            "avatar_url",
+            "timezone",
+            "language",
+            "status",
+        )
+        read_only_fields = ("id", "username", "email", "status")
+
+
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
