@@ -67,7 +67,7 @@ export const APPS: PlatformApp[] = [
     name: "Contracts",
     icon: FileSignature,
     tagline: "Agreements, renewals, and expiry reminders.",
-    availability: "coming-soon",
+    availability: "ready",
   },
   /*
   {

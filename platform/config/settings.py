@@ -89,6 +89,7 @@ PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 MODULE_APPS = [
     "purchase.backend",
     "documents.backend",
+    "contracts.backend",
 ]
 
 INSTALLED_APPS = (

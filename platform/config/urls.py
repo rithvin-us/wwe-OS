@@ -25,6 +25,7 @@ api_v1 = [
     # --- Business modules ---
     path("purchase/", include("purchase.backend.api.urls")),
     path("documents/", include("documents.backend.api.urls")),
+    path("contracts/", include("contracts.backend.api.urls")),
 ]
 
 urlpatterns = [
