@@ -60,6 +60,9 @@ class DeliveryChallan(TenantOwnedModel):
     # Store the products/items and quantities delivered on this DC
     items = models.JSONField(default=list, blank=True)
 
+    # Verification SHA-256 hash of the generated document for tamper-proofing
+    verification_hash = models.CharField(max_length=64, blank=True, default="")
+
     class Meta(TenantOwnedModel.Meta):
         db_table = "assets_delivery_challan"
         ordering = ("-created_at",)

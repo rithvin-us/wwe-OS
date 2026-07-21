@@ -1,7 +1,11 @@
 "use client";
 
-import { Download } from "@bop/icons";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Download, Trash2 } from "@bop/icons";
 import { formatDateTime } from "@/lib/inventory-constants";
+import { Button } from "@bop/ui/components/button";
+import { deleteDCAction } from "./actions";
 import {
   Table,
   TableBody,
@@ -25,6 +29,24 @@ export function DCTable({
     pdf_url: string;
   }[];
 }) {
+  const router = useRouter();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this Delivery Challan?")) return;
+    setDeletingId(id);
+    try {
+      const res = await deleteDCAction(id);
+      if (!res.success) {
+        alert("Failed to delete DC: " + res.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (dcs.length === 0) {
     return (
       <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 text-center">
@@ -53,7 +75,7 @@ export function DCTable({
           {dcs.map((dc) => (
             <TableRow key={dc.id}>
               <TableCell className="font-medium">{dc.dc_number}</TableCell>
-              <TableCell>{dc.site?.name}</TableCell>
+              <TableCell>{dc.site?.name || "-"}</TableCell>
               <TableCell>
                 <Badge variant="outline">
                   {dc.dc_type === "returnable" ? "Returnable" : "Non-Returnable"}
@@ -63,7 +85,7 @@ export function DCTable({
               <TableCell className="text-muted-foreground">
                 {formatDateTime(dc.created_at)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right space-x-2">
                 <a
                   href={dc.pdf_url}
                   download
@@ -72,6 +94,15 @@ export function DCTable({
                   <Download className="mr-2 h-3.5 w-3.5" />
                   Download PDF
                 </a>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  disabled={deletingId === dc.id}
+                  onClick={() => handleDelete(dc.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}

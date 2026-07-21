@@ -21,6 +21,7 @@ class DeliveryChallanService:
         dc_type: str,
         dc_number: str,
         date: str,
+        deliver_to: str = "",
         items: list[dict],
     ) -> DeliveryChallan:
         if tenant is None and actor:
@@ -31,13 +32,13 @@ class DeliveryChallanService:
             tenant = Tenant.objects.first()
 
         site = None
-        deliver_to = ""
         if site_id:
             try:
                 site = Site.objects.get(id=site_id, tenant=tenant)
-                deliver_to = f"{site.name}\n{site.address}"
-                if site.contact_person:
-                    deliver_to += f"\nAttn: {site.contact_person} ({site.contact_phone})"
+                if not deliver_to:
+                    deliver_to = f"{site.name}\n{site.address}"
+                    if site.contact_person:
+                        deliver_to += f"\nAttn: {site.contact_person} ({site.contact_phone})"
             except Exception:
                 site = None
 
@@ -45,12 +46,16 @@ class DeliveryChallanService:
         stored_items = []
 
         for req_item in items:
-            item_id = str(req_item["id"])
+            item_id = str(req_item.get("id", req_item.get("description", "")))
             qty = req_item.get("qty", 1)
+            unit = req_item.get("unit", "")
+            qty_str = f"{qty} {unit}".strip() if unit else str(qty)
 
             # Treat all inputs as custom text items
-            rendered_items.append({"description": item_id, "qty": qty})
-            stored_items.append({"id": None, "description": item_id, "qty": qty, "unit": "Nos"})
+            rendered_items.append({"description": item_id, "qty": qty_str})
+            stored_items.append(
+                {"id": None, "description": item_id, "qty": qty, "unit": unit or "Nos"}
+            )
 
         dc_title = (
             "RETURNABLE DELIVERY CHALLAN"
@@ -111,6 +116,7 @@ class DeliveryChallanService:
             site=site,
             file=stored_file,
             generated_by=actor,
+            verification_hash=stored_file.sha256 if stored_file else "",
         )
         dc.items = stored_items
         dc.save()

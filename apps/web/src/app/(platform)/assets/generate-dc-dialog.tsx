@@ -26,7 +26,7 @@ export function GenerateDCDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState([{ id: "", qty: 1 }]);
+  const [items, setItems] = useState([{ id: "", qty: 1, unit: "Nos" }]);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -46,6 +46,7 @@ export function GenerateDCDialog({
         dc_type: fd.get("dc_type") as string,
         site_id: fd.get("site_id") as string,
         date: fd.get("date") as string,
+        deliver_to: fd.get("deliver_to") as string,
         items: validItems,
       });
 
@@ -58,7 +59,7 @@ export function GenerateDCDialog({
       }
 
       setOpen(false);
-      setItems([{ id: "", qty: 1 }]);
+      setItems([{ id: "", qty: 1, unit: "Nos" }]);
       router.refresh();
       // Automatically trigger download
       if ((result.res as any)?.pdf_url) {
@@ -71,9 +72,9 @@ export function GenerateDCDialog({
     }
   }
 
-  const addItem = () => setItems([...items, { id: "", qty: 1 }]);
+  const addItem = () => setItems([...items, { id: "", qty: 1, unit: "Nos" }]);
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
-  const updateItem = (index: number, field: "id" | "qty", value: any) => {
+  const updateItem = (index: number, field: "id" | "qty" | "unit", value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -91,7 +92,7 @@ export function GenerateDCDialog({
         <DialogHeader>
           <DialogTitle>Generate Delivery Challan</DialogTitle>
           <DialogDescription>
-            Select a site and the products to deliver. A PDF will be generated and downloaded.
+            Enter delivery details and products to generate and download a PDF Delivery Challan.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,6 +144,15 @@ export function GenerateDCDialog({
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="deliver_to">Deliver To / Site Address</Label>
+            <Input
+              id="deliver_to"
+              name="deliver_to"
+              placeholder="e.g. Water Works Site 4, Peelamedu, Coimbatore"
+            />
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Products to Deliver</Label>
@@ -154,8 +164,8 @@ export function GenerateDCDialog({
               {items.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Input
-                    className="w-full"
-                    placeholder="Enter product..."
+                    className="flex-1"
+                    placeholder="Product description..."
                     value={item.id}
                     onChange={(e) => updateItem(index, "id", e.target.value)}
                     required
@@ -163,10 +173,16 @@ export function GenerateDCDialog({
                   <Input
                     type="number"
                     min="1"
-                    className="w-24"
+                    className="w-20"
                     value={item.qty}
                     onChange={(e) => updateItem(index, "qty", parseInt(e.target.value))}
                     required
+                  />
+                  <Input
+                    className="w-24"
+                    placeholder="Unit (Kg, Litre, Lot...)"
+                    value={item.unit}
+                    onChange={(e) => updateItem(index, "unit", e.target.value)}
                   />
                   <Button
                     type="button"

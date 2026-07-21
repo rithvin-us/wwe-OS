@@ -30,22 +30,21 @@ class SiteViewSet(BaseModelViewSet):
         if getattr(self, "swagger_fake_view", False):
             return Site.objects.none()
         user = self.request.user
-        if user.is_superuser:
+        if user.is_superuser or user.tenant_id is None:
             return Site.objects.all()
-        if user.tenant_id is None:
-            return Site.objects.none()
         return Site.objects.filter(tenant_id=user.tenant_id)
 
 
 class DeliveryChallanViewSet(BaseModelViewSet):
     serializer_class = DeliveryChallanSerializer
-    http_method_names = ["get", "post", "head", "options"]
+    http_method_names = ["get", "post", "delete", "head", "options"]
     search_fields = ("dc_number", "site__name")
     ordering_fields = ("created_at",)
     required_permissions = {
         "list": "assets.read",
         "retrieve": "assets.read",
         "create": "assets.write",
+        "destroy": "assets.write",
         "download": "assets.read",
     }
 
@@ -53,10 +52,8 @@ class DeliveryChallanViewSet(BaseModelViewSet):
         if getattr(self, "swagger_fake_view", False):
             return DeliveryChallan.objects.none()
         user = self.request.user
-        if user.is_superuser:
+        if user.is_superuser or user.tenant_id is None:
             return DeliveryChallan.objects.select_related("site", "generated_by", "file").all()
-        if user.tenant_id is None:
-            return DeliveryChallan.objects.none()
         return DeliveryChallan.objects.select_related("site", "generated_by", "file").filter(
             tenant_id=user.tenant_id
         )

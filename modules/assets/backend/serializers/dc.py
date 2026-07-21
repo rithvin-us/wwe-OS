@@ -41,6 +41,7 @@ class GenerateDCSerializer(serializers.Serializer):
     dc_type = serializers.CharField(required=False, allow_blank=True, default="non_returnable")
     dc_number = serializers.CharField()
     date = serializers.CharField()
+    deliver_to = serializers.CharField(required=False, allow_blank=True, default="")
     items = serializers.ListField(
         child=serializers.DictField(),
         allow_empty=False,
