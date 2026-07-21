@@ -1,10 +1,42 @@
 # Module Intelligence · Inventory
 
-Route `/inventory` · Domain: Operations · Status: Planned
+Route `/inventory` · Domain: Operations · Status: **Built (v1) — 2026-07-21**
 
 ## 1. Business purpose
 
-Know what the company holds, where it is, and how it moves — item master, stock levels, movements, and locations across every site.
+Know what the company holds and how it moves — item master, stock levels, and an append-only movement ledger.
+
+## Built (v1) — shipped surface
+
+Live end to end. Backend: `modules/inventory/backend` (17 tests). Frontend:
+`apps/web/src/app/(platform)/inventory` (items list + item detail with ledger +
+receive/issue/adjust, build-verified).
+
+- **Entities**: `InventoryItem` (UUID, tenant-scoped, soft-delete; SKU unique per
+  tenant; on-hand quantity, reorder level, unit cost, supplier as free text) and
+  an append-only `StockMovement` ledger (receipt / issue / adjustment, signed
+  delta, balance-after, actor).
+- **Ledger integrity**: on-hand and its ledger row change together **atomically
+  under a `select_for_update` row lock** — concurrent receipts/issues can't
+  corrupt the balance; stock can never go negative.
+- **Low-stock alerts**: crossing the reorder level notifies the operator via
+  `NotificationService` and emits `inventory.low_stock`.
+- **Search / Reporting / Audit** (platform): items indexed via a `SearchAdapter`;
+  stock-on-hand report exported through `ReportService`; every movement + item
+  change on the audit trail.
+- **API**: `GET/POST …/items/`, `{id}/` (GET/PATCH/DELETE), actions `receive`,
+  `issue`, `adjust`, `movements`, `low-stock`, `stats`, `export`.
+- **Permissions**: `inventory.read` / `.write` / `.manage`.
+
+**Platform services deliberately not used in v1** (and why — no contrived
+integration): **storage** (items carry no files), **AI** (no genuine language
+task), **workflow** (single-operator stock ops need no approval routing; a
+future write-off approval is where it would slot in). The module reuses exactly
+the services it needs and reimplements none.
+
+**Not in v1** (roadmap below): multi-location transfers, batch/lot & expiry,
+barcode scanning, valuation methods (FIFO/weighted average), purchase-order
+linkage.
 
 ## 2. Problems it solves
 

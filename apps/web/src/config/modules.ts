@@ -2,6 +2,7 @@ import {
   BarChart3,
   Bell,
   Bot,
+  Boxes,
   FileSearch,
   FileSignature,
   FileText,
@@ -46,15 +47,13 @@ export const APPS: PlatformApp[] = [
     tagline: "Review bills sent in from the Telegram bot.",
     availability: "ready",
   },
-  /*
   {
     slug: "inventory",
     name: "Inventory",
     icon: Boxes,
     tagline: "Stock, items, and where things are.",
-    availability: "coming-soon",
+    availability: "ready",
   },
-  */
   {
     slug: "dms",
     name: "Documents",

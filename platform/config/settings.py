@@ -90,6 +90,7 @@ MODULE_APPS = [
     "purchase.backend",
     "documents.backend",
     "contracts.backend",
+    "inventory.backend",
 ]
 
 INSTALLED_APPS = (
