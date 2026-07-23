@@ -12,7 +12,7 @@ import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/section-card";
 import {
-  AI_INSIGHTS,
+  buildAiInsights,
   buildKpis,
   FINANCIAL_SUMMARY,
   operationalAlerts,
@@ -20,35 +20,120 @@ import {
   recentActivity,
   type LivePurchaseStats,
 } from "@/config/dashboard";
-import { getPurchaseBillStats, getRecentPurchaseActivity } from "@/lib/purchase";
+import { getBusinessSummary } from "@/lib/ai";
+import { activityLabel, getTodayActivity } from "@/lib/audit";
+import { getActiveRules } from "@/lib/automation";
+import { getContracts } from "@/lib/contracts";
+import { getPurchaseBillStats, getRecentTelegramBills } from "@/lib/purchase";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-async function loadPurchaseData() {
+const CONTRACT_EXPIRY_WINDOW_DAYS = 30;
+const TELEGRAM_WINDOW_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+async function loadPurchaseStats(): Promise<LivePurchaseStats | null> {
   try {
-    const [stats, recent] = await Promise.all([
-      getPurchaseBillStats(),
-      getRecentPurchaseActivity(),
-    ]);
-    const live: LivePurchaseStats = {
+    const stats = await getPurchaseBillStats();
+    return {
       processed: stats.processed,
       needsAttention: stats.needs_attention,
       total: stats.total,
       unpaid: stats.unpaid,
     };
-    return { stats: live, recent };
   } catch {
-    return { stats: null, recent: [] };
+    return null;
   }
 }
 
+async function loadTelegramCount(): Promise<number | null> {
+  try {
+    const bills = await getRecentTelegramBills();
+    const cutoff = Date.now() - TELEGRAM_WINDOW_DAYS * DAY_MS;
+    return bills.filter((bill) => new Date(bill.created_at).getTime() >= cutoff).length;
+  } catch {
+    return null;
+  }
+}
+
+async function loadAutomationDueCount(): Promise<number> {
+  try {
+    const rules = await getActiveRules();
+    const now = Date.now();
+    return rules.filter((rule) => rule.next_run_at && new Date(rule.next_run_at).getTime() <= now)
+      .length;
+  } catch {
+    return 0;
+  }
+}
+
+async function loadContractsExpiringCount(): Promise<number> {
+  try {
+    const contracts = await getContracts({ status: "active" });
+    const cutoff = Date.now() + CONTRACT_EXPIRY_WINDOW_DAYS * DAY_MS;
+    return contracts.filter(
+      (contract) => contract.end_date && new Date(contract.end_date).getTime() <= cutoff,
+    ).length;
+  } catch {
+    return 0;
+  }
+}
+
+function buildStatsText(args: {
+  purchase: LivePurchaseStats | null;
+  activityCount: number;
+  automationDueCount: number;
+  contractsExpiringCount: number;
+}): string {
+  const lines: string[] = [];
+  if (args.purchase) {
+    lines.push(
+      `Purchases: ${args.purchase.processed} processed, ${args.purchase.needsAttention} need ` +
+        `attention, ${args.purchase.unpaid} unpaid.`,
+    );
+  }
+  lines.push(
+    `${args.activityCount} activity event${args.activityCount === 1 ? "" : "s"} recorded today.`,
+  );
+  if (args.contractsExpiringCount > 0) {
+    lines.push(`${args.contractsExpiringCount} contract(s) expiring within 30 days.`);
+  }
+  if (args.automationDueCount > 0) {
+    lines.push(`${args.automationDueCount} automation rule(s) due to run.`);
+  }
+  return lines.join("\n");
+}
+
 export default async function DashboardPage() {
-  const { stats: purchaseStats, recent } = await loadPurchaseData();
+  const [purchaseStats, telegramCount, automationDueCount, contractsExpiringCount, activityEntries] =
+    await Promise.all([
+      loadPurchaseStats(),
+      loadTelegramCount(),
+      loadAutomationDueCount(),
+      loadContractsExpiringCount(),
+      getTodayActivity(8),
+    ]);
+
   const kpis = buildKpis(purchaseStats);
-  const alerts = operationalAlerts(purchaseStats);
-  const activity = recentActivity(recent);
+  const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
+  const activity = recentActivity(activityEntries, activityLabel);
+
+  // Skip the AI call entirely on a quiet/fresh install — nothing real to
+  // summarize, and no reason to spend a call describing emptiness.
+  const hasSignal = purchaseStats !== null || activityEntries.length > 0;
+  const summary = hasSignal
+    ? await getBusinessSummary(
+        buildStatsText({
+          purchase: purchaseStats,
+          activityCount: activityEntries.length,
+          automationDueCount,
+          contractsExpiringCount,
+        }),
+      )
+    : null;
+  const insights = buildAiInsights(summary);
 
   return (
     <div className="space-y-4 md:space-y-6 pb-6">
@@ -75,14 +160,14 @@ export default async function DashboardPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <SectionCard title="Procurement & Bills" icon={ShoppingCart} href="/purchase">
-              <SummaryRows rows={procurementSummary(purchaseStats)} />
+              <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
             </SectionCard>
             {/* <SectionCard title="Service Equipment & Tools" icon={Boxes} href="/inventory">
               <SummaryRows rows={INVENTORY_SUMMARY} />
             </SectionCard> */}
           </div>
 
-          <SectionCard title="Recent activity" icon={Activity}>
+          <SectionCard title="Recent activity" icon={Activity} href="/timeline">
             {activity.length === 0 ? (
               <PanelEmpty>
                 Activity from across the company will appear here as your team gets to work.
@@ -122,14 +207,14 @@ export default async function DashboardPage() {
           </SectionCard>
 
           <SectionCard title="AI insights" icon={Sparkles}>
-            {AI_INSIGHTS.length === 0 ? (
+            {insights.length === 0 ? (
               <PanelEmpty>
                 Once there&rsquo;s activity to learn from, you&rsquo;ll see trends and suggestions
                 here.
               </PanelEmpty>
             ) : (
               <ul className="space-y-3">
-                {AI_INSIGHTS.map((item) => (
+                {insights.map((item) => (
                   <li key={item.id} className="text-sm text-foreground">
                     {item.text}
                   </li>

@@ -149,3 +149,26 @@ export function describeEntry(entry: TimelineEntry): string {
   if (typeof candidate === "string" && candidate.trim()) return candidate;
   return entry.object_type || entry.module;
 }
+
+/** "<record> — <action>", e.g. "Acme Corp — bill created" — the Executive
+ * Dashboard's recent-activity line for one audit entry. */
+export function activityLabel(entry: AuditLogEntry): string {
+  return `${describeEntry(entry)} — ${entry.action.replace(/[._]/g, " ")}`;
+}
+
+/** Today's activity across the business modules — the Executive
+ * Dashboard's "recent activity" feed, not scoped to any one record. */
+export async function getTodayActivity(limit = 8): Promise<AuditLogEntry[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const params = new URLSearchParams({
+    module__in: TIMELINE_MODULES.join(","),
+    created_at__gte: today,
+    ordering: "-created_at",
+    page_size: String(limit),
+  });
+  try {
+    return await djangoFetch<AuditLogEntry[]>(`/api/v1/audit/?${params.toString()}`);
+  } catch {
+    return [];
+  }
+}

@@ -20,6 +20,16 @@ export async function getRules(): Promise<AutomationRule[]> {
   }
 }
 
+export async function getActiveRules(): Promise<AutomationRule[]> {
+  try {
+    return await djangoFetch<AutomationRule[]>(
+      "/api/v1/automation/rules/?is_active=true&page_size=100",
+    );
+  } catch {
+    return [];
+  }
+}
+
 export async function getRuleSources(): Promise<AutomationSource[]> {
   try {
     return await djangoFetch<AutomationSource[]>("/api/v1/automation/rules/sources/");

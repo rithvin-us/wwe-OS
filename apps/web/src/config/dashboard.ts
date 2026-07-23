@@ -2,10 +2,13 @@ import {
   Boxes,
   CircleDollarSign,
   FilePlus2,
+  History,
   ShoppingCart,
   Wallet,
+  Workflow,
   type LucideIcon,
 } from "@bop/icons";
+import type { AuditLogEntry } from "@/lib/audit";
 
 export type KpiFormat = "currency" | "count";
 
@@ -86,11 +89,15 @@ export const INVENTORY_SUMMARY: SummaryRow[] = [
   { label: "Depleted spare parts", value: null, format: "count" },
 ];
 
-export function procurementSummary(purchase: LivePurchaseStats | null): SummaryRow[] {
+export function procurementSummary(
+  purchase: LivePurchaseStats | null,
+  telegramRecentCount: number | null = null,
+): SummaryRow[] {
   return [
     { label: "Processed purchases", value: purchase?.processed ?? null, format: "count" },
     { label: "Needs attention", value: purchase?.needsAttention ?? null, format: "count" },
     { label: "Unpaid purchases", value: purchase?.unpaid ?? null, format: "count" },
+    { label: "Via Telegram (7d)", value: telegramRecentCount, format: "count" },
   ];
 }
 
@@ -101,10 +108,13 @@ export interface AlertItem {
   area: string;
 }
 
-export function operationalAlerts(purchase: LivePurchaseStats | null): AlertItem[] {
-  if (purchase === null) return [];
+export function operationalAlerts(
+  purchase: LivePurchaseStats | null,
+  automationDueCount = 0,
+  contractsExpiringCount = 0,
+): AlertItem[] {
   const alerts: AlertItem[] = [];
-  if (purchase.needsAttention > 0) {
+  if (purchase !== null && purchase.needsAttention > 0) {
     alerts.push({
       id: "purchase-needs-attention",
       message: `${purchase.needsAttention} purchase document${
@@ -114,7 +124,7 @@ export function operationalAlerts(purchase: LivePurchaseStats | null): AlertItem
       area: "Purchases",
     });
   }
-  if (purchase.unpaid > 0) {
+  if (purchase !== null && purchase.unpaid > 0) {
     alerts.push({
       id: "purchase-unpaid",
       message: `${purchase.unpaid} purchase bill${
@@ -122,6 +132,26 @@ export function operationalAlerts(purchase: LivePurchaseStats | null): AlertItem
       } awaiting payment`,
       severity: "info",
       area: "Purchases",
+    });
+  }
+  if (contractsExpiringCount > 0) {
+    alerts.push({
+      id: "contracts-expiring",
+      message: `${contractsExpiringCount} contract${
+        contractsExpiringCount === 1 ? "" : "s"
+      } expiring within 30 days`,
+      severity: "warning",
+      area: "Contracts",
+    });
+  }
+  if (automationDueCount > 0) {
+    alerts.push({
+      id: "automation-due",
+      message: `${automationDueCount} automation rule${
+        automationDueCount === 1 ? "" : "s"
+      } due to run`,
+      severity: "info",
+      area: "Automation",
     });
   }
   return alerts;
@@ -147,36 +177,40 @@ function formatRelative(iso: string): string {
   return RELATIVE_TIME.format(diffDays, "day");
 }
 
+const MODULE_LABEL: Record<string, string> = {
+  assets: "Assets",
+  inventory: "Inventory",
+  contracts: "Contracts",
+  documents: "Documents",
+  purchase: "Purchases",
+};
+
+/** Today's cross-module activity, straight from the audit trail (the same
+ * source the Business Timeline reads) — every business module, not just
+ * Purchases. */
 export function recentActivity(
-  bills: {
-    id: string;
-    seller_name: string;
-    currency: string;
-    total_rate: string;
-    status: "processed" | "needs_attention";
-    payment_status: "unpaid" | "paid";
-    created_at: string;
-  }[],
+  entries: AuditLogEntry[],
+  describe: (entry: AuditLogEntry) => string,
 ): ActivityItem[] {
-  return bills.map((bill) => {
-    const amount = `${bill.currency} ${bill.total_rate}`;
-    const summary = `${bill.seller_name} digitized — ${amount}${
-      bill.payment_status === "paid" ? " (paid)" : ""
-    }`;
-    return {
-      id: bill.id,
-      summary,
-      area: "Purchases",
-      at: formatRelative(bill.created_at),
-    };
-  });
+  return entries.map((entry) => ({
+    id: entry.id,
+    summary: describe(entry),
+    area: MODULE_LABEL[entry.module] ?? entry.module,
+    at: formatRelative(entry.created_at),
+  }));
 }
 
 export interface Insight {
   id: string;
   text: string;
 }
-export const AI_INSIGHTS: Insight[] = [];
+
+/** Wraps the AI-generated business summary (or nothing, if the call failed
+ * or hasn't run yet) into the dashboard's insight list — an honest empty
+ * state rather than a placeholder sentence. */
+export function buildAiInsights(summary: string | null): Insight[] {
+  return summary ? [{ id: "business-summary", text: summary }] : [];
+}
 
 export interface QuickAction {
   label: string;
@@ -186,6 +220,8 @@ export interface QuickAction {
 export const QUICK_ACTIONS: QuickAction[] = [
   { label: "New Purchase", href: "/purchase", icon: ShoppingCart },
   { label: "Upload Document", href: "/dms", icon: FilePlus2 },
+  { label: "Business Timeline", href: "/timeline", icon: History },
+  { label: "Automation", href: "/automation", icon: Workflow },
 ];
 
 export function formatValue(value: number | null, format: KpiFormat): string {

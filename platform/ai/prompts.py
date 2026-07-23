@@ -117,3 +117,24 @@ register(
         variables=("sentences", "text"),
     )
 )
+
+register(
+    PromptDef(
+        key="dashboard-business-summary",
+        version=1,
+        category="general",
+        description="A short operator-facing summary of today's activity for the dashboard.",
+        system=(
+            "You are a precise business operations assistant for a single-operator company. "
+            "Write a short, plain-language summary the owner can read in five seconds. Never "
+            "invent numbers or events not present in the figures given — if activity is low, "
+            "say things are quiet rather than inventing detail."
+        ),
+        user=(
+            "Today's figures:\n{stats}\n\n"
+            "Write 2-3 sentences summarizing how the company is doing today, in plain "
+            "business language — no jargon, no headers, no bullet points."
+        ),
+        variables=("stats",),
+    )
+)

@@ -92,6 +92,12 @@ export async function getRecentPurchaseActivity() {
   return djangoFetch<PurchaseBill[]>("/api/v1/purchase/bills/recent/");
 }
 
+export async function getRecentTelegramBills() {
+  return djangoFetch<PurchaseBill[]>(
+    "/api/v1/purchase/bills/?source_channel=telegram&ordering=-created_at&page_size=20",
+  );
+}
+
 export async function getVendors() {
   return djangoFetch<Vendor[]>("/api/v1/purchase/vendors/?page_size=100&ordering=name");
 }
