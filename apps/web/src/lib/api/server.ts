@@ -45,7 +45,15 @@ export async function djangoFetch<T>(path: string, init: RequestInit = {}): Prom
     cache: "no-store",
   });
 
+  if (response.status === 204) {
+    return null as T;
+  }
+
   const text = await response.text();
+  if (response.ok && !text.trim()) {
+    return null as T;
+  }
+
   let envelope: ApiEnvelope<T>;
   try {
     envelope = JSON.parse(text) as ApiEnvelope<T>;

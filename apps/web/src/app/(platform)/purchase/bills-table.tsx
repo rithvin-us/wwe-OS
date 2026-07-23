@@ -1,9 +1,17 @@
 "use client";
 
-import { Check, Edit, Eye, FileText, Trash } from "@bop/icons";
+import { Check, Edit, Eye, FileText, Trash, AlertTriangle } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { DataTable } from "@bop/ui/components/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@bop/ui/components/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@bop/ui/components/popover";
 import { Input } from "@bop/ui/components/input";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -83,30 +91,17 @@ function formatDate(iso: string) {
 function RowActions({
   bill,
   onViewDetails,
+  onConfirmDelete,
 }: {
   bill: PurchaseBill;
   onViewDetails: (bill: PurchaseBill) => void;
+  onConfirmDelete: (bill: PurchaseBill) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [vendorName, setVendorName] = useState(bill.seller_name);
   const [invoiceNumber, setInvoiceNumber] = useState(bill.invoice_number);
   const [totalRate, setTotalRate] = useState(bill.total_rate);
-
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  function handleDelete(e: React.MouseEvent) {
-    e.stopPropagation();
-    startTransition(async () => {
-      const result = await deleteBillAction(bill.id);
-      if (result.ok) {
-        toast.success(result.message);
-        setDeleteOpen(false);
-      } else {
-        toast.error(result.message);
-      }
-    });
-  }
 
   function handleSave(e: React.MouseEvent) {
     e.stopPropagation();
@@ -126,13 +121,13 @@ function RowActions({
   }
 
   return (
-    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+    <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
       <Button
         size="sm"
         variant="secondary"
         onClick={() => onViewDetails(bill)}
       >
-        <Eye className="size-3.5 mr-1" />
+        <Eye className="size-3.5 mr-1.5" />
         View Details & Preview
       </Button>
 
@@ -172,51 +167,49 @@ function RowActions({
         </Popover>
       )}
 
-      <Popover open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <PopoverTrigger asChild>
-          <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10">
-            <Trash className="size-3.5" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 space-y-3">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-destructive">Delete Purchase Record</p>
-            <p className="text-xs text-muted-foreground">
-              Are you sure? This purchase bill will be permanently deleted.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => setDeleteOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="w-full"
-              onClick={handleDelete}
-              disabled={pending}
-            >
-              Confirm Delete
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-destructive hover:bg-destructive/10 hover:text-destructive px-2.5"
+        onClick={() => onConfirmDelete(bill)}
+        title="Delete Bill"
+      >
+        <Trash className="size-3.5" />
+      </Button>
     </div>
   );
 }
 
 export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
   const [selectedBill, setSelectedBill] = useState<PurchaseBill | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const [billToDelete, setBillToDelete] = useState<PurchaseBill | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   function handleViewDetails(bill: PurchaseBill) {
     setSelectedBill(bill);
-    setDialogOpen(true);
+    setDetailsOpen(true);
+  }
+
+  function handlePromptDelete(bill: PurchaseBill) {
+    setBillToDelete(bill);
+    setDeleteModalOpen(true);
+  }
+
+  function handleExecuteDelete() {
+    if (!billToDelete) return;
+    startTransition(async () => {
+      const result = await deleteBillAction(billToDelete.id);
+      if (result.ok) {
+        toast.success(result.message);
+        setDeleteModalOpen(false);
+        setBillToDelete(null);
+      } else {
+        toast.error(result.message);
+      }
+    });
   }
 
   const columns: ColumnDef<PurchaseBill, unknown>[] = [
@@ -225,11 +218,11 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
       header: "Vendor",
       cell: ({ row }) => (
         <div
-          className="cursor-pointer hover:underline"
+          className="cursor-pointer hover:underline py-1"
           onClick={() => handleViewDetails(row.original)}
         >
           <div className="flex items-center gap-1.5">
-            <span className="font-medium text-foreground">{row.original.seller_name}</span>
+            <span className="font-medium text-foreground text-sm">{row.original.seller_name}</span>
             {row.original.is_duplicate && (
               <Badge variant="destructive" className="text-[10px]">
                 Duplicate
@@ -253,7 +246,7 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
       accessorKey: "total_rate",
       header: "Grand Total",
       cell: ({ row }) => (
-        <span className="font-semibold tabular-nums text-foreground">
+        <span className="font-bold tabular-nums text-foreground text-sm">
           {formatMoney(row.original.total_rate, row.original.currency)}
         </span>
       ),
@@ -271,7 +264,7 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
               ? `@${row.original.telegram_username}`
               : row.original.telegram_user_id
                 ? `ID: ${row.original.telegram_user_id}`
-                : "Direct Ingestion"}
+                : "Direct Upload"}
           </span>
         </div>
       ),
@@ -292,7 +285,11 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
       header: "",
       enableSorting: false,
       cell: ({ row }) => (
-        <RowActions bill={row.original} onViewDetails={handleViewDetails} />
+        <RowActions
+          bill={row.original}
+          onViewDetails={handleViewDetails}
+          onConfirmDelete={handlePromptDelete}
+        />
       ),
     },
   ];
@@ -313,9 +310,36 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
 
       <BillDetailsDialog
         bill={selectedBill}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
       />
+
+      {/* Centered Delete Confirmation Dialog */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="max-w-md p-6 space-y-4">
+          <DialogHeader className="space-y-2">
+            <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
+              <AlertTriangle className="size-5 shrink-0" />
+              Delete Purchase Record
+            </div>
+            <DialogTitle className="sr-only">Delete Purchase Record</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to delete the purchase bill for{" "}
+              <strong className="text-foreground">{billToDelete?.seller_name}</strong> (
+              {billToDelete ? formatMoney(billToDelete.total_rate, billToDelete.currency) : ""})? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="pt-2 flex items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleExecuteDelete} disabled={pending}>
+              <Trash className="size-3.5 mr-1.5" /> Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
