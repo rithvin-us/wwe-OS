@@ -1,19 +1,15 @@
 """Purchase bill API.
 
 Two distinct audiences, two distinct authentication schemes:
-- `IngestBillView` — a document-ingestion channel (Telegram bot, later email)
+- `IngestBillView` — a document-ingestion channel (Telegram bot, email)
   posting extracted data in. Service-token authenticated, never JWT.
-- `PurchaseBillViewSet` — the human operator reviewing bills. JWT authenticated,
-  same permission mechanism as every other platform endpoint.
+- `PurchaseBillViewSet` — digitized purchase records & AI insights. JWT authenticated.
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 from django.db import IntegrityError
 from django.db.models import Count
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
@@ -27,21 +23,19 @@ from shared.views import BaseModelViewSet, ReadOnlyModelViewSet
 
 from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Vendor
 from purchase.backend.serializers.purchase_bill import (
-    ConfirmBillSerializer,
     IngestBillSerializer,
     PurchaseBillSerializer,
-    RejectBillSerializer,
+    UpdatePurchaseBillSerializer,
     VendorSerializer,
 )
 from purchase.backend.services.purchase_bill import PurchaseBillService
-
-PENDING_REVIEW_ALERT_AGE = timedelta(days=3)
+from purchase.backend.services.purchase_insights import PurchaseInsightsService
 
 
 @extend_schema(
     tags=["purchase"],
     request=IngestBillSerializer,
-    responses={201: OpenApiResponse(description="Bill accepted for review.")},
+    responses={201: OpenApiResponse(description="Purchase document ingested and digitized.")},
 )
 class IngestBillView(APIView):
     """POST /api/v1/purchase/bills/ingest/ — for ingestion channels only."""
@@ -51,34 +45,49 @@ class IngestBillView(APIView):
     throttle_classes = [IngestionRateThrottle]
 
     def post(self, request: Request) -> Response:
-        data = IngestBillSerializer(data=request.data)
-        data.is_valid(raise_exception=True)
+        serializer = IngestBillSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         source_channel = request.data.get("source_channel", "telegram")
         bill = PurchaseBillService().ingest(
-            data=data.validated_data,
+            data=serializer.validated_data,
             source_channel=source_channel,
             raw_extraction=request.data.get("raw_extraction"),
+            document_text=request.data.get("document_text", ""),
         )
-        return Response({"id": str(bill.id), "status": bill.status}, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "id": str(bill.id),
+                "status": bill.status,
+                "seller_name": bill.seller_name,
+                "invoice_number": bill.invoice_number,
+                "total_rate": str(bill.total_rate),
+                "currency": bill.currency,
+                "confidence_score": float(bill.confidence_score),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
-class PurchaseBillViewSet(ReadOnlyModelViewSet):
-    """The operator's review queue. Read-only except the two review actions —
-    bills are never edited directly, only confirmed or rejected."""
+class PurchaseBillViewSet(BaseModelViewSet):
+    """Digitized purchase records & AI procurement insights."""
 
     serializer_class = PurchaseBillSerializer
-    filterset_fields = ("status", "source_channel", "vendor")
-    search_fields = ("seller_name",)
-    ordering_fields = ("created_at", "purchase_date", "total_rate")
+    filterset_fields = ("status", "source_channel", "vendor", "is_duplicate")
+    search_fields = ("seller_name", "invoice_number", "gst_number")
+    ordering_fields = ("created_at", "purchase_date", "total_rate", "confidence_score")
     required_permissions = {
         "list": "purchase.bill.read",
         "retrieve": "purchase.bill.read",
         "stats": "purchase.bill.read",
+        "insights": "purchase.bill.read",
         "recent": "purchase.bill.read",
-        "confirm": "purchase.bill.review",
-        "reject": "purchase.bill.review",
+        "update_bill": "purchase.bill.review",
         "mark_paid": "purchase.bill.review",
+        "destroy": "purchase.bill.review",
     }
+
+    def perform_destroy(self, instance):
+        PurchaseBillService().delete_bill(bill=instance, actor=self.request.user)
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -91,9 +100,7 @@ class PurchaseBillViewSet(ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def stats(self, request: Request) -> Response:
-        """Counts by status — the dashboard's procurement panel and the
-        review queue's header both read this instead of paginating the
-        full list just to count it."""
+        """Counts by status — processed, needs_attention, total, unpaid."""
         counts = dict.fromkeys(BillStatus.values, 0)
         counts.update(
             self.get_queryset()
@@ -102,53 +109,37 @@ class PurchaseBillViewSet(ReadOnlyModelViewSet):
             .values_list("status", "count")
         )
         qs = self.get_queryset()
-        overdue_cutoff = timezone.now() - PENDING_REVIEW_ALERT_AGE
         return Response(
             {
-                "pending_review": counts[BillStatus.PENDING_REVIEW],
-                "confirmed": counts[BillStatus.CONFIRMED],
-                "rejected": counts[BillStatus.REJECTED],
+                "processed": counts[BillStatus.PROCESSED],
+                "needs_attention": counts[BillStatus.NEEDS_ATTENTION],
                 "total": sum(counts.values()),
-                "unpaid_confirmed": qs.filter(
-                    status=BillStatus.CONFIRMED, payment_status=PaymentStatus.UNPAID
-                ).count(),
-                "overdue_pending": qs.filter(
-                    status=BillStatus.PENDING_REVIEW, created_at__lt=overdue_cutoff
-                ).count(),
+                "unpaid": qs.filter(payment_status=PaymentStatus.UNPAID).count(),
             }
         )
 
     @action(detail=False, methods=["get"])
+    def insights(self, request: Request) -> Response:
+        """AI Insights: Spend analysis, vendor analysis, duplicate detection, GST summary."""
+        tenant = request.user.tenant if hasattr(request.user, "tenant") else None
+        data = PurchaseInsightsService().get_insights(tenant)
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
     def recent(self, request: Request) -> Response:
-        """The last N bills an operator acted on — feeds the dashboard's
-        recent activity panel. Pending bills aren't "activity" yet; only
-        reviewed ones (confirmed/rejected/paid) are."""
-        qs = (
-            self.get_queryset()
-            .exclude(status=BillStatus.PENDING_REVIEW)
-            .order_by("-reviewed_at")[:8]
-        )
+        """Latest digitized purchases."""
+        qs = self.get_queryset().order_by("-created_at")[:8]
         return Response(PurchaseBillSerializer(qs, many=True).data)
 
-    @action(detail=True, methods=["post"])
-    def confirm(self, request: Request, pk=None) -> Response:
+    @action(detail=True, methods=["patch"], url_path="update-bill")
+    def update_bill(self, request: Request, pk=None) -> Response:
         bill = self.get_object()
-        data = ConfirmBillSerializer(data=request.data)
-        data.is_valid(raise_exception=True)
-        bill = PurchaseBillService().confirm(
-            bill=bill, reviewer=request.user, vendor_name=data.validated_data.get("vendor_name", "")
+        serializer = UpdatePurchaseBillSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_bill = PurchaseBillService().update_bill(
+            bill=bill, actor=request.user, data=serializer.validated_data
         )
-        return Response(PurchaseBillSerializer(bill).data)
-
-    @action(detail=True, methods=["post"])
-    def reject(self, request: Request, pk=None) -> Response:
-        bill = self.get_object()
-        data = RejectBillSerializer(data=request.data)
-        data.is_valid(raise_exception=True)
-        bill = PurchaseBillService().reject(
-            bill=bill, reviewer=request.user, reason=data.validated_data["reason"]
-        )
-        return Response(PurchaseBillSerializer(bill).data)
+        return Response(PurchaseBillSerializer(updated_bill).data)
 
     @action(detail=True, methods=["post"], url_path="mark-paid")
     def mark_paid(self, request: Request, pk=None) -> Response:
@@ -158,13 +149,12 @@ class PurchaseBillViewSet(ReadOnlyModelViewSet):
 
 
 class VendorViewSet(BaseModelViewSet):
-    """The operator's vendor directory. Deliberately thin — name, active
-    flag, GST number. Never hard-deleted; deactivate via `is_active`."""
+    """The vendor directory."""
 
     serializer_class = VendorSerializer
     http_method_names = ["get", "post", "patch", "head", "options"]
     filterset_fields = ("is_active",)
-    search_fields = ("name",)
+    search_fields = ("name", "gst_number")
     ordering_fields = ("name", "created_at")
     required_permissions = {
         "list": "purchase.vendor.manage",

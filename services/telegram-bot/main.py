@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import datetime
 import json
 import logging
 import os
@@ -7,6 +8,7 @@ import os
 import httpx
 from dotenv import load_dotenv
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Load environment variables
@@ -18,7 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-OCR_MODEL = os.getenv("OCR_MODEL", "gemini-2.5-flash")
+OCR_MODEL = os.getenv("OCR_MODEL", "gemini-flash-latest")
 PLATFORM_API_URL = os.getenv("PLATFORM_API_URL", "http://localhost:8000")
 PLATFORM_SERVICE_TOKEN = os.getenv("PLATFORM_SERVICE_TOKEN")
 
@@ -158,9 +160,8 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
         "- purchase_date: the transaction date, formatted YYYY-MM-DD.\n"
         "- total_rate: the total final amount as a plain number, no currency symbol "
         "or thousands separators (e.g. 150.00, not '$150.00' or '1,500').\n"
-        "- currency: the 3-letter ISO 4217 currency code (e.g. USD, INR, EUR). If the "
-        "receipt does not show a currency, infer the most likely one from context, or "
-        "use USD if there is truly no signal.\n"
+        "currency: the 3-letter ISO 4217 currency code (e.g. INR, USD, EUR). Default to INR "
+        "if there is no explicit currency symbol or signal.\n"
         "Return ONLY a valid JSON object with keys 'seller_name', 'purchase_date', "
         "'total_rate', and 'currency'."
     )
@@ -189,18 +190,23 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             },
         ]
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{OCR_MODEL}:generateContent?key={api_key}"
+    model_name = OCR_MODEL
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": parts}],
         "generationConfig": {
             "response_mime_type": "application/json",
             "temperature": 0.1,
-            "maxOutputTokens": 300,
+            "maxOutputTokens": 2048,
         },
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(url, json=payload)
+        if response.status_code == 404 and model_name != "gemini-flash-latest":
+            logger.warning("Model %s returned 404, falling back to gemini-flash-latest", model_name)
+            fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
+            response = await client.post(fallback_url, json=payload)
         if response.status_code != 200:
             raise RuntimeError(f"Gemini API returned {response.status_code}: {response.text}")
         data = response.json()
@@ -208,7 +214,14 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
         if not candidates or "content" not in candidates[0]:
             raise RuntimeError("Gemini API returned no candidates or content.")
         res_parts = candidates[0]["content"].get("parts", [])
-        text_content = "".join(p.get("text", "") for p in res_parts)
+        text_content = "".join(p.get("text", "") for p in res_parts).strip()
+        if text_content.startswith("```"):
+            lines = text_content.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            text_content = "\n".join(lines).strip()
         return json.loads(text_content)
 
 
@@ -288,20 +301,23 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await message.edit_text("❌ Failed to receive document. Please try sending again.")
         return
 
-    # STEP 1: Save document to backend FIRST so it is NEVER lost
+    # STEP 1: Save document to backend FIRST through Storage Service (never blocked)
+    user_handle = update.effective_user.username or update.effective_user.full_name or ""
     initial_payload = {
         "seller_name": "Pending OCR Processing",
-        "purchase_date": str(timezone.now().date()),
+        "purchase_date": str(datetime.date.today()),
         "total_rate": "0.00",
-        "currency": "USD",
+        "currency": "INR",
         "telegram_user_id": update.effective_user.id,
+        "telegram_username": user_handle,
         "document_url": document_url,
         "external_ref": file_unique_id,
+        "source_channel": "telegram",
     }
 
     try:
-        result = await _post_to_platform(initial_payload)
-        await message.edit_text("✅ Document saved to WWE OS! Running OCR & generating insights...")
+        saved_result = await _post_to_platform(initial_payload)
+        await message.edit_text("📥 Document safely stored in Storage Service. Running OCR...")
     except DuplicateBillError:
         await message.edit_text("ℹ️ This document was already saved in WWE OS — no duplicate created.")
         return
@@ -310,33 +326,52 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await message.edit_text(f"⚠️ Could not save document to platform: {exc}")
         return
 
-    # STEP 2: Now run OCR extraction and update the saved bill/document
+    # STEP 2: Run AI OCR extraction and send full payload to backend
     try:
         extracted = await _extract_bill_fields(base64_image, bytes(file_bytes))
+        vendor_name = extracted.get("vendor") or extracted.get("seller_name") or "Unknown Vendor"
+        invoice_num = extracted.get("invoice_number") or "N/A"
+        total_amt = str(extracted.get("grand_total") or extracted.get("total_rate") or "0.00")
+        curr = (extracted.get("currency") or "INR").upper()
+        confidence = float(extracted.get("confidence_score") or 0.85)
+        conf_percent = int(confidence * 100) if confidence <= 1.0 else int(confidence)
+
         update_payload = {
-            "seller_name": extracted.get("seller_name") or "Unknown Seller",
-            "purchase_date": extracted.get("purchase_date") or str(timezone.now().date()),
-            "total_rate": str(extracted.get("total_rate") or "0.00"),
-            "currency": (extracted.get("currency") or "USD").upper(),
+            "seller_name": vendor_name,
+            "purchase_date": extracted.get("invoice_date") or extracted.get("purchase_date") or str(datetime.date.today()),
+            "total_rate": total_amt,
+            "currency": curr,
             "telegram_user_id": update.effective_user.id,
+            "telegram_username": user_handle,
             "document_url": document_url,
             "external_ref": file_unique_id,
+            "source_channel": "telegram",
             "raw_extraction": extracted,
         }
-        await _post_to_platform(update_payload)
-        await message.edit_text(
-            f"🎉 <b>OCR Extraction Complete!</b>\n\n"
-            f"<b>Seller:</b> {update_payload['seller_name']}\n"
-            f"<b>Date:</b> {update_payload['purchase_date']}\n"
-            f"<b>Total:</b> {update_payload['currency']} {update_payload['total_rate']}\n\n"
-            f"Saved & waiting for review in Purchases & Documents!"
-        )
+        res = await _post_to_platform(update_payload)
+        bill_status = res.get("status", "processed")
+
+        if bill_status == "processed" and conf_percent >= 80:
+            await message.edit_text(
+                f"🎉 <b>Purchase successfully processed.</b>\n\n"
+                f"<b>Vendor:</b> {vendor_name}\n"
+                f"<b>Invoice #:</b> {invoice_num}\n"
+                f"<b>Amount:</b> {curr} {total_amt}\n"
+                f"<b>Confidence:</b> {conf_percent}%",
+                parse_mode=ParseMode.HTML,
+            )
+        else:
+            await message.edit_text(
+                "📁 <b>Document safely stored.</b>\n\n"
+                "OCR requires manual review.",
+                parse_mode=ParseMode.HTML,
+            )
     except Exception as exc:
         logger.warning("OCR extraction failed after document was saved: %s", exc)
         await message.edit_text(
-            "⚠️ <b>Document Saved Successfully!</b>\n\n"
-            "The file is safely stored in WWE OS under Purchases & Documents.\n"
-            "Automatic OCR encountered an issue, but you can view and review the file manually."
+            "📁 <b>Document safely stored.</b>\n\n"
+            "OCR requires manual review.",
+            parse_mode=ParseMode.HTML,
         )
 
 

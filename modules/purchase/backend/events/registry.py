@@ -8,6 +8,7 @@ internals directly.
 """
 
 PURCHASE_BILL_INGESTED = "purchase.bill.ingested"
-PURCHASE_BILL_CONFIRMED = "purchase.bill.confirmed"
-PURCHASE_BILL_REJECTED = "purchase.bill.rejected"
+PURCHASE_BILL_PROCESSED = "purchase.bill.processed"
+PURCHASE_BILL_NEEDS_ATTENTION = "purchase.bill.needs_attention"
 PURCHASE_BILL_PAID = "purchase.bill.paid"
+PURCHASE_BILL_DELETED = "purchase.bill.deleted"

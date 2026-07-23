@@ -1,6 +1,5 @@
 import {
   Activity,
-  Boxes,
   CircleDollarSign,
   ShoppingCart,
   Sparkles,
@@ -16,13 +15,12 @@ import {
   AI_INSIGHTS,
   buildKpis,
   FINANCIAL_SUMMARY,
-  INVENTORY_SUMMARY,
   operationalAlerts,
   procurementSummary,
   recentActivity,
   type LivePurchaseStats,
 } from "@/config/dashboard";
-import { getPurchaseBills, getPurchaseBillStats, getRecentPurchaseActivity } from "@/lib/purchase";
+import { getPurchaseBillStats, getRecentPurchaseActivity } from "@/lib/purchase";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -30,22 +28,19 @@ export const metadata: Metadata = {
 
 async function loadPurchaseData() {
   try {
-    const [stats, pending, recent] = await Promise.all([
+    const [stats, recent] = await Promise.all([
       getPurchaseBillStats(),
-      getPurchaseBills({ status: "pending_review" }),
       getRecentPurchaseActivity(),
     ]);
     const live: LivePurchaseStats = {
-      pendingReview: stats.pending_review,
-      confirmed: stats.confirmed,
-      rejected: stats.rejected,
+      processed: stats.processed,
+      needsAttention: stats.needs_attention,
       total: stats.total,
-      unpaidConfirmed: stats.unpaid_confirmed,
-      overduePending: stats.overdue_pending,
+      unpaid: stats.unpaid,
     };
-    return { stats: live, pending, recent };
+    return { stats: live, recent };
   } catch {
-    return { stats: null, pending: [], recent: [] };
+    return { stats: null, recent: [] };
   }
 }
 

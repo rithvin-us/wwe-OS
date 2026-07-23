@@ -80,7 +80,7 @@ services:
       PLATFORM_API_URL: http://backend:8000
       # Must match one "name:token" pair in the backend's
       # INGESTION_SERVICE_TOKENS above.
-      PLATFORM_SERVICE_TOKEN: ${PLATFORM_SERVICE_TOKEN:-dev-only-change-me}
+      PLATFORM_SERVICE_TOKEN: ${PLATFORM_SERVICE_TOKEN:-8811942921:AAEZexHFe8URJoI8ut36fOkj7jb3dXCTc7M}
     volumes:
       - ./services/telegram-bot:/app
     depends_on:

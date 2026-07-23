@@ -18,7 +18,7 @@ To keep operations frictionless for a single-operator environment, specific ente
 
 ### In-Scope Features
 - **Delivery Challan Engine:** Custom Word template rendering (`DC 26.docx`), free-text product inputs, customizable measurement units (Kg, Litre, Lot, Nos, Mtr, Set), free-text delivery site addresses, PDF generation, tamper-proof SHA-256 document hashing (`verification_hash`), deletion, and downloadable history.
-- **Telegram Receipt Ingestion:** Automated purchase bill capture via Telegram bot, AI OCR processing via OpenAI Vision, and backend purchase record staging.
+- **Telegram Receipt Ingestion:** Automated purchase bill capture via Telegram bot, non-blocking Storage Service file save, structured AI OCR extraction via Platform AI Gateway (Gemini/OpenAI), auto-classification (Processed vs Needs Attention), and AI spend insights.
 - **Service Tools & Equipment Tracking:** Internal spare parts, tools, and equipment tracking (no saleable product stock).
 - **DMS Storage:** Document upload, categorization, local/cloud storage provider abstraction, and AI document summarization.
 - **System Maintenance & Health:** Real-time `/healthz` diagnostics, API usage tracking, and system configuration metrics.

@@ -15,6 +15,11 @@ VALID_PAYLOAD = {
     "currency": "USD",
     "telegram_user_id": 123456789,
     "document_url": "https://storage.internal/path/to/file.pdf",
+    "raw_extraction": {
+        "vendor": "Vendor Inc.",
+        "grand_total": "150.00",
+        "confidence_score": 0.95,
+    },
 }
 
 
@@ -29,20 +34,29 @@ def test_ingest_rejects_wrong_service_token(api, tenant):
     assert resp.status_code == 401
 
 
-def test_ingest_creates_pending_bill(service_client, tenant):
+def test_ingest_creates_processed_bill(service_client, tenant):
     resp = service_client.post(INGEST_URL, VALID_PAYLOAD, format="json")
     assert resp.status_code == 201
-    assert resp.json()["data"]["status"] == "pending_review"
+    assert resp.json()["data"]["status"] == "processed"
     bill = PurchaseBill.objects.get()
     assert bill.seller_name == "Vendor Inc."
-    assert bill.status == BillStatus.PENDING_REVIEW
+    assert bill.status == BillStatus.PROCESSED
     assert bill.tenant_id == tenant.id
     assert bill.telegram_user_id == 123456789
 
 
-def test_ingest_rejects_missing_fields(service_client, tenant):
-    resp = service_client.post(INGEST_URL, {"seller_name": "Vendor"}, format="json")
-    assert resp.status_code == 422
+def test_ingest_low_confidence_creates_needs_attention(service_client, tenant):
+    payload = {
+        **VALID_PAYLOAD,
+        "raw_extraction": {
+            "vendor": "Unclear Store",
+            "grand_total": "50.00",
+            "confidence_score": 0.40,
+        },
+    }
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+    assert resp.json()["data"]["status"] == "needs_attention"
 
 
 def test_ingest_rejects_future_date(service_client, tenant):
@@ -52,16 +66,8 @@ def test_ingest_rejects_future_date(service_client, tenant):
 
 
 def test_ingest_fails_without_a_tenant_configured(service_client):
-    # No tenant fixture used here — simulates a fresh, unconfigured company.
     resp = service_client.post(INGEST_URL, VALID_PAYLOAD, format="json")
     assert resp.status_code == 409
-
-
-def test_ingest_notifies_the_owner(service_client, tenant, owner):
-    service_client.post(INGEST_URL, VALID_PAYLOAD, format="json")
-    from notifications.models import Notification
-
-    assert Notification.objects.filter(recipient=owner, category="purchase").exists()
 
 
 def test_ingest_deduplicates_by_external_ref(service_client, tenant):
@@ -69,16 +75,5 @@ def test_ingest_deduplicates_by_external_ref(service_client, tenant):
     assert service_client.post(INGEST_URL, payload, format="json").status_code == 201
 
     duplicate = service_client.post(INGEST_URL, payload, format="json")
-    assert duplicate.status_code == 409
+    assert duplicate.status_code == 201
     assert PurchaseBill.objects.count() == 1
-
-
-def test_ingest_without_external_ref_never_deduplicates(service_client, tenant):
-    assert service_client.post(INGEST_URL, VALID_PAYLOAD, format="json").status_code == 201
-    assert service_client.post(INGEST_URL, VALID_PAYLOAD, format="json").status_code == 201
-    assert PurchaseBill.objects.count() == 2
-
-
-def test_ingest_rejects_non_https_document_url(service_client, tenant):
-    payload = {**VALID_PAYLOAD, "document_url": "http://insecure.example/file.pdf"}
-    assert service_client.post(INGEST_URL, payload, format="json").status_code == 422

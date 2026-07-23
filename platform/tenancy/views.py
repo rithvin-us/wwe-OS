@@ -15,7 +15,8 @@ class CurrentTenantView(RetrieveUpdateAPIView):
     """Read or update the calling tenant's basics (name, timezone, currency, config)."""
 
     serializer_class = TenantSettingsSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = {"GET": "settings.view", "default": "settings.manage"}
 
     def get_object(self):
         user = getattr(self.request, "user", None)

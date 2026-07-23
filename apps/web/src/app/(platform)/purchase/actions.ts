@@ -10,27 +10,22 @@ export interface ActionResult {
   message: string;
 }
 
-export async function confirmBillAction(billId: string, vendorName: string): Promise<ActionResult> {
+export async function updateBillAction(
+  billId: string,
+  data: {
+    seller_name?: string;
+    invoice_number?: string;
+    total_rate?: string;
+    gst_number?: string;
+  },
+): Promise<ActionResult> {
   try {
-    await djangoFetch(`/api/v1/purchase/bills/${billId}/confirm/`, {
-      method: "POST",
-      body: JSON.stringify({ vendor_name: vendorName }),
+    await djangoFetch(`/api/v1/purchase/bills/${billId}/update-bill/`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     });
     revalidatePath("/purchase");
-    return { ok: true, message: "Bill confirmed." };
-  } catch (error) {
-    return { ok: false, message: errorMessage(error) };
-  }
-}
-
-export async function rejectBillAction(billId: string, reason: string): Promise<ActionResult> {
-  try {
-    await djangoFetch(`/api/v1/purchase/bills/${billId}/reject/`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    });
-    revalidatePath("/purchase");
-    return { ok: true, message: "Bill rejected." };
+    return { ok: true, message: "Purchase record updated." };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }
@@ -40,7 +35,17 @@ export async function markBillPaidAction(billId: string): Promise<ActionResult> 
   try {
     await djangoFetch(`/api/v1/purchase/bills/${billId}/mark-paid/`, { method: "POST" });
     revalidatePath("/purchase");
-    return { ok: true, message: "Bill marked as paid." };
+    return { ok: true, message: "Purchase marked as paid." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function deleteBillAction(billId: string): Promise<ActionResult> {
+  try {
+    await djangoFetch(`/api/v1/purchase/bills/${billId}/`, { method: "DELETE" });
+    revalidatePath("/purchase");
+    return { ok: true, message: "Purchase bill deleted successfully." };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }

@@ -3,22 +3,9 @@ import {
   CircleDollarSign,
   FilePlus2,
   ShoppingCart,
-  UserPlus,
-  Users,
   Wallet,
   type LucideIcon,
 } from "@bop/icons";
-
-/**
- * Executive dashboard data contract — the single place a backend fills to
- * light up the company command center. Every figure resolves from a real
- * business area; until that area starts being used, counts read 0 (a true
- * empty count) and monetary figures read as "not yet available" (unknown,
- * never invented). No fabricated numbers anywhere.
- *
- * When APIs land, replace the constant values below with live queries; the
- * dashboard UI does not change.
- */
 
 export type KpiFormat = "currency" | "count";
 
@@ -27,35 +14,18 @@ export interface Kpi {
   label: string;
   icon: LucideIcon;
   format: KpiFormat;
-  /** Live value, or null when the source area has no figure yet. */
   value: number | null;
-  /** Period-over-period change in percent, or null when there's no history. */
   deltaPct: number | null;
-  /** Plain line naming where the number comes from. */
   source: string;
 }
 
-/**
- * Live purchase figures, when available. `null` means "not fetched yet or
- * the request failed" — every consumer below renders that as an honest
- * blank, never a zero it doesn't actually know.
- */
 export interface LivePurchaseStats {
-  pendingReview: number;
-  confirmed: number;
-  rejected: number;
+  processed: number;
+  needsAttention: number;
   total: number;
-  unpaidConfirmed: number;
-  overduePending: number;
+  unpaid: number;
 }
 
-/**
- * The dashboard's KPI row. Two of the six are backed by real data today
- * (Purchases is the only module with any) — the rest stay honest nulls
- * until their module exists. Built as a function, not a constant, because
- * "pending approvals" and "bills to review" need the live count injected
- * by the page that fetches it.
- */
 export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
   return [
     {
@@ -77,11 +47,11 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       source: "Purchases & finance",
     },
     {
-      key: "bills-to-review",
-      label: "Bills to review",
+      key: "digitized-purchases",
+      label: "Digitized Purchases",
       icon: ShoppingCart,
       format: "count",
-      value: purchase?.pendingReview ?? null,
+      value: purchase?.processed ?? null,
       deltaPct: null,
       source: "Purchases",
     },
@@ -97,7 +67,6 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
   ];
 }
 
-/** A row in a summary panel (financials, people, inventory, procurement…). */
 export interface SummaryRow {
   label: string;
   value: number | null;
@@ -117,12 +86,11 @@ export const INVENTORY_SUMMARY: SummaryRow[] = [
   { label: "Depleted spare parts", value: null, format: "count" },
 ];
 
-/** Real, live bill counts — the one summary panel backed by actual data. */
 export function procurementSummary(purchase: LivePurchaseStats | null): SummaryRow[] {
   return [
-    { label: "Bills pending review", value: purchase?.pendingReview ?? null, format: "count" },
-    { label: "Bills confirmed", value: purchase?.confirmed ?? null, format: "count" },
-    { label: "Bills rejected", value: purchase?.rejected ?? null, format: "count" },
+    { label: "Processed purchases", value: purchase?.processed ?? null, format: "count" },
+    { label: "Needs attention", value: purchase?.needsAttention ?? null, format: "count" },
+    { label: "Unpaid purchases", value: purchase?.unpaid ?? null, format: "count" },
   ];
 }
 
@@ -133,26 +101,24 @@ export interface AlertItem {
   area: string;
 }
 
-/** Real alerts derived from live purchase figures — empty until something
- * actually needs attention, never a placeholder list. */
 export function operationalAlerts(purchase: LivePurchaseStats | null): AlertItem[] {
   if (purchase === null) return [];
   const alerts: AlertItem[] = [];
-  if (purchase.overduePending > 0) {
+  if (purchase.needsAttention > 0) {
     alerts.push({
-      id: "purchase-overdue-pending",
-      message: `${purchase.overduePending} bill${
-        purchase.overduePending === 1 ? "" : "s"
-      } awaiting review for over 3 days`,
+      id: "purchase-needs-attention",
+      message: `${purchase.needsAttention} purchase document${
+        purchase.needsAttention === 1 ? "" : "s"
+      } flagged for low OCR confidence`,
       severity: "warning",
       area: "Purchases",
     });
   }
-  if (purchase.unpaidConfirmed > 0) {
+  if (purchase.unpaid > 0) {
     alerts.push({
-      id: "purchase-unpaid-confirmed",
-      message: `${purchase.unpaidConfirmed} confirmed bill${
-        purchase.unpaidConfirmed === 1 ? "" : "s"
+      id: "purchase-unpaid",
+      message: `${purchase.unpaid} purchase bill${
+        purchase.unpaid === 1 ? "" : "s"
       } awaiting payment`,
       severity: "info",
       area: "Purchases",
@@ -170,8 +136,8 @@ export interface ActivityItem {
 
 const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
-/** Short "2h ago" / "3d ago" label for an ISO timestamp. */
 function formatRelative(iso: string): string {
+  if (!iso) return "recently";
   const diffMs = new Date(iso).getTime() - Date.now();
   const diffMinutes = Math.round(diffMs / 60_000);
   if (Math.abs(diffMinutes) < 60) return RELATIVE_TIME.format(diffMinutes, "minute");
@@ -181,35 +147,29 @@ function formatRelative(iso: string): string {
   return RELATIVE_TIME.format(diffDays, "day");
 }
 
-/** Real recent activity from bills the operator has reviewed. */
 export function recentActivity(
   bills: {
     id: string;
     seller_name: string;
     currency: string;
     total_rate: string;
-    status: "pending_review" | "confirmed" | "rejected";
+    status: "processed" | "needs_attention";
     payment_status: "unpaid" | "paid";
-    reviewed_at: string | null;
+    created_at: string;
   }[],
 ): ActivityItem[] {
-  return bills
-    .filter((bill) => bill.reviewed_at !== null)
-    .map((bill) => {
-      const amount = `${bill.currency} ${bill.total_rate}`;
-      const summary =
-        bill.status === "confirmed"
-          ? `${bill.seller_name} confirmed — ${amount}${
-              bill.payment_status === "paid" ? " (paid)" : ""
-            }`
-          : `${bill.seller_name} rejected — ${amount}`;
-      return {
-        id: bill.id,
-        summary,
-        area: "Purchases",
-        at: formatRelative(bill.reviewed_at as string),
-      };
-    });
+  return bills.map((bill) => {
+    const amount = `${bill.currency} ${bill.total_rate}`;
+    const summary = `${bill.seller_name} digitized — ${amount}${
+      bill.payment_status === "paid" ? " (paid)" : ""
+    }`;
+    return {
+      id: bill.id,
+      summary,
+      area: "Purchases",
+      at: formatRelative(bill.created_at),
+    };
+  });
 }
 
 export interface Insight {
@@ -218,7 +178,6 @@ export interface Insight {
 }
 export const AI_INSIGHTS: Insight[] = [];
 
-/** Quick actions — real navigation into the areas people act in most. */
 export interface QuickAction {
   label: string;
   href: string;
@@ -227,16 +186,14 @@ export interface QuickAction {
 export const QUICK_ACTIONS: QuickAction[] = [
   { label: "New Purchase", href: "/purchase", icon: ShoppingCart },
   { label: "Upload Document", href: "/dms", icon: FilePlus2 },
-  // { label: "Add Service Tool", href: "/inventory", icon: UserPlus },
 ];
 
-/** Format a value for display, or an em dash when it isn't available yet. */
 export function formatValue(value: number | null, format: KpiFormat): string {
   if (value === null) return "—";
   if (format === "currency") {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
       maximumFractionDigits: 0,
     }).format(value);
   }

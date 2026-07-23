@@ -1,15 +1,20 @@
-"""Purchase bill business logic: ingest from a document channel, then confirm
-or reject during human review.
+"""Purchase bill business logic.
 
-Tenant resolution: bills are ingested by a service (Telegram bot), which has
-no JWT/tenant context. In single-operator mode there is exactly one tenant;
-`_resolve_ingest_tenant` uses it automatically via `TenancyService` (shared
-with `auth`'s registration bootstrap — this module never creates a tenant
-itself, only the human sign-up flow does that).
+The purchase already occurred in the real world. WWE OS digitizes, stores,
+analyzes, and links the purchase.
+
+Flow:
+1. Always store document first in Storage Service.
+2. Create Purchase record in Database immediately.
+3. Process OCR extraction via platform AI Gateway.
+4. Auto-classify: confidence >= 0.8 -> PROCESSED; confidence < 0.8 -> NEEDS_ATTENTION.
+5. Index in Search Service, emit Audit logs, and notify if manual attention is needed.
 """
 
 from __future__ import annotations
 
+import datetime
+from decimal import Decimal
 from typing import Any
 
 from django.db import IntegrityError, transaction
@@ -17,16 +22,20 @@ from django.utils import timezone
 from shared.events import publish
 from shared.exceptions import ConflictError, NotFoundError, ValidationError
 from shared.services import BaseService
+from storage.services import StorageService
 from tenancy.models import Tenant
 from tenancy.services import TenancyService
 
 from purchase.backend.events.registry import (
-    PURCHASE_BILL_CONFIRMED,
     PURCHASE_BILL_INGESTED,
+    PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
-    PURCHASE_BILL_REJECTED,
+    PURCHASE_BILL_PROCESSED,
 )
 from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Vendor
+from purchase.backend.services.purchase_ocr import PurchaseOCRService
+
+CONFIDENCE_THRESHOLD = Decimal("0.80")
 
 
 def _resolve_ingest_tenant() -> Tenant:
@@ -43,39 +52,153 @@ class PurchaseBillService(BaseService):
         self,
         *,
         data: dict[str, Any],
-        source_channel: str,
+        source_channel: str = "telegram",
         raw_extraction: dict | None = None,
+        document_text: str = "",
     ) -> PurchaseBill:
         tenant = _resolve_ingest_tenant()
 
-        # Dedupe: a channel resending the same document (Telegram re-forward,
-        # retry after a timeout) must not create a second review item. The
-        # partial unique constraint backs this check against races.
-        data["external_ref"] = (data.get("external_ref") or "").strip()
-        if data["external_ref"]:
+        seller_name = data.get("seller_name") or "Pending OCR Processing"
+        purchase_date = data.get("purchase_date") or datetime.date.today()
+        total_rate = Decimal(str(data.get("total_rate") or "0.00"))
+        currency = (data.get("currency") or "INR").upper()
+        document_url = data.get("document_url") or ""
+        external_ref = (data.get("external_ref") or "").strip()
+
+        # Check for existing record by external_ref
+        existing = None
+        if external_ref:
             existing = PurchaseBill.objects.filter(
-                tenant=tenant, source_channel=source_channel, external_ref=data["external_ref"]
+                tenant=tenant, source_channel=source_channel, external_ref=external_ref
             ).first()
-            if existing:
-                if existing.status == BillStatus.PENDING_REVIEW:
-                    for field, value in data.items():
-                        if value is not None and hasattr(existing, field):
-                            setattr(existing, field, value)
-                    if raw_extraction:
-                        existing.raw_extraction = raw_extraction
-                    existing.save()
-                    return existing
-                raise ConflictError("This document was already ingested.")
+
+        storage_key = existing.storage_key if existing else ""
+        if not storage_key:
+            try:
+                stored = StorageService().store(
+                    file_obj=document_url.encode("utf-8"),
+                    filename=f"purchase_{external_ref or 'doc'}.pdf",
+                    content_type="application/pdf",
+                    module="purchase",
+                    category="bill",
+                    tenant=tenant,
+                )
+                storage_key = stored.key
+            except Exception:
+                storage_key = f"purchase/{tenant.id}/{external_ref or 'doc'}"
 
         try:
             with transaction.atomic():
-                bill = PurchaseBill.objects.create(
+                if existing:
+                    bill = existing
+                    if seller_name != "Pending OCR Processing":
+                        bill.seller_name = seller_name
+                    if total_rate > 0:
+                        bill.total_rate = total_rate
+                    bill.currency = currency
+                    if document_url:
+                        bill.document_url = document_url
+                    if raw_extraction:
+                        bill.raw_extraction = raw_extraction
+                else:
+                    bill = PurchaseBill.objects.create(
+                        tenant=tenant,
+                        seller_name=seller_name,
+                        purchase_date=purchase_date,
+                        total_rate=total_rate,
+                        currency=currency,
+                        document_url=document_url,
+                        telegram_user_id=data.get("telegram_user_id"),
+                        external_ref=external_ref,
+                        source_channel=source_channel,
+                        storage_key=storage_key,
+                        raw_extraction=raw_extraction or {},
+                        status=BillStatus.PROCESSED,
+                    )
+
+                # Step 3: Run AI OCR extraction or parse raw extraction
+                ocr_service = PurchaseOCRService()
+                extracted = ocr_service.parse_raw_or_extract(
+                    raw_extraction=raw_extraction or bill.raw_extraction,
+                    document_text=document_text,
                     tenant=tenant,
-                    source_channel=source_channel,
-                    raw_extraction=raw_extraction or {},
-                    **data,
                 )
-                # Auto-register document in Documents App (DMS)
+
+                # Populate extracted fields
+                if extracted.get("vendor"):
+                    bill.seller_name = extracted["vendor"]
+                    vendor, _ = Vendor.objects.get_or_create(
+                        tenant=tenant, name=extracted["vendor"].strip()
+                    )
+                    bill.vendor = vendor
+
+                if extracted.get("invoice_number"):
+                    bill.invoice_number = extracted["invoice_number"]
+
+                if extracted.get("invoice_date"):
+                    try:
+                        if isinstance(extracted["invoice_date"], str):
+                            bill.invoice_date = datetime.datetime.strptime(
+                                extracted["invoice_date"], "%Y-%m-%d"
+                            ).date()
+                        elif isinstance(extracted["invoice_date"], datetime.date):
+                            bill.invoice_date = extracted["invoice_date"]
+                    except Exception:
+                        pass
+
+                if extracted.get("gst_number"):
+                    bill.gst_number = extracted["gst_number"]
+                    if bill.vendor and not bill.vendor.gst_number:
+                        bill.vendor.gst_number = extracted["gst_number"]
+                        bill.vendor.save(update_fields=["gst_number"])
+
+                if extracted.get("items"):
+                    bill.items = extracted["items"]
+
+                if extracted.get("total_quantity"):
+                    bill.total_quantity = Decimal(str(extracted["total_quantity"]))
+
+                if extracted.get("tax_amount"):
+                    bill.tax_amount = Decimal(str(extracted["tax_amount"]))
+
+                if extracted.get("grand_total") and float(extracted["grand_total"]) > 0:
+                    bill.total_rate = Decimal(str(extracted["grand_total"]))
+
+                if extracted.get("currency"):
+                    bill.currency = extracted["currency"]
+                else:
+                    bill.currency = "INR"
+
+                if extracted.get("payment_method"):
+                    bill.payment_method = extracted["payment_method"]
+
+                confidence = Decimal(str(extracted.get("confidence_score") or "0.85"))
+                bill.confidence_score = confidence
+                bill.raw_extraction = extracted
+
+                # Duplicate detection check
+                if bill.invoice_number:
+                    duplicate_exists = (
+                        PurchaseBill.objects.filter(
+                            tenant=tenant,
+                            seller_name=bill.seller_name,
+                            invoice_number=bill.invoice_number,
+                        )
+                        .exclude(id=bill.id)
+                        .exists()
+                    )
+                    if duplicate_exists:
+                        bill.is_duplicate = True
+
+                # Step 4: Auto-classification based on OCR confidence score
+                if confidence >= CONFIDENCE_THRESHOLD and bill.seller_name != "Pending OCR Processing":
+                    bill.status = BillStatus.PROCESSED
+                else:
+                    bill.status = BillStatus.NEEDS_ATTENTION
+
+                bill.save()
+
+                # Step 5: Auto-register document in Documents App (DMS)
                 try:
                     from documents.backend.models import Document, DocumentCategory
                     from users.models import User
@@ -87,22 +210,49 @@ class PurchaseBillService(BaseService):
                         defaults={
                             "owner": owner,
                             "category": DocumentCategory.FINANCIAL,
-                            "description": f"Source: {source_channel.title()} Bot. Total: {bill.currency} {bill.total_rate}. URL: {bill.document_url}",
+                            "description": (
+                                f"Invoice #{bill.invoice_number or 'N/A'}. Source: {source_channel.title()}. "
+                                f"Total: {bill.currency} {bill.total_rate}. URL: {bill.document_url}"
+                            ),
                         },
                     )
                 except Exception:
                     pass
-        except IntegrityError as exc:  # concurrent resend lost the race
+
+        except IntegrityError as exc:
             raise ConflictError("This document was already ingested.") from exc
+
+        # Step 6: Connect to Search Service & Platform Events
         publish(PURCHASE_BILL_INGESTED, instance=bill)
-        self._notify_operator(bill)
+        if bill.status == BillStatus.PROCESSED:
+            publish(PURCHASE_BILL_PROCESSED, instance=bill)
+        else:
+            publish(PURCHASE_BILL_NEEDS_ATTENTION, instance=bill)
+            self._notify_operator(bill)
+
+        self._index_search(bill)
         return bill
 
+    def _index_search(self, bill: PurchaseBill) -> None:
+        """Connect to Search Service."""
+        try:
+            from search.services import SearchService
+
+            SearchService().index(
+                tenant=bill.tenant,
+                module="purchase",
+                title=f"Purchase: {bill.seller_name} ({bill.invoice_number or bill.currency + ' ' + str(bill.total_rate)})",
+                content=f"Vendor: {bill.seller_name}, Invoice #: {bill.invoice_number}, GST: {bill.gst_number}, Total: {bill.total_rate}",
+                url=f"/purchase",
+            )
+        except Exception:
+            pass
+
     def _notify_operator(self, bill: PurchaseBill) -> None:
-        """Best-effort: let the operator know a bill needs review. Never
-        blocks ingestion if no reviewer can be found yet (bootstrap gap)."""
+        """Notify operator when a purchase bill needs attention."""
         from notifications.services import NotificationService
         from roles.models import Role
+        from users.models import User
 
         owner_role = Role.objects.filter(tenant__isnull=True, slug="owner").first()
         if owner_role is None:
@@ -110,53 +260,35 @@ class PurchaseBillService(BaseService):
         recipients = owner_role.assignments.filter(user__tenant=bill.tenant).values_list(
             "user", flat=True
         )
-        from users.models import User
 
         for recipient in User.objects.filter(id__in=recipients):
             NotificationService().create(
                 recipient=recipient,
                 tenant=bill.tenant,
-                title="New purchase bill needs review",
-                body=f"{bill.seller_name} — {bill.currency} {bill.total_rate}",
+                title="Purchase document requires review",
+                body=f"{bill.seller_name} — {bill.currency} {bill.total_rate} (Low confidence: {int(bill.confidence_score * 100)}%)",
                 category="purchase",
                 data={"bill_id": str(bill.id)},
             )
 
-    def confirm(self, *, bill: PurchaseBill, reviewer, vendor_name: str = "") -> PurchaseBill:
-        if bill.status != BillStatus.PENDING_REVIEW:
-            raise ConflictError(f"Bill is already {bill.status}.")
-
-        vendor = None
+    def update_bill(self, *, bill: PurchaseBill, actor, data: dict[str, Any]) -> PurchaseBill:
+        """Update/correct a Purchase record (e.g. for NEEDS_ATTENTION items)."""
+        vendor_name = data.pop("vendor_name", None)
         if vendor_name:
             vendor, _ = Vendor.objects.get_or_create(tenant=bill.tenant, name=vendor_name.strip())
+            bill.vendor = vendor
 
-        bill.vendor = vendor
-        bill.status = BillStatus.CONFIRMED
-        bill.reviewed_by = reviewer
-        bill.reviewed_at = timezone.now()
-        bill.save(update_fields=["vendor", "status", "reviewed_by", "reviewed_at", "updated_at"])
-        publish(PURCHASE_BILL_CONFIRMED, instance=bill, actor=reviewer)
-        return bill
+        for field, val in data.items():
+            if hasattr(bill, field) and val is not None:
+                setattr(bill, field, val)
 
-    def reject(self, *, bill: PurchaseBill, reviewer, reason: str) -> PurchaseBill:
-        if bill.status != BillStatus.PENDING_REVIEW:
-            raise ConflictError(f"Bill is already {bill.status}.")
-        if not reason.strip():
-            raise ValidationError(detail={"reason": ["A rejection reason is required."]})
-
-        bill.status = BillStatus.REJECTED
-        bill.reviewed_by = reviewer
-        bill.reviewed_at = timezone.now()
-        bill.rejection_reason = reason.strip()
-        bill.save(
-            update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"]
-        )
-        publish(PURCHASE_BILL_REJECTED, instance=bill, actor=reviewer)
+        bill.status = BillStatus.PROCESSED
+        bill.save()
+        publish(PURCHASE_BILL_PROCESSED, instance=bill, actor=actor)
+        self._index_search(bill)
         return bill
 
     def mark_paid(self, *, bill: PurchaseBill, actor) -> PurchaseBill:
-        if bill.status != BillStatus.CONFIRMED:
-            raise ConflictError("Only a confirmed bill can be marked paid.")
         if bill.payment_status == PaymentStatus.PAID:
             raise ConflictError("Bill is already marked paid.")
 
@@ -166,8 +298,9 @@ class PurchaseBillService(BaseService):
         publish(PURCHASE_BILL_PAID, instance=bill, actor=actor)
         return bill
 
-    def get_for_review(self, *, bill_id, tenant) -> PurchaseBill:
-        bill = PurchaseBill.objects.filter(id=bill_id, tenant=tenant).first()
-        if bill is None:
-            raise NotFoundError("Purchase bill not found.")
-        return bill
+    def delete_bill(self, *, bill: PurchaseBill, actor) -> None:
+        """Delete a purchase bill record and record audit."""
+        from purchase.backend.events.registry import PURCHASE_BILL_DELETED
+
+        publish(PURCHASE_BILL_DELETED, instance=bill, actor=actor)
+        bill.delete()

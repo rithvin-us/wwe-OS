@@ -12,10 +12,11 @@ from typing import Any
 from shared.events import subscribe
 
 from purchase.backend.events.registry import (
-    PURCHASE_BILL_CONFIRMED,
+    PURCHASE_BILL_DELETED,
     PURCHASE_BILL_INGESTED,
+    PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
-    PURCHASE_BILL_REJECTED,
+    PURCHASE_BILL_PROCESSED,
 )
 
 
@@ -33,8 +34,9 @@ def _record_audit(event: str, instance: Any = None, actor: Any = None, **_extra:
 
 for _event in (
     PURCHASE_BILL_INGESTED,
-    PURCHASE_BILL_CONFIRMED,
-    PURCHASE_BILL_REJECTED,
+    PURCHASE_BILL_PROCESSED,
+    PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
+    PURCHASE_BILL_DELETED,
 ):
     subscribe(_event, _record_audit)

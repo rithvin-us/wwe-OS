@@ -208,6 +208,7 @@ class ModelInfo:
 
 MODELS: dict[str, ModelInfo] = {
     "mock": ModelInfo("mock", Decimal("0"), Decimal("0")),
+    "gemini-flash-latest": ModelInfo("gemini", Decimal("0.075"), Decimal("0.30")),
     "gemini-2.5-flash": ModelInfo("gemini", Decimal("0.075"), Decimal("0.30")),
     "gemini-1.5-flash": ModelInfo("gemini", Decimal("0.075"), Decimal("0.30")),
     "gemini-1.5-pro": ModelInfo("gemini", Decimal("1.25"), Decimal("5.00")),

@@ -19,9 +19,8 @@ class SourceChannel(models.TextChoices):
 
 
 class BillStatus(models.TextChoices):
-    PENDING_REVIEW = "pending_review", "Pending review"
-    CONFIRMED = "confirmed", "Confirmed"
-    REJECTED = "rejected", "Rejected"
+    PROCESSED = "processed", "Processed"
+    NEEDS_ATTENTION = "needs_attention", "Needs Attention"
 
 
 class PaymentStatus(models.TextChoices):
@@ -42,9 +41,10 @@ class PurchaseBill(TenantOwnedModel):
     seller_name = models.CharField(max_length=200)
     purchase_date = models.DateField()
     total_rate = models.DecimalField(max_digits=12, decimal_places=2)
-    currency = models.CharField(max_length=3, default="USD")
+    currency = models.CharField(max_length=3, default="INR")
     document_url = models.URLField(max_length=500)
     telegram_user_id = models.BigIntegerField(null=True, blank=True)
+    telegram_username = models.CharField(max_length=150, blank=True, default="")
     external_ref = models.CharField(
         max_length=128,
         blank=True,
@@ -55,31 +55,38 @@ class PurchaseBill(TenantOwnedModel):
         ),
     )
 
-    # --- Ingestion metadata ---
+    # --- Ingestion & Storage Service metadata ---
     source_channel = models.CharField(
         max_length=20, choices=SourceChannel.choices, default=SourceChannel.TELEGRAM
     )
+    storage_key = models.CharField(max_length=500, blank=True, default="")
     raw_extraction = models.JSONField(
         default=dict,
         blank=True,
         help_text="The full OCR/extraction payload, kept for audit and reprocessing.",
     )
 
-    # --- Review queue state ---
-    status = models.CharField(
-        max_length=20, choices=BillStatus.choices, default=BillStatus.PENDING_REVIEW, db_index=True
-    )
-    reviewed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
+    # --- Structured OCR extraction fields ---
+    invoice_number = models.CharField(max_length=100, blank=True, default="")
+    invoice_date = models.DateField(null=True, blank=True)
+    gst_number = models.CharField(max_length=50, blank=True, default="")
+    items = models.JSONField(
+        default=list,
         blank=True,
-        related_name="+",
+        help_text="Extracted line items: [{item_name, quantity, unit_price, tax, total}]",
     )
-    reviewed_at = models.DateTimeField(null=True, blank=True)
-    rejection_reason = models.CharField(max_length=300, blank=True)
+    total_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=50, blank=True, default="")
+    confidence_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    is_duplicate = models.BooleanField(default=False)
 
-    # --- Payment tracking (confirmed bills only) ---
+    # --- Processing status ---
+    status = models.CharField(
+        max_length=20, choices=BillStatus.choices, default=BillStatus.PROCESSED, db_index=True
+    )
+
+    # --- Payment tracking ---
     payment_status = models.CharField(
         max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.UNPAID, db_index=True
     )

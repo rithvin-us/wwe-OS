@@ -8,16 +8,16 @@ from purchase.backend.models import PurchaseBill, Vendor
 
 
 class IngestBillSerializer(serializers.Serializer):
-    """What an ingestion channel (Telegram bot today) posts. Field names and
-    shape match docs/modules/purchase-integration-requirements.md exactly."""
+    """What an ingestion channel (Telegram bot, email, web upload) posts."""
 
-    seller_name = serializers.CharField(max_length=200, required=False, default="Pending OCR")
+    seller_name = serializers.CharField(max_length=200, required=False, default="Pending OCR Processing")
     purchase_date = serializers.DateField(required=False, default=date.today)
     total_rate = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
     )
-    currency = serializers.CharField(max_length=3, min_length=3, required=False, default="USD")
+    currency = serializers.CharField(max_length=3, min_length=3, required=False, default="INR")
     telegram_user_id = serializers.IntegerField(required=False, allow_null=True)
+    telegram_username = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
     document_url = serializers.URLField(max_length=500)
     external_ref = serializers.CharField(
         max_length=128,
@@ -31,8 +31,8 @@ class IngestBillSerializer(serializers.Serializer):
         return value.upper()
 
     def validate_document_url(self, value: str) -> str:
-        if not value.lower().startswith("https://"):
-            raise serializers.ValidationError("Document URL must use https.")
+        if not value.lower().startswith("https://") and not value.lower().startswith("http://"):
+            raise serializers.ValidationError("Document URL must use http or https.")
         return value
 
     def validate_purchase_date(self, value: date) -> date:
@@ -59,29 +59,37 @@ class PurchaseBillSerializer(serializers.ModelSerializer):
             "vendor",
             "seller_name",
             "purchase_date",
+            "invoice_number",
+            "invoice_date",
+            "gst_number",
             "total_rate",
             "currency",
+            "items",
+            "total_quantity",
+            "tax_amount",
+            "payment_method",
+            "confidence_score",
             "document_url",
+            "storage_key",
             "source_channel",
+            "telegram_user_id",
+            "telegram_username",
+            "is_duplicate",
             "status",
-            "reviewed_by",
-            "reviewed_at",
-            "rejection_reason",
             "payment_status",
             "paid_at",
             "created_at",
+            "updated_at",
         )
         read_only_fields = fields
 
 
-class ConfirmBillSerializer(serializers.Serializer):
-    vendor_name = serializers.CharField(
-        max_length=200,
-        required=False,
-        allow_blank=True,
-        help_text="Link (or create) a vendor by name. Leave blank to confirm without one.",
-    )
-
-
-class RejectBillSerializer(serializers.Serializer):
-    reason = serializers.CharField(max_length=300, allow_blank=False)
+class UpdatePurchaseBillSerializer(serializers.Serializer):
+    seller_name = serializers.CharField(max_length=200, required=False)
+    vendor_name = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    invoice_number = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    purchase_date = serializers.DateField(required=False)
+    total_rate = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    currency = serializers.CharField(max_length=3, required=False)
+    gst_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    payment_method = serializers.CharField(max_length=50, required=False, allow_blank=True)
