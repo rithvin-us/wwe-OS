@@ -364,7 +364,7 @@ STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "") or ""
 # --------------------------------------------------------------------------- #
 # AI gateway (platform/ai)
 # --------------------------------------------------------------------------- #
-OPENAI_API_KEY = env_str("OPENAI_API_KEY", "") or ""
+GEMINI_API_KEY = env_str("GEMINI_API_KEY", "") or ""
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
 # "mock" answers deterministically without keys — safe default for dev/tests.
 AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", "mock")

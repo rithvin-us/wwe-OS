@@ -6,7 +6,6 @@ import os
 
 import httpx
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
@@ -19,7 +18,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-OCR_MODEL = os.getenv("OCR_MODEL", "gpt-4o")
+OCR_MODEL = os.getenv("OCR_MODEL", "gemini-2.5-flash")
 PLATFORM_API_URL = os.getenv("PLATFORM_API_URL", "http://localhost:8000")
 PLATFORM_SERVICE_TOKEN = os.getenv("PLATFORM_SERVICE_TOKEN")
 
@@ -148,11 +147,9 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = None) -> dict:
     """Call the OCR / AI model and return fields shaped for the platform's ingest contract."""
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set in environment.")
-
-    client = AsyncOpenAI(api_key=api_key)
+        raise RuntimeError("GEMINI_API_KEY is not set in environment.")
 
     system_prompt = (
         "You are a strict data extraction OCR bot. Extract the following from the "
@@ -168,7 +165,7 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
         "'total_rate', and 'currency'."
     )
 
-    user_content: list[dict] = []
+    parts: list[dict] = []
     if file_bytes and file_bytes.startswith(b"%PDF"):
         try:
             import io
@@ -177,32 +174,42 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             reader = pypdf.PdfReader(io.BytesIO(file_bytes))
             pdf_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
             if pdf_text:
-                user_content = [
-                    {"type": "text", "text": f"Extract receipt/invoice data from this document text:\n\n{pdf_text}"}
-                ]
+                parts.append({"text": f"{system_prompt}\n\nExtract receipt/invoice data from this document text:\n\n{pdf_text}"})
         except Exception as err:
             logger.warning("pypdf text extraction failed, falling back to vision: %s", err)
 
-    if not user_content:
-        user_content = [
-            {"type": "text", "text": "Extract data from this receipt/invoice."},
+    if not parts:
+        parts = [
+            {"text": f"{system_prompt}\n\nExtract data from this receipt/invoice."},
             {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": base64_image,
+                }
             },
         ]
 
-    response = await client.chat.completions.create(
-        model=OCR_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ],
-        response_format={"type": "json_object"},
-        max_tokens=300,
-    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{OCR_MODEL}:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": parts}],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "temperature": 0.1,
+            "maxOutputTokens": 300,
+        },
+    }
 
-    return json.loads(response.choices[0].message.content)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(url, json=payload)
+        if response.status_code != 200:
+            raise RuntimeError(f"Gemini API returned {response.status_code}: {response.text}")
+        data = response.json()
+        candidates = data.get("candidates", [])
+        if not candidates or "content" not in candidates[0]:
+            raise RuntimeError("Gemini API returned no candidates or content.")
+        res_parts = candidates[0]["content"].get("parts", [])
+        text_content = "".join(p.get("text", "") for p in res_parts)
+        return json.loads(text_content)
 
 
 async def _post_to_platform(payload: dict) -> dict:

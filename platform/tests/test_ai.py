@@ -150,11 +150,11 @@ def test_retry_recovers_from_transient_failure(tenant, monkeypatch, no_sleep):
 def test_fallback_model_on_unconfigured_provider(tenant, settings, no_sleep):
     settings.AI_FALLBACK_MODEL = "mock"
 
-    result = _generate(tenant, model="gpt-5-mini")  # no OPENAI_API_KEY in tests
+    result = _generate(tenant, model="gemini-2.5-flash")  # no GEMINI_API_KEY in tests
 
     assert result.model == "mock"
     failed = AIUsage.objects.get(success=False)
-    assert failed.model == "gpt-5-mini"
+    assert failed.model == "gemini-2.5-flash"
     assert AIUsage.objects.filter(success=True, model="mock").count() == 1
 
 
@@ -203,4 +203,4 @@ def test_api_usage_prompts_health(tenant, owner, auth_client):
 
     health = client.get("/api/v1/ai/health/")
     assert health.data["providers"]["mock"] is True
-    assert health.data["providers"]["openai"] is False
+    assert health.data["providers"]["gemini"] is False

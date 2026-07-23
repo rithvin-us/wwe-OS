@@ -37,9 +37,9 @@ All runtime parameters are configured through environment variables (defined in 
 ### AI Gateway & OCR
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `OPENAI_API_KEY` | API key for OpenAI Vision (GPT-4o OCR for receipts). | `sk-proj-...` |
-| `OCR_MODEL` | Vision model name used for receipt parsing. | `gpt-4o` |
-| `AI_DEFAULT_MODEL` | Platform AI gateway default model (`mock`, `gpt-4o`, `claude-3-5-sonnet`). | `mock` |
+| `GEMINI_API_KEY` | API key for Google Gemini (Gemini Vision OCR for receipts). | `AIzaSy...` |
+| `OCR_MODEL` | Vision model name used for receipt parsing. | `gemini-2.5-flash` |
+| `AI_DEFAULT_MODEL` | Platform AI gateway default model (`mock`, `gemini-2.5-flash`, `claude-sonnet-4-5`). | `mock` |
 | `AI_TENANT_HOURLY_LIMIT` | Maximum AI requests per hour per tenant. | `200` |
 
 ### Telegram Bot & Service Auth
@@ -62,13 +62,13 @@ flowchart TD
     PLATFORM -->|Queue / Cache| REDIS[(Redis 7)]
     PLATFORM -->|Email Dev Sink| MAILPIT[(Mailpit)]
     PLATFORM -->|File Storage| R2[(Cloudflare R2 / S3)]
-    PLATFORM -->|Receipt OCR| OPENAI[(OpenAI Vision API)]
+    PLATFORM -->|Receipt OCR| GEMINI[(Google Gemini Vision API)]
     PLATFORM -->|Bot Channel| TG[(Telegram Bot API)]
 ```
 
 - **PostgreSQL 16:** Relational database for all tenant and business module records.
 - **Redis 7:** Session caching, rate limiting, and pub/sub message queues.
 - **Cloudflare R2 / AWS S3:** S3-compatible object storage for PDF Delivery Challans and document attachments.
-- **OpenAI Vision API (GPT-4o):** Powers receipt OCR extraction for incoming purchase bills.
+- **Google Gemini Vision API (gemini-2.5-flash):** Powers receipt OCR extraction for incoming purchase bills.
 - **Telegram Bot API:** Mobile receipt capture channel.
 - **Mailpit:** Local SMTP server sink for testing email output during development.

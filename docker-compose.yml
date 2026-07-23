@@ -56,8 +56,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
-      INGESTION_SERVICE_TOKENS: ${INGESTION_SERVICE_TOKENS:-telegram-bot:dev-only-change-me}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      INGESTION_SERVICE_TOKENS: ${INGESTION_SERVICE_TOKENS:-telegram-bot:8811942921:AAEZexHFe8URJoI8ut36fOkj7jb3dXCTc7M}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-AQ.Ab8RN6K_6TDJXA13Gjm0JH0lyPldGvayvQSA2R_OekqrxRHAXA}
     volumes:
       - ./platform:/app
       - ./modules:/modules
@@ -74,9 +74,9 @@ services:
     build: ./services/telegram-bot
     container_name: bop-telegram-bot
     environment:
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OCR_MODEL: ${OCR_MODEL:-gpt-4o}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-8811942921:AAEZexHFe8URJoI8ut36fOkj7jb3dXCTc7M}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-AQ.Ab8RN6K_6TDJXA13Gjm0JH0lyPldGvayvQSA2R_OekqrxRHAXA}
+      OCR_MODEL: ${OCR_MODEL:-gemini-2.5-flash}
       PLATFORM_API_URL: http://backend:8000
       # Must match one "name:token" pair in the backend's
       # INGESTION_SERVICE_TOKENS above.

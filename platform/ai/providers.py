@@ -66,49 +66,59 @@ def _classify_status(status_code: int, body: str) -> ProviderError:
     return ProviderError(f"Provider returned {status_code}: {body[:300]}", retryable=retryable)
 
 
-class OpenAIProvider(AIProvider):
-    name = "openai"
-    base_url = "https://api.openai.com/v1"
+class GeminiProvider(AIProvider):
+    name = "gemini"
+    base_url = "https://generativelanguage.googleapis.com/v1beta"
 
     @property
     def configured(self) -> bool:
-        return bool(settings.OPENAI_API_KEY)
+        return bool(settings.GEMINI_API_KEY)
 
     def complete(self, request: AIRequest) -> AIResponse:
         if not self.configured:
-            raise ProviderError("OPENAI_API_KEY is not configured.", retryable=False)
-        messages = []
+            raise ProviderError("GEMINI_API_KEY is not configured.", retryable=False)
+        contents = []
         if request.system:
-            messages.append({"role": "system", "content": request.system})
-        messages.append({"role": "user", "content": request.user})
+            contents.append({"role": "user", "parts": [{"text": f"System directive: {request.system}"}]})
+            contents.append({"role": "model", "parts": [{"text": "Understood."}]})
+        contents.append({"role": "user", "parts": [{"text": request.user}]})
+
         payload: dict = {
-            "model": request.model,
-            "messages": messages,
-            "max_completion_tokens": request.max_tokens,
+            "contents": contents,
+            "generationConfig": {
+                "maxOutputTokens": request.max_tokens,
+            },
         }
         if request.temperature is not None:
-            payload["temperature"] = request.temperature
+            payload["generationConfig"]["temperature"] = request.temperature
 
         started = time.perf_counter()
+        url = f"{self.base_url}/models/{request.model}:generateContent?key={settings.GEMINI_API_KEY}"
         try:
             response = httpx.post(
-                f"{self.base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
+                url,
                 json=payload,
                 timeout=request.timeout,
             )
         except httpx.HTTPError as exc:
-            raise ProviderError(f"OpenAI request failed: {exc}", retryable=True) from exc
+            raise ProviderError(f"Gemini request failed: {exc}", retryable=True) from exc
         if response.status_code != 200:
             raise _classify_status(response.status_code, response.text)
         data = response.json()
-        usage = data.get("usage", {})
+
+        candidates = data.get("candidates", [])
+        text = ""
+        if candidates and "content" in candidates[0]:
+            parts = candidates[0]["content"].get("parts", [])
+            text = "".join(p.get("text", "") for p in parts)
+
+        usage = data.get("usageMetadata", {})
         return AIResponse(
-            text=data["choices"][0]["message"]["content"] or "",
+            text=text,
             model=request.model,
             provider=self.name,
-            input_tokens=int(usage.get("prompt_tokens", 0)),
-            output_tokens=int(usage.get("completion_tokens", 0)),
+            input_tokens=int(usage.get("promptTokenCount", 0)),
+            output_tokens=int(usage.get("candidatesTokenCount", 0)),
             latency_ms=int((time.perf_counter() - started) * 1000),
         )
 
@@ -198,14 +208,15 @@ class ModelInfo:
 
 MODELS: dict[str, ModelInfo] = {
     "mock": ModelInfo("mock", Decimal("0"), Decimal("0")),
-    "gpt-5-mini": ModelInfo("openai", Decimal("0.25"), Decimal("2.00")),
-    "gpt-4o": ModelInfo("openai", Decimal("2.50"), Decimal("10.00")),
+    "gemini-2.5-flash": ModelInfo("gemini", Decimal("0.075"), Decimal("0.30")),
+    "gemini-1.5-flash": ModelInfo("gemini", Decimal("0.075"), Decimal("0.30")),
+    "gemini-1.5-pro": ModelInfo("gemini", Decimal("1.25"), Decimal("5.00")),
     "claude-haiku-4-5": ModelInfo("anthropic", Decimal("1.00"), Decimal("5.00")),
     "claude-sonnet-4-5": ModelInfo("anthropic", Decimal("3.00"), Decimal("15.00")),
 }
 
 PROVIDERS: dict[str, AIProvider] = {
-    provider.name: provider for provider in (OpenAIProvider(), AnthropicProvider(), MockProvider())
+    provider.name: provider for provider in (GeminiProvider(), AnthropicProvider(), MockProvider())
 }
 
 
