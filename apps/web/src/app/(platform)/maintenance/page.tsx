@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bop/ui/components/card";
+import { Badge } from "@bop/ui/components/badge";
 import { PageHeader } from "@bop/ui/components/page-header";
 import { Activity, Key, BrainCircuit } from "@bop/icons";
 import { ConfigForm } from "./config-form";
@@ -36,27 +37,17 @@ export default async function MaintenancePage() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between border-b pb-2">
                 <span className="text-sm font-medium">API Gateway</span>
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                  Healthy
-                </span>
+                <Badge variant="success">Healthy</Badge>
               </div>
               <div className="flex items-center justify-between border-b pb-2">
                 <span className="text-sm font-medium">Backend Services</span>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    health.status === "healthy"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                  }`}
-                >
+                <Badge variant={health.status === "healthy" ? "success" : "destructive"}>
                   {health.status === "healthy" ? "Healthy" : "Unhealthy"}
-                </span>
+                </Badge>
               </div>
               <div className="flex items-center justify-between pb-2">
                 <span className="text-sm font-medium">AI Providers</span>
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                  Available
-                </span>
+                <Badge variant="success">Available</Badge>
               </div>
             </div>
           </CardContent>
