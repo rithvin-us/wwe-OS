@@ -26,6 +26,7 @@ class DocumentsConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         # In-memory registrations (safe at import; no DB access).
+        from documents.backend.collectible import register_collectible
         from documents.backend.events.subscribers import register_subscribers
         from documents.backend.prompts import register_prompts
         from documents.backend.reports import register_reports
@@ -34,4 +35,5 @@ class DocumentsConfig(AppConfig):
         register_prompts()
         register_search()
         register_reports()
+        register_collectible()
         register_subscribers()

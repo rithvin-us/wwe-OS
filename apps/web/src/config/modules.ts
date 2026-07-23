@@ -4,12 +4,14 @@ import {
   Bot,
   FileSearch,
   FileText,
+  History,
   Landmark,
   Mail,
   ScanText,
   Send,
   ShoppingCart,
   Users,
+  Workflow,
   type LucideIcon,
 } from "@bop/icons";
 
@@ -78,6 +80,20 @@ export const APPS: PlatformApp[] = [
     name: "Reports",
     icon: FileSearch,
     tagline: "Ready-made reports, on demand or on schedule.",
+    availability: "ready",
+  },
+  {
+    slug: "timeline",
+    name: "Business Timeline",
+    icon: History,
+    tagline: "Everything that happened across the company, in one feed.",
+    availability: "ready",
+  },
+  {
+    slug: "automation",
+    name: "Automation",
+    icon: Workflow,
+    tagline: "Collect tagged records on a schedule — packages, reports, auditor folders.",
     availability: "ready",
   },
 ];

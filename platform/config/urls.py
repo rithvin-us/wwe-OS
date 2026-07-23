@@ -22,6 +22,7 @@ api_v1 = [
     path("search/", include("search.urls")),
     path("reporting/", include("reporting.urls")),
     path("tags/", include("tagging.urls")),
+    path("automation/", include("automation.urls")),
     # --- Business modules ---
     path("purchase/", include("purchase.backend.api.urls")),
     path("documents/", include("documents.backend.api.urls")),

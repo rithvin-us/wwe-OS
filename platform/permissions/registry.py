@@ -52,6 +52,10 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("tags.manage", "Create, edit, and delete tags", "Tags"),
     # Dashboard
     PermissionDef("dashboard.view", "View dashboard", "Dashboard"),
+    # Automation
+    PermissionDef("automation.view", "View automation rules and history", "Automation"),
+    PermissionDef("automation.manage", "Create and edit automation rules", "Automation"),
+    PermissionDef("automation.run", "Manually run an automation rule", "Automation"),
 ]
 
 ALL_CODES = frozenset(p.code for p in PLATFORM_PERMISSIONS)

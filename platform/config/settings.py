@@ -79,6 +79,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "search",
     "reporting",
     "tagging",
+    "automation",
 ]
 PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 
