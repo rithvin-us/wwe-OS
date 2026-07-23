@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { ApiRequestError, type ApiEnvelope } from "@/lib/api/envelope";
+import { ApiRequestError, type ApiEnvelope, type ApiSuccess } from "@/lib/api/envelope";
 
 /**
  * Server-only access to the Django platform API. The browser never calls
@@ -27,13 +27,7 @@ export async function isAuthenticated(): Promise<boolean> {
   return (await getAccessToken()) !== null;
 }
 
-/**
- * Call the Django API with the current session's access token attached.
- * Unwraps the `{success, data}` / `{success, error}` envelope; throws
- * `ApiRequestError` on failure so callers can branch on `.status`/`.code`
- * (see `isAuthError`) instead of re-parsing the envelope everywhere.
- */
-export async function djangoFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function fetchEnvelope<T>(path: string, init: RequestInit = {}): Promise<ApiSuccess<T>> {
   const token = await getAccessToken();
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
@@ -46,12 +40,12 @@ export async function djangoFetch<T>(path: string, init: RequestInit = {}): Prom
   });
 
   if (response.status === 204) {
-    return null as T;
+    return { success: true, data: null as T };
   }
 
   const text = await response.text();
   if (response.ok && !text.trim()) {
-    return null as T;
+    return { success: true, data: null as T };
   }
 
   let envelope: ApiEnvelope<T>;
@@ -68,5 +62,32 @@ export async function djangoFetch<T>(path: string, init: RequestInit = {}): Prom
   if (!envelope.success) {
     throw new ApiRequestError(response.status, envelope.error);
   }
+  return envelope;
+}
+
+/**
+ * Call the Django API with the current session's access token attached.
+ * Unwraps the `{success, data}` / `{success, error}` envelope; throws
+ * `ApiRequestError` on failure so callers can branch on `.status`/`.code`
+ * (see `isAuthError`) instead of re-parsing the envelope everywhere.
+ */
+export async function djangoFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const envelope = await fetchEnvelope<T>(path, init);
   return envelope.data;
+}
+
+/**
+ * Same as `djangoFetch`, but keeps the pagination `meta` (count/page/pages)
+ * that `StandardResultsSetPagination` puts alongside `data` — for list
+ * endpoints a caller needs to paginate over, not just render as-is.
+ */
+export async function djangoFetchPage<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<{ data: T; meta: NonNullable<ApiSuccess<T>["meta"]> }> {
+  const envelope = await fetchEnvelope<T>(path, init);
+  return {
+    data: envelope.data,
+    meta: envelope.meta ?? { count: 0, page: 1, pages: 1, page_size: 0, next: null, previous: null },
+  };
 }

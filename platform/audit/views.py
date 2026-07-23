@@ -22,7 +22,17 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
     }
     search_fields = ("action", "module", "object_type", "object_id")
     ordering_fields = ("created_at", "action", "module")
-    filterset_fields = ("module", "action", "archived", "actor")
+    filterset_fields = {
+        "module": ["exact", "in"],
+        "action": ["exact"],
+        "archived": ["exact"],
+        "actor": ["exact"],
+        # Cross-reference: every entry for one record, e.g. all activity on
+        # a single purchase bill (object_type=PurchaseBill&object_id=<id>).
+        "object_type": ["exact"],
+        "object_id": ["exact"],
+        "created_at": ["gte", "lte"],
+    }
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
