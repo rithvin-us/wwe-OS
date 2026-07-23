@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.exceptions import ConflictError
 from shared.service_auth import IngestionRateThrottle, ServiceTokenAuthentication
-from shared.views import BaseModelViewSet, ReadOnlyModelViewSet
+from shared.views import BaseModelViewSet
 
 from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Vendor
 from purchase.backend.serializers.purchase_bill import (

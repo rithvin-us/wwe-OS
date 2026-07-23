@@ -2,7 +2,6 @@ import {
   BarChart3,
   Bell,
   Bot,
-  Boxes,
   FileSearch,
   FileText,
   Landmark,

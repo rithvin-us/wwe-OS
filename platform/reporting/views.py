@@ -53,6 +53,12 @@ class ReportCatalogView(APIView):
 class RunReportSerializer(serializers.Serializer):
     key = serializers.CharField()
     format = serializers.ChoiceField(choices=["csv", "xlsx", "pdf", "html"], default="csv")
+    date_from = serializers.DateField(required=False, allow_null=True, default=None)
+    date_to = serializers.DateField(required=False, allow_null=True, default=None)
+    vendor = serializers.CharField(required=False, allow_blank=True, default="")
+    tag_ids = serializers.ListField(
+        child=serializers.UUIDField(), required=False, default=list
+    )
 
 
 class RunReportView(APIView):
@@ -79,9 +85,16 @@ class RunReportView(APIView):
 
         from reporting.services import ReportService
 
+        filters = {
+            "date_from": data.validated_data["date_from"],
+            "date_to": data.validated_data["date_to"],
+            "vendor": data.validated_data["vendor"],
+            "tag_ids": [str(tag_id) for tag_id in data.validated_data["tag_ids"]],
+        }
         export = ReportService().run(
             key=definition.key,
             format=data.validated_data["format"],
+            filters=filters,
             tenant=request.user.tenant,
             actor=request.user,
         )

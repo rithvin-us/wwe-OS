@@ -124,7 +124,7 @@ export async function generateDCAction(data: {
       body: JSON.stringify(data),
     });
     return { success: true, res };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof ApiRequestError) {
       return {
         success: false,
@@ -134,7 +134,7 @@ export async function generateDCAction(data: {
     }
     return {
       success: false,
-      error: err.message || "Failed to generate DC",
+      error: err instanceof Error ? err.message : "Failed to generate DC",
     };
   }
 }
@@ -145,7 +145,7 @@ export async function deleteDCAction(id: string) {
       method: "DELETE",
     });
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof ApiRequestError) {
       return {
         success: false,
@@ -155,7 +155,7 @@ export async function deleteDCAction(id: string) {
     }
     return {
       success: false,
-      error: err.message || "Failed to delete DC",
+      error: err instanceof Error ? err.message : "Failed to delete DC",
     };
   }
 }

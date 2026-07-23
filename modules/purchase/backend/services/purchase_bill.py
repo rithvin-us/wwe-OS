@@ -21,6 +21,7 @@ from typing import Any
 
 import httpx
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from shared.events import publish
 from shared.exceptions import ConflictError
@@ -358,3 +359,79 @@ class PurchaseBillService(BaseService):
 
         publish(PURCHASE_BILL_DELETED, instance=bill, actor=actor)
         bill.delete()
+
+    # ------------------------------------------------------------------ #
+    # Reporting
+    # ------------------------------------------------------------------ #
+    def build_report_spec(self, *, bills, filters: dict | None = None) -> Any:
+        from reporting.filtering import filters_summary
+        from reporting.spec import ReportColumn, ReportSpec
+
+        rows = [
+            {
+                "vendor": bill.vendor.name if bill.vendor else bill.seller_name,
+                "invoice": bill.invoice_number or "—",
+                "date": bill.purchase_date.strftime("%Y-%m-%d"),
+                "total": f"{bill.currency} {bill.total_rate}",
+                "status": bill.get_status_display(),
+                "payment": bill.get_payment_status_display(),
+            }
+            for bill in bills
+        ]
+        return ReportSpec(
+            key="purchase-bills",
+            title="Purchase bill register",
+            module="purchase",
+            columns=[
+                ReportColumn("vendor", "Vendor"),
+                ReportColumn("invoice", "Invoice #"),
+                ReportColumn("date", "Date", align="right"),
+                ReportColumn("total", "Total", align="right"),
+                ReportColumn("status", "Status"),
+                ReportColumn("payment", "Payment"),
+            ],
+            rows=rows,
+            filters=filters_summary(filters or {}),
+        )
+
+    def build_reconciliation_spec(self, *, bills, filters: dict | None = None) -> Any:
+        """Bills not yet settled: unpaid, or flagged for review — the
+        operator's worklist for reconciling against bank/vendor statements."""
+        from reporting.filtering import filters_summary
+        from reporting.spec import ReportColumn, ReportSpec
+
+        today = timezone.now().date()
+        unresolved = bills.filter(
+            Q(payment_status=PaymentStatus.UNPAID) | Q(status=BillStatus.NEEDS_ATTENTION)
+        ).order_by("purchase_date")
+        rows = [
+            {
+                "vendor": bill.vendor.name if bill.vendor else bill.seller_name,
+                "invoice": bill.invoice_number or "—",
+                "date": bill.purchase_date.strftime("%Y-%m-%d"),
+                "total": f"{bill.currency} {bill.total_rate}",
+                "days_outstanding": (
+                    str((today - bill.purchase_date).days)
+                    if bill.payment_status == PaymentStatus.UNPAID
+                    else "—"
+                ),
+                "review": bill.get_status_display(),
+            }
+            for bill in unresolved
+        ]
+        return ReportSpec(
+            key="purchase-reconciliation",
+            title="Purchase reconciliation",
+            module="purchase",
+            subtitle="Unpaid bills and bills flagged for review.",
+            columns=[
+                ReportColumn("vendor", "Vendor"),
+                ReportColumn("invoice", "Invoice #"),
+                ReportColumn("date", "Date", align="right"),
+                ReportColumn("total", "Total", align="right"),
+                ReportColumn("days_outstanding", "Days outstanding", align="right"),
+                ReportColumn("review", "Review status"),
+            ],
+            rows=rows,
+            filters=filters_summary(filters or {}),
+        )

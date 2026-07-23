@@ -19,7 +19,7 @@ import { generateDCAction } from "./actions";
 
 export function GenerateDCDialog({
   sites,
-  inventoryItems,
+  inventoryItems: _inventoryItems,
 }: {
   sites: { id: string; name: string }[];
   inventoryItems: { id: string; name: string; sku: string; unit: string }[];
@@ -51,9 +51,9 @@ export function GenerateDCDialog({
       });
 
       if (!result.success) {
-        const detailsMsg = (result as any).details
-          ? JSON.stringify((result as any).details)
-          : (result as any).error;
+        const detailsMsg = result.details
+          ? JSON.stringify(result.details)
+          : result.error;
         alert("Failed to generate DC: " + detailsMsg);
         return;
       }
@@ -62,11 +62,12 @@ export function GenerateDCDialog({
       setItems([{ id: "", qty: 1, unit: "Nos" }]);
       router.refresh();
       // Automatically trigger download
-      if ((result.res as any)?.pdf_url) {
-        window.location.href = (result.res as any).pdf_url;
+      const resData = result.res as { pdf_url?: string } | undefined;
+      if (resData?.pdf_url) {
+        window.location.href = resData.pdf_url;
       }
-    } catch (err: any) {
-      alert("Failed to generate DC: " + (err.message || JSON.stringify(err)));
+    } catch (err: unknown) {
+      alert("Failed to generate DC: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export function GenerateDCDialog({
 
   const addItem = () => setItems([...items, { id: "", qty: 1, unit: "Nos" }]);
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
-  const updateItem = (index: number, field: "id" | "qty" | "unit", value: any) => {
+  const updateItem = (index: number, field: "id" | "qty" | "unit", value: string | number) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);

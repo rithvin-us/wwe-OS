@@ -139,7 +139,8 @@ class InventoryService(BaseService):
     # ------------------------------------------------------------------ #
     # Reporting
     # ------------------------------------------------------------------ #
-    def build_report_spec(self, *, items) -> Any:
+    def build_report_spec(self, *, items, filters: dict | None = None) -> Any:
+        from reporting.filtering import filters_summary
         from reporting.spec import ReportColumn, ReportSpec
 
         rows = [
@@ -164,6 +165,7 @@ class InventoryService(BaseService):
                 ReportColumn("value", "Value", align="right"),
             ],
             rows=rows,
+            filters=filters_summary(filters or {}, vendor_label="Supplier"),
         )
 
     # ------------------------------------------------------------------ #

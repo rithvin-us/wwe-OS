@@ -7,7 +7,6 @@ exactly for the ingested fields; everything else supports the review queue.
 
 from __future__ import annotations
 
-from django.conf import settings
 from django.db import models
 from shared.models import TenantOwnedModel
 

@@ -2,10 +2,13 @@
 
 A module registers a `ReportDefinition` from its `AppConfig.ready()` (same
 pattern as the search adapter registry): a key, a label, the permission needed
-to run it, and a `build_spec(tenant)` callable that returns a `ReportSpec`. The
-Reports UI lists the registered reports a user may run and runs them through
-`ReportService`. The platform never imports a module — the module carries its
-own spec builder into the registry.
+to run it, and a `build_spec(tenant, filters)` callable that returns a
+`ReportSpec`. `filters` is the same dict for every report — date_from,
+date_to, vendor, tag_ids — a module applies whichever of those make sense to
+its own data and ignores the rest. The Reports UI lists the registered
+reports a user may run and runs them through `ReportService`. The platform
+never imports a module — the module carries its own spec builder into the
+registry.
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ class ReportDefinition:
     label: str
     module: str
     permission: str
-    build_spec: Callable[[Any], Any]  # (tenant) -> ReportSpec
+    build_spec: Callable[[Any, dict[str, Any]], Any]  # (tenant, filters) -> ReportSpec
     description: str = ""
 
 

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { Label } from "@bop/ui/components/label";
+import type { TenantConfig } from "@/lib/maintenance";
 import { updateTenantConfigAction } from "./actions";
 
-export function ConfigForm({ config }: { config: Record<string, any> }) {
+export function ConfigForm({ config }: { config: TenantConfig }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -28,8 +29,8 @@ export function ConfigForm({ config }: { config: Record<string, any> }) {
       } else {
         alert(`Failed to save configuration: ${res.error}`);
       }
-    } catch (err: any) {
-      alert(`Failed to save configuration: ${err.message || "Unknown error"}`);
+    } catch (err: unknown) {
+      alert(`Failed to save configuration: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,7 @@ export function ConfigForm({ config }: { config: Record<string, any> }) {
           name="openai_api_key"
           type="password"
           placeholder="sk-..."
-          defaultValue={config?.openai_api_key || ""}
+          defaultValue={config?.openai_api_key ?? ""}
         />
         <p className="text-xs text-muted-foreground">
           Used for AI features. Ensure your subscription is active.

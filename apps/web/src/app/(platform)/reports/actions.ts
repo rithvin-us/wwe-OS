@@ -10,11 +10,32 @@ export interface RunResult {
   filename?: string;
 }
 
-export async function runReportAction(key: string, format: string): Promise<RunResult> {
+export interface ReportFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  vendor?: string;
+  tagIds?: string[];
+}
+
+export async function runReportAction(
+  key: string,
+  format: string,
+  filters: ReportFilters = {},
+): Promise<RunResult> {
   try {
     const result = await djangoFetch<{ download_url: string | null; filename: string | null }>(
       "/api/v1/reporting/run/",
-      { method: "POST", body: JSON.stringify({ key, format }) },
+      {
+        method: "POST",
+        body: JSON.stringify({
+          key,
+          format,
+          date_from: filters.dateFrom || undefined,
+          date_to: filters.dateTo || undefined,
+          vendor: filters.vendor || undefined,
+          tag_ids: filters.tagIds?.length ? filters.tagIds : undefined,
+        }),
+      },
     );
     const url = result.download_url;
     if (!url) {

@@ -197,7 +197,8 @@ class ContractService(BaseService):
     # ------------------------------------------------------------------ #
     # Reporting
     # ------------------------------------------------------------------ #
-    def build_report_spec(self, *, contracts) -> Any:
+    def build_report_spec(self, *, contracts, filters: dict | None = None) -> Any:
+        from reporting.filtering import filters_summary
         from reporting.spec import ReportColumn, ReportSpec
 
         rows = [
@@ -224,6 +225,7 @@ class ContractService(BaseService):
                 ReportColumn("ends", "Ends", align="right"),
             ],
             rows=rows,
+            filters=filters_summary(filters or {}, vendor_label="Counterparty"),
         )
 
     # ------------------------------------------------------------------ #

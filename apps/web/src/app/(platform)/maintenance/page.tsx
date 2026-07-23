@@ -110,7 +110,7 @@ export default async function MaintenancePage() {
               <p className="text-sm text-muted-foreground">No AI usage recorded yet.</p>
             ) : (
               <ul className="space-y-2">
-                {aiUsage.by_module.map((mod: any, i: number) => (
+                {aiUsage.by_module.map((mod, i) => (
                   <li key={i} className="flex justify-between text-sm">
                     <span>{mod.module}</span>
                     <span className="font-mono text-muted-foreground">

@@ -1,18 +1,42 @@
 import { djangoFetch, internalApiUrl } from "@/lib/api/server";
 
-export async function getTenantConfig() {
+export interface TenantConfig {
+  openai_api_key?: string;
+  [key: string]: unknown;
+}
+
+export interface AIUsageTotals {
+  calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+}
+
+export interface AIUsageByModule {
+  module: string;
+  calls: number;
+  cost_usd: number;
+}
+
+export async function getTenantConfig(): Promise<{ config: TenantConfig }> {
   try {
-    return await djangoFetch<{ config: Record<string, any> }>("/api/v1/tenancy/current/");
+    return await djangoFetch<{ config: TenantConfig }>("/api/v1/tenancy/current/");
   } catch {
     return { config: {} };
   }
 }
 
-export async function getAIUsage() {
+export async function getAIUsage(): Promise<{
+  totals: AIUsageTotals;
+  by_model: unknown[];
+  by_module: AIUsageByModule[];
+}> {
   try {
-    return await djangoFetch<{ totals: Record<string, any>; by_model: any[]; by_module: any[] }>(
-      "/api/v1/ai/usage/",
-    );
+    return await djangoFetch<{
+      totals: AIUsageTotals;
+      by_model: unknown[];
+      by_module: AIUsageByModule[];
+    }>("/api/v1/ai/usage/");
   } catch {
     return { totals: { calls: 0, input_tokens: 0, output_tokens: 0, cost_usd: 0 }, by_model: [], by_module: [] };
   }

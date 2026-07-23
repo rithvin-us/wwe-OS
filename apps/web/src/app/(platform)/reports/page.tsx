@@ -3,6 +3,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import { ReportCatalog } from "@/app/(platform)/reports/report-catalog";
 import { getReportCatalog, getReportHistory } from "@/lib/reports";
+import { listTags } from "@/lib/tags";
 
 export const metadata: Metadata = {
   title: "Reports",
@@ -18,7 +19,11 @@ function formatDateTime(iso: string): string {
 }
 
 export default async function ReportsPage() {
-  const [catalog, history] = await Promise.all([getReportCatalog(), getReportHistory()]);
+  const [catalog, history, allTags] = await Promise.all([
+    getReportCatalog(),
+    getReportHistory(),
+    listTags(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -31,7 +36,7 @@ export default async function ReportsPage() {
         <h2 className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
           Available reports
         </h2>
-        <ReportCatalog reports={catalog} />
+        <ReportCatalog reports={catalog} allTags={allTags} />
       </section>
 
       <section className="space-y-3">

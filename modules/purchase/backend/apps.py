@@ -32,9 +32,11 @@ class PurchaseConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         # In-memory registrations (safe at import; no DB access).
+        from purchase.backend.reports import register_reports
         from purchase.backend.search.adapter import register_search
 
         register_search()
+        register_reports()
 
         # Subscribe to this module's own events. Modules may import platform
         # capabilities (audit, notifications) — never the reverse, and never

@@ -8,10 +8,10 @@ import django
 
 django.setup()
 
-from assets.backend.models.dc import Site
-from rest_framework.test import APIClient
-from tenancy.models import Tenant
-from users.models import User
+from assets.backend.models.dc import Site  # noqa: E402
+from rest_framework.test import APIClient  # noqa: E402
+from tenancy.models import Tenant  # noqa: E402
+from users.models import User  # noqa: E402
 
 user = User.objects.first()
 tenant = Tenant.objects.first()

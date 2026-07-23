@@ -2,17 +2,17 @@
 
 import { djangoFetch } from "@/lib/api/server";
 
-export async function updateTenantConfigAction(data: { config: Record<string, any> }) {
+export async function updateTenantConfigAction(data: { config: Record<string, unknown> }) {
   try {
     const res = await djangoFetch<unknown>("/api/v1/tenancy/current/", {
       method: "PATCH",
       body: JSON.stringify(data),
     });
     return { success: true, data: res };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      error: err.message || "Failed to update configuration",
+      error: err instanceof Error ? err.message : "Failed to update configuration",
     };
   }
 }

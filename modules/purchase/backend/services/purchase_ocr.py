@@ -20,9 +20,9 @@ Return ONLY a valid JSON object without any Markdown formatting code blocks.
 
 The JSON object must contain EXACTLY the following keys:
 - "vendor": String. Name of the selling company, store, or vendor.
-- "invoice_number": String. Unique invoice/bill identifier or reference number. If not present, return "".
-- "invoice_date": String. Date formatted YYYY-MM-DD. If invalid or missing, return the transaction date.
-- "gst_number": String. Vendor's Tax Identification / GST / VAT / Tax ID number if available, else "".
+- "invoice_number": String. Unique invoice/bill identifier. Return "" if not present.
+- "invoice_date": String. Date formatted YYYY-MM-DD. Return transaction date if missing.
+- "gst_number": String. Vendor's Tax Identification / GST / VAT ID if available, else "".
 - "items": Array of Objects. Line items extracted. Each item object must have:
     - "item_name": String (e.g. "Steel Beams", "Office Supplies")
     - "quantity": Number (e.g. 10)
@@ -34,7 +34,7 @@ The JSON object must contain EXACTLY the following keys:
 - "grand_total": Number. Final payable total amount as a plain number (e.g. 150.00).
 - "currency": String. 3-letter ISO 4217 currency code (e.g. INR, USD, EUR). Default "INR".
 - "payment_method": String. E.g. "Credit Card", "Bank Transfer", "Cash", "UPI", "Unspecified".
-- "confidence_score": Number between 0.00 and 1.00 indicating confidence level in accuracy of extraction. (0.95 = very high, 0.40 = low).
+- "confidence_score": Number between 0.00 and 1.00 indicating confidence level in extraction.
 """
 
 
@@ -42,7 +42,9 @@ class PurchaseOCRService:
     def extract_from_text(self, document_text: str, tenant=None) -> dict[str, Any]:
         """Call AI Gateway to extract structured purchase fields from text."""
         ai_service = AIService()
-        user_prompt = f"Extract structured purchase invoice data from the following text:\n\n{document_text}"
+        user_prompt = (
+            f"Extract structured purchase invoice data from the following text:\n\n{document_text}"
+        )
 
         try:
             result = ai_service.generate(
@@ -60,15 +62,23 @@ class PurchaseOCRService:
             logger.warning("Purchase OCR gateway call failed or unparseable: %s", exc)
             return self._fallback_extraction()
 
-    def parse_raw_or_extract(self, raw_extraction: dict | None, document_text: str = "", tenant=None) -> dict[str, Any]:
+    def parse_raw_or_extract(
+        self, raw_extraction: dict | None, document_text: str = "", tenant=None
+    ) -> dict[str, Any]:
         """Helper to process raw extraction or run gateway OCR extraction."""
         if document_text:
             return self.extract_from_text(document_text, tenant=tenant)
 
         if raw_extraction:
             # Normalize existing extraction if already passed by ingestion channel
-            seller = raw_extraction.get("vendor") or raw_extraction.get("seller_name") or "Unknown Vendor"
-            grand_total = raw_extraction.get("grand_total") or raw_extraction.get("total_rate") or "0.00"
+            seller = (
+                raw_extraction.get("vendor")
+                or raw_extraction.get("seller_name")
+                or "Unknown Vendor"
+            )
+            grand_total = (
+                raw_extraction.get("grand_total") or raw_extraction.get("total_rate") or "0.00"
+            )
             inv_date = raw_extraction.get("invoice_date") or raw_extraction.get("purchase_date")
             confidence = raw_extraction.get("confidence_score")
             try:

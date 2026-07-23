@@ -14,10 +14,10 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Sum
 from shared.services import BaseService
 
-from purchase.backend.models import BillStatus, PurchaseBill, Vendor
+from purchase.backend.models import BillStatus, PurchaseBill
 
 
 class PurchaseInsightsService(BaseService):
@@ -67,8 +67,9 @@ class PurchaseInsightsService(BaseService):
         # 4. Duplicate Invoice Detection
         duplicates_count = qs.filter(is_duplicate=True).count()
         duplicate_bills = list(
-            qs.filter(is_duplicate=True)
-            .values("id", "seller_name", "invoice_number", "total_rate", "purchase_date")[:5]
+            qs.filter(is_duplicate=True).values(
+                "id", "seller_name", "invoice_number", "total_rate", "purchase_date"
+            )[:5]
         )
 
         # 5. Top Purchased Materials (Line items aggregation)

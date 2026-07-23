@@ -9,8 +9,6 @@ from tenancy.models import CompanyProfile
 from tenancy.serializers import CompanyProfileSerializer, TenantSettingsSerializer
 
 
-from rest_framework.permissions import AllowAny, IsAuthenticated
-
 class CurrentTenantView(RetrieveUpdateAPIView):
     """Read or update the calling tenant's basics (name, timezone, currency, config)."""
 

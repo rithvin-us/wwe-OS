@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Paperclip, Send, Sparkles, Trash2 } from "@bop/icons";
+import { Ban, Paperclip, Sparkles, Trash2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,

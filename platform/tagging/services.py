@@ -132,6 +132,20 @@ class TagService(BaseService):
     def items_for_tag(self, *, tenant, tag: Tag) -> QuerySet[TaggedItem]:
         return TaggedItem.objects.filter(tenant=tenant, tag=tag)
 
+    def object_ids_for_tags(
+        self, *, tenant, module: str, object_type: str, tag_ids: list[str]
+    ) -> set[str]:
+        """Object ids of `(module, object_type)` items carrying any of `tag_ids`
+        — the tag-filter building block for report queries (see
+        reporting/filtering.py)."""
+        if not tag_ids:
+            return set()
+        return set(
+            TaggedItem.objects.filter(
+                tenant=tenant, module=module, object_type=object_type, tag_id__in=tag_ids
+            ).values_list("object_id", flat=True)
+        )
+
     def analytics(self, *, tenant) -> list[dict]:
         rows = (
             Tag.objects.filter(tenant=tenant)

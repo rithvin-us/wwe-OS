@@ -193,7 +193,8 @@ class DocumentService(BaseService):
     # ------------------------------------------------------------------ #
     # Reporting (through the platform reporting engine)
     # ------------------------------------------------------------------ #
-    def build_report_spec(self, *, documents) -> Any:
+    def build_report_spec(self, *, documents, filters: dict | None = None) -> Any:
+        from reporting.filtering import filters_summary
         from reporting.spec import ReportColumn, ReportSpec
 
         rows = [
@@ -218,6 +219,7 @@ class DocumentService(BaseService):
                 ReportColumn("created", "Created", align="right"),
             ],
             rows=rows,
+            filters=filters_summary(filters or {}),
         )
 
     # ------------------------------------------------------------------ #

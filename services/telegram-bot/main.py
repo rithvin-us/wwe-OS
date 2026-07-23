@@ -75,7 +75,9 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Check the processing status of your recent purchase uploads."""
     user_id = update.effective_user.id
     url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
-    headers = {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+    headers = (
+        {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+    )
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -103,14 +105,18 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as exc:
         logger.warning("Failed to fetch status from platform: %s", exc)
 
-    await update.message.reply_text("ℹ️ System active. Purchase bill processing pipeline is operational.")
+    await update.message.reply_text(
+        "ℹ️ System active. Purchase bill processing pipeline is operational."
+    )
 
 
 async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """View your recently submitted purchase bills."""
     user_id = update.effective_user.id
     url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
-    headers = {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+    headers = (
+        {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
+    )
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -143,7 +149,8 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Cancel the current upload or ongoing operation."""
     await update.message.reply_text(
-        "❌ Operation cancelled. You can start a new upload anytime with /purchase or by sending a receipt document."
+        "❌ Operation cancelled. You can start a new upload anytime with /purchase "
+        "or by sending a receipt document."
     )
 
 
@@ -170,12 +177,20 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
     if file_bytes and file_bytes.startswith(b"%PDF"):
         try:
             import io
+
             import pypdf
 
             reader = pypdf.PdfReader(io.BytesIO(file_bytes))
             pdf_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
             if pdf_text:
-                parts.append({"text": f"{system_prompt}\n\nExtract receipt/invoice data from this document text:\n\n{pdf_text}"})
+                parts.append(
+                    {
+                        "text": (
+                            f"{system_prompt}\n\nExtract receipt/invoice data from "
+                            f"this document text:\n\n{pdf_text}"
+                        )
+                    }
+                )
         except Exception as err:
             logger.warning("pypdf text extraction failed, falling back to vision: %s", err)
 
@@ -277,7 +292,7 @@ async def _post_to_platform(payload: dict) -> dict:
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle incoming documents or photos (bills): Save to platform FIRST, then run OCR & extract insights."""
+    """Handle incoming documents/photos: Save to platform FIRST, then run OCR."""
     message = await update.message.reply_text("📥 Document received. Saving to WWE OS...")
 
     try:
@@ -316,10 +331,12 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     }
 
     try:
-        saved_result = await _post_to_platform(initial_payload)
+        await _post_to_platform(initial_payload)
         await message.edit_text("📥 Document safely stored in Storage Service. Running OCR...")
     except DuplicateBillError:
-        await message.edit_text("ℹ️ This document was already saved in WWE OS — no duplicate created.")
+        await message.edit_text(
+            "ℹ️ This document was already saved in WWE OS — no duplicate created."
+        )
         return
     except Exception as exc:
         logger.error("Initial document save failed: %s", exc)
@@ -338,7 +355,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         update_payload = {
             "seller_name": vendor_name,
-            "purchase_date": extracted.get("invoice_date") or extracted.get("purchase_date") or str(datetime.date.today()),
+            "purchase_date": (
+                extracted.get("invoice_date")
+                or extracted.get("purchase_date")
+                or str(datetime.date.today())
+            ),
             "total_rate": total_amt,
             "currency": curr,
             "telegram_user_id": update.effective_user.id,
@@ -362,15 +383,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         else:
             await message.edit_text(
-                "📁 <b>Document safely stored.</b>\n\n"
-                "OCR requires manual review.",
+                "📁 <b>Document safely stored.</b>\n\nOCR requires manual review.",
                 parse_mode=ParseMode.HTML,
             )
     except Exception as exc:
         logger.warning("OCR extraction failed after document was saved: %s", exc)
         await message.edit_text(
-            "📁 <b>Document safely stored.</b>\n\n"
-            "OCR requires manual review.",
+            "📁 <b>Document safely stored.</b>\n\nOCR requires manual review.",
             parse_mode=ParseMode.HTML,
         )
 

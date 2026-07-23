@@ -10,14 +10,18 @@ from purchase.backend.models import PurchaseBill, Vendor
 class IngestBillSerializer(serializers.Serializer):
     """What an ingestion channel (Telegram bot, email, web upload) posts."""
 
-    seller_name = serializers.CharField(max_length=200, required=False, default="Pending OCR Processing")
+    seller_name = serializers.CharField(
+        max_length=200, required=False, default="Pending OCR Processing"
+    )
     purchase_date = serializers.DateField(required=False, default=date.today)
     total_rate = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
     )
     currency = serializers.CharField(max_length=3, min_length=3, required=False, default="INR")
     telegram_user_id = serializers.IntegerField(required=False, allow_null=True)
-    telegram_username = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+    telegram_username = serializers.CharField(
+        max_length=150, required=False, allow_blank=True, default=""
+    )
     document_url = serializers.URLField(max_length=500)
     external_ref = serializers.CharField(
         max_length=128,

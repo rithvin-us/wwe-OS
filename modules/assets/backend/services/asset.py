@@ -204,7 +204,8 @@ class AssetService(BaseService):
     # ------------------------------------------------------------------ #
     # Reporting
     # ------------------------------------------------------------------ #
-    def build_report_spec(self, *, assets) -> Any:
+    def build_report_spec(self, *, assets, filters: dict | None = None) -> Any:
+        from reporting.filtering import filters_summary
         from reporting.spec import ReportColumn, ReportSpec
 
         rows = [
@@ -235,6 +236,7 @@ class AssetService(BaseService):
                 ReportColumn("cost", "Cost", align="right"),
             ],
             rows=rows,
+            filters=filters_summary(filters or {}),
         )
 
     # ------------------------------------------------------------------ #

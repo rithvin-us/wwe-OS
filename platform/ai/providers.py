@@ -79,7 +79,9 @@ class GeminiProvider(AIProvider):
             raise ProviderError("GEMINI_API_KEY is not configured.", retryable=False)
         contents = []
         if request.system:
-            contents.append({"role": "user", "parts": [{"text": f"System directive: {request.system}"}]})
+            contents.append(
+                {"role": "user", "parts": [{"text": f"System directive: {request.system}"}]}
+            )
             contents.append({"role": "model", "parts": [{"text": "Understood."}]})
         contents.append({"role": "user", "parts": [{"text": request.user}]})
 
@@ -93,7 +95,9 @@ class GeminiProvider(AIProvider):
             payload["generationConfig"]["temperature"] = request.temperature
 
         started = time.perf_counter()
-        url = f"{self.base_url}/models/{request.model}:generateContent?key={settings.GEMINI_API_KEY}"
+        url = (
+            f"{self.base_url}/models/{request.model}:generateContent?key={settings.GEMINI_API_KEY}"
+        )
         try:
             response = httpx.post(
                 url,
