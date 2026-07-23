@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from documents.backend.models import Document, DocumentCategory
 from rest_framework import serializers
+from tagging.serializers import TagSerializer
+from tagging.services import TagService
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -13,6 +15,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     owner_email = serializers.SerializerMethodField()
     category_label = serializers.CharField(source="get_category_display", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
@@ -38,6 +41,12 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_owner_email(self, obj: Document) -> str | None:
         return obj.owner.email if obj.owner else None
+
+    def get_tags(self, obj: Document) -> list[dict]:
+        tags = TagService().tags_for_object(
+            tenant=obj.tenant, module="documents", object_type="Document", object_id=str(obj.id)
+        )
+        return TagSerializer(tags, many=True).data
 
 
 class UploadDocumentSerializer(serializers.Serializer):

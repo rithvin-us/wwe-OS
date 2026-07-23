@@ -92,6 +92,14 @@ export function UploadDialog() {
               placeholder="Optional — a line about what this is."
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="document-tags">Tags</Label>
+            <Input
+              id="document-tags"
+              name="tags"
+              placeholder="e.g. Auditor, GST, Monthly — comma-separated"
+            />
+          </div>
           <DialogFooter>
             <Button type="submit" disabled={pending}>
               Upload document

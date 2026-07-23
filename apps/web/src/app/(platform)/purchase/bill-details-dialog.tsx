@@ -6,7 +6,6 @@ import {
   Edit,
   ExternalLink,
   FileText,
-  Send,
   Trash,
   User,
   AlertTriangle,
@@ -22,11 +21,18 @@ import {
   DialogTitle,
 } from "@bop/ui/components/dialog";
 import { Input } from "@bop/ui/components/input";
-import { useState, useTransition } from "react";
+import { TagPicker, type TagPickerChange } from "@bop/ui/components/tag-picker";
+import type { TagLike } from "@bop/ui/components/tag-pill";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { deleteBillAction, markBillPaidAction, updateBillAction } from "@/app/(platform)/purchase/actions";
 import type { PurchaseBill } from "@/lib/purchase";
+import { getObjectTagsAction, setObjectTagsAction } from "@/lib/tags-actions";
+import type { Tag } from "@/lib/tags";
+
+const TAG_MODULE = "purchase";
+const TAG_OBJECT_TYPE = "PurchaseBill";
 
 function formatMoney(amount: string | number, currency = "INR") {
   const value = Number(amount);
@@ -50,20 +56,44 @@ function formatDate(iso: string) {
 
 interface BillDetailsDialogProps {
   bill: PurchaseBill | null;
+  allTags: Tag[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function BillDetailsDialog({ bill, open, onOpenChange }: BillDetailsDialogProps) {
+export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDetailsDialogProps) {
   const [pending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tags, setTags] = useState<TagLike[]>([]);
+  const [tagsPending, startTagsTransition] = useTransition();
 
   // Editable fields
   const [vendorName, setVendorName] = useState(bill?.seller_name || "");
   const [invoiceNumber, setInvoiceNumber] = useState(bill?.invoice_number || "");
   const [totalRate, setTotalRate] = useState(bill?.total_rate || "0.00");
   const [gstNumber, setGstNumber] = useState(bill?.gst_number || "");
+
+  useEffect(() => {
+    if (!open || !bill) return;
+    getObjectTagsAction(TAG_MODULE, TAG_OBJECT_TYPE, bill.id).then(setTags);
+  }, [open, bill]);
+
+  function handleTagsChange(next: TagPickerChange) {
+    if (!bill) return;
+    startTagsTransition(async () => {
+      const result = await setObjectTagsAction(
+        TAG_MODULE,
+        TAG_OBJECT_TYPE,
+        bill.id,
+        next.tagIds,
+        next.tagNames,
+        "/purchase",
+      );
+      if (result.ok) setTags(result.tags);
+      else toast.error(result.message);
+    });
+  }
 
   if (!bill) return null;
 
@@ -162,6 +192,13 @@ export function BillDetailsDialog({ bill, open, onOpenChange }: BillDetailsDialo
             Digitized purchase details & document preview.
           </DialogDescription>
         </DialogHeader>
+
+        <TagPicker
+          tags={tags}
+          allTags={allTags}
+          onChange={handleTagsChange}
+          disabled={tagsPending}
+        />
 
         {/* Delete Confirmation Warning Box */}
         {confirmDelete && (

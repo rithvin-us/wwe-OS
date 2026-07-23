@@ -45,6 +45,10 @@ class Events:
     FILE_DELETED = "storage.file_deleted"
     REPORT_EXPORTED = "reporting.exported"
     SEARCH_REINDEXED = "search.reindexed"
+    TAG_CREATED = "tags.created"
+    TAG_DELETED = "tags.deleted"
+    TAG_ATTACHED = "tags.attached"
+    TAG_DETACHED = "tags.detached"
 
 
 def subscribe(event: str, handler: EventHandler) -> None:

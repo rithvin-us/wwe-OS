@@ -48,7 +48,6 @@ class Document(TenantOwnedModel):
     status = models.CharField(
         max_length=20, choices=DocumentStatus.choices, default=DocumentStatus.ACTIVE, db_index=True
     )
-    tags = models.JSONField(default=list, blank=True)
 
     file = models.ForeignKey(
         "storage.StoredFile",

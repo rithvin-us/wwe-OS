@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+from unittest.mock import Mock
+
+import httpx
 import pytest
+from documents.backend.models import Document
+from search.models import SearchDocument
+from storage.models import StoredFile
 
 from purchase.backend.models import BillStatus, PurchaseBill
 
@@ -77,3 +83,55 @@ def test_ingest_deduplicates_by_external_ref(service_client, tenant):
     duplicate = service_client.post(INGEST_URL, payload, format="json")
     assert duplicate.status_code == 201
     assert PurchaseBill.objects.count() == 1
+
+
+# --------------------------------------------------------------------------- #
+# Pipeline integrity: storage, search, and the documents cross-module event
+# --------------------------------------------------------------------------- #
+
+
+def _fake_response(*, content=b"%PDF-1.4 fake bill", content_type="application/pdf"):
+    response = Mock(spec=httpx.Response)
+    response.content = content
+    response.headers = {"content-type": content_type}
+    response.raise_for_status.side_effect = None
+    return response
+
+
+def test_ingest_stores_indexes_and_registers_document(service_client, tenant, monkeypatch):
+    monkeypatch.setattr(
+        "purchase.backend.services.purchase_bill.httpx.get",
+        lambda url, timeout: _fake_response(),
+    )
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-file-store-1"}
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+
+    bill = PurchaseBill.objects.get()
+    assert bill.storage_key
+
+    stored = StoredFile.objects.get(key=bill.storage_key)
+    assert stored.content_type == "application/pdf"
+    assert stored.tenant_id == tenant.id
+
+    assert SearchDocument.objects.filter(index="purchase", doc_id=str(bill.id)).exists()
+
+    document = Document.objects.get(file=stored)
+    assert document.tenant_id == tenant.id
+    assert "Vendor Inc." in document.title
+
+
+def test_ingest_survives_a_document_fetch_failure(service_client, tenant, monkeypatch):
+    def _raise(url, timeout):
+        raise httpx.ConnectError("boom", request=Mock())
+
+    monkeypatch.setattr("purchase.backend.services.purchase_bill.httpx.get", _raise)
+    monkeypatch.setattr("purchase.backend.services.purchase_bill.time.sleep", lambda s: None)
+
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-file-fail-1"}
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+
+    bill = PurchaseBill.objects.get()
+    assert bill.storage_key == ""
+    assert Document.objects.count() == 0

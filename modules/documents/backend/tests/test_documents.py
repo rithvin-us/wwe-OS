@@ -157,3 +157,33 @@ def test_api_tenant_isolation(tenant, other_tenant, owner, make_user, auth_clien
     outsider = make_user("owner@globex.test", "globex", tenant=other_tenant)
     RoleService().assign_role(user=outsider, role=Role.objects.get(slug="owner"))
     assert auth_client(outsider).get(LIST_URL).data["data"] == []
+
+
+# --------------------------------------------------------------------------- #
+# Tags (through the platform tagging capability, not a local JSONField)
+# --------------------------------------------------------------------------- #
+
+
+def test_create_with_tags_creates_real_tag_relations(tenant, owner):
+    from tagging.models import Tag
+
+    document = _create(tenant, owner, tags=["Auditor", "Monthly"])
+
+    names = {t.name for t in DocumentService().tags_for(document)}
+    assert names == {"Auditor", "Monthly"}
+    assert Tag.objects.filter(tenant=tenant, name__in=["Auditor", "Monthly"]).count() == 2
+
+
+def test_api_document_serializes_tags_as_objects(tenant, owner, auth_client):
+    document = _create(tenant, owner, tags=["Urgent"])
+    response = auth_client(owner).get(f"{LIST_URL}{document.id}/")
+    assert response.status_code == 200
+    assert response.data["tags"][0]["name"] == "Urgent"
+    assert "color" in response.data["tags"][0]
+
+
+def test_update_metadata_replaces_tags(tenant, owner):
+    document = _create(tenant, owner, tags=["Urgent"])
+    DocumentService().update_metadata(document=document, actor=owner, tags=["Paid"])
+    names = {t.name for t in DocumentService().tags_for(document)}
+    assert names == {"Paid"}

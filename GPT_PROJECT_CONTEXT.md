@@ -1,8 +1,9 @@
 # WWE OS — Comprehensive Project Context for GPT / AI Assistants
 
-> **Last Updated:** July 21, 2026  
+> **Last Updated:** July 23, 2026  
 > **Repository:** `rithvin-us/wwe-OS`  
-> **Architecture:** Single-operator Enterprise Business Operations Platform (Monorepo)
+> **Architecture:** Single-operator Enterprise Business Operations Platform (Monorepo)  
+> **Detailed Knowledge Base:** See [GPT_KNOWLEDGE_BASE.md](file:///e:/w/wwe%20OS/GPT_KNOWLEDGE_BASE.md) for full system specifications.
 
 ---
 

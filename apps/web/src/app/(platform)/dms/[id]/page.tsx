@@ -8,8 +8,10 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { DocumentActions } from "@/app/(platform)/dms/[id]/document-actions";
+import { DocumentTags } from "@/app/(platform)/dms/[id]/document-tags";
 import { ApiRequestError } from "@/lib/api/envelope";
 import { formatFileSize, getDocument, type DocumentRecord } from "@/lib/dms";
+import { listTags } from "@/lib/tags";
 
 function StatusBadge({ document }: { document: DocumentRecord }) {
   if (document.status === "archived")
@@ -35,6 +37,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;
   }
+  const allTags = await listTags();
 
   return (
     <div className="space-y-8">
@@ -98,15 +101,10 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                 day: "numeric",
               })}
             </MetaRow>
-            {document.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 py-3">
-                {document.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="text-sm text-muted-foreground">Tags</span>
+              <DocumentTags documentId={document.id} tags={document.tags} allTags={allTags} />
+            </div>
             <div className="pt-3">
               <Button variant="secondary" size="sm" asChild className="w-full">
                 <a href={`/api/dms/${document.id}/download`}>

@@ -32,6 +32,9 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
     forward.append("title", title);
     forward.append("category", String(formData.get("category") ?? "other"));
     forward.append("description", String(formData.get("description") ?? ""));
+    for (const tag of parseTags(String(formData.get("tags") ?? ""))) {
+      forward.append("tags", tag);
+    }
 
     const response = await fetch(`${internalApiUrl()}${BASE}/`, {
       method: "POST",
@@ -82,4 +85,11 @@ async function post(path: string, success: string, id: string): Promise<ActionRe
 function errorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return error.message;
   return "Something went wrong. Try again.";
+}
+
+function parseTags(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 }

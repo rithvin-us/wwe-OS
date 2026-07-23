@@ -10,6 +10,7 @@ import {
   getPurchaseInsights,
   getVendors,
 } from "@/lib/purchase";
+import { listTags } from "@/lib/tags";
 
 export const metadata: Metadata = {
   title: "Purchases & AI Insights",
@@ -41,11 +42,12 @@ function StatTile({
 }
 
 export default async function PurchasePage() {
-  const [bills, stats, insights, vendors] = await Promise.all([
+  const [bills, stats, insights, vendors, allTags] = await Promise.all([
     getPurchaseBills(),
     getPurchaseBillStats(),
     getPurchaseInsights(),
     getVendors(),
+    listTags(),
   ]);
 
   const totalSpendFormatted = new Intl.NumberFormat("en-IN", {
@@ -136,7 +138,7 @@ export default async function PurchasePage() {
           <Send aria-hidden className="size-3.5" />
           Send a receipt photo or PDF to the Telegram bot to digitize it automatically.
         </div>
-        <BillsTable bills={bills} />
+        <BillsTable bills={bills} allTags={allTags} />
       </section>
 
       <VendorsPanel vendors={vendors} />

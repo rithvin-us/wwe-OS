@@ -35,6 +35,7 @@ export interface PurchaseBill {
   confidence_score: number;
   document_url: string;
   storage_key: string;
+  raw_extraction?: Record<string, unknown> | null;
   source_channel: "telegram" | "email" | "upload";
   telegram_user_id?: number | null;
   telegram_username?: string;

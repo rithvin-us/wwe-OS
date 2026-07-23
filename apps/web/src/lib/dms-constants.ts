@@ -12,6 +12,14 @@ export type DocumentCategory =
   | "other";
 export type SummaryStatus = "none" | "ready" | "failed";
 
+// A tag as the API returns it — see packages/ui/src/components/tag-pill.tsx
+// for the shared TagLike shape every module's tags conform to.
+export interface DocumentTag {
+  id: string;
+  name: string;
+  color: "blue" | "green" | "amber" | "violet" | "rose";
+}
+
 // Named DocumentRecord, not Document — the latter is a global DOM type.
 export interface DocumentRecord {
   id: string;
@@ -21,7 +29,7 @@ export interface DocumentRecord {
   category_label: string;
   status: DocumentStatus;
   status_label: string;
-  tags: string[];
+  tags: DocumentTag[];
   ai_summary: string;
   summary_status: SummaryStatus;
   file_name: string;

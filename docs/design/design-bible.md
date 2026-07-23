@@ -122,6 +122,15 @@ DropdownMenu, Tooltip) manage their own stacking correctly by portaling to
   (status.tsx), `PageHeader`, `EmptyState`, `DataTable` (data-table.tsx —
   sticky header, sortable, empty-state-first; the one table component).
   Use them — never re-implement.
+- **Tags**: `TagPill`/`TagDot`/`TagPicker` (tag-pill.tsx, tag-picker.tsx) are
+  the one tagging UI for the whole platform — Purchase, Documents, Assets,
+  Contracts, and anything added later all render and edit tags through these,
+  never a bespoke per-module chip. Tag color is always one of 5 fixed
+  swatches reusing the categorical chart palette (`--chart-1..5` via
+  `bg-chart-1..5`) — never a 6th color or free-form hex. A tag reads as a
+  small color dot + label, distinct from `Badge` (which carries no color
+  choice) and from `StatusChip` (mono/uppercase, reserved for module
+  lifecycle status only).
 - Toasts: `Toaster` (sonner.tsx), mounted once in `Providers`. Reserved for
   async/global feedback on real mutations (e.g. confirming a bill) — never
   for validation errors, which stay inline at the field.

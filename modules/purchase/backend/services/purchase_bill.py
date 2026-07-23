@@ -14,13 +14,16 @@ Flow:
 from __future__ import annotations
 
 import datetime
+import logging
+import time
 from decimal import Decimal
 from typing import Any
 
+import httpx
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from shared.events import publish
-from shared.exceptions import ConflictError, NotFoundError, ValidationError
+from shared.exceptions import ConflictError
 from shared.services import BaseService
 from storage.services import StorageService
 from tenancy.models import Tenant
@@ -35,7 +38,18 @@ from purchase.backend.events.registry import (
 from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Vendor
 from purchase.backend.services.purchase_ocr import PurchaseOCRService
 
+logger = logging.getLogger(__name__)
+
 CONFIDENCE_THRESHOLD = Decimal("0.80")
+
+DOCUMENT_FETCH_RETRIES = 2
+DOCUMENT_FETCH_TIMEOUT = 15.0
+_EXT_BY_CONTENT_TYPE = {
+    "application/pdf": "pdf",
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp",
+}
 
 
 def _resolve_ingest_tenant() -> Tenant:
@@ -45,6 +59,60 @@ def _resolve_ingest_tenant() -> Tenant:
             "No company is configured yet. Set up the company profile before ingesting bills."
         )
     return tenant
+
+
+def _fetch_and_store_document(document_url: str, *, tenant: Tenant, external_ref: str) -> str:
+    """Downloads the source document's real bytes and stores them via the
+    platform Storage service. Returns the storage key, or "" if the document
+    couldn't be fetched or stored — a storage hiccup must not block
+    ingestion, since `document_url` is retained on the bill either way."""
+    if not document_url:
+        return ""
+
+    data: bytes | None = None
+    content_type = "application/octet-stream"
+    for attempt in range(1, DOCUMENT_FETCH_RETRIES + 1):
+        try:
+            response = httpx.get(document_url, timeout=DOCUMENT_FETCH_TIMEOUT)
+            response.raise_for_status()
+            data = response.content
+            content_type = response.headers.get("content-type", content_type).split(";")[0].strip()
+            break
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "Attempt %s/%s to fetch purchase document (%s) failed: %s",
+                attempt,
+                DOCUMENT_FETCH_RETRIES,
+                external_ref or "no ref",
+                exc,
+            )
+            if attempt < DOCUMENT_FETCH_RETRIES:
+                time.sleep(0.5 * attempt)
+
+    if not data:
+        logger.warning(
+            "Could not fetch source document for %s; ingesting without a stored file.",
+            external_ref or "(no ref)",
+        )
+        return ""
+
+    ext = _EXT_BY_CONTENT_TYPE.get(content_type, "")
+    filename = f"purchase_{external_ref or 'doc'}" + (f".{ext}" if ext else "")
+    try:
+        stored = StorageService().store(
+            data=data,
+            filename=filename,
+            content_type=content_type,
+            module="purchase",
+            category="bill",
+            tenant=tenant,
+        )
+        return stored.key
+    except Exception as exc:
+        logger.warning(
+            "Storage rejected purchase document for %s: %s", external_ref or "(no ref)", exc
+        )
+        return ""
 
 
 class PurchaseBillService(BaseService):
@@ -74,18 +142,9 @@ class PurchaseBillService(BaseService):
 
         storage_key = existing.storage_key if existing else ""
         if not storage_key:
-            try:
-                stored = StorageService().store(
-                    file_obj=document_url.encode("utf-8"),
-                    filename=f"purchase_{external_ref or 'doc'}.pdf",
-                    content_type="application/pdf",
-                    module="purchase",
-                    category="bill",
-                    tenant=tenant,
-                )
-                storage_key = stored.key
-            except Exception:
-                storage_key = f"purchase/{tenant.id}/{external_ref or 'doc'}"
+            storage_key = _fetch_and_store_document(
+                document_url, tenant=tenant, external_ref=external_ref
+            )
 
         try:
             with transaction.atomic():
@@ -191,38 +250,21 @@ class PurchaseBillService(BaseService):
                         bill.is_duplicate = True
 
                 # Step 4: Auto-classification based on OCR confidence score
-                if confidence >= CONFIDENCE_THRESHOLD and bill.seller_name != "Pending OCR Processing":
+                is_identified = bill.seller_name != "Pending OCR Processing"
+                if confidence >= CONFIDENCE_THRESHOLD and is_identified:
                     bill.status = BillStatus.PROCESSED
                 else:
                     bill.status = BillStatus.NEEDS_ATTENTION
 
                 bill.save()
 
-                # Step 5: Auto-register document in Documents App (DMS)
-                try:
-                    from documents.backend.models import Document, DocumentCategory
-                    from users.models import User
-
-                    owner = User.objects.filter(tenant=tenant).first()
-                    Document.objects.get_or_create(
-                        tenant=tenant,
-                        title=f"Receipt - {bill.seller_name} ({bill.purchase_date})",
-                        defaults={
-                            "owner": owner,
-                            "category": DocumentCategory.FINANCIAL,
-                            "description": (
-                                f"Invoice #{bill.invoice_number or 'N/A'}. Source: {source_channel.title()}. "
-                                f"Total: {bill.currency} {bill.total_rate}. URL: {bill.document_url}"
-                            ),
-                        },
-                    )
-                except Exception:
-                    pass
-
         except IntegrityError as exc:
             raise ConflictError("This document was already ingested.") from exc
 
-        # Step 6: Connect to Search Service & Platform Events
+        # Step 5: Connect to Search Service & Platform Events. Anything that
+        # needs to react to a new bill (e.g. Documents registering it in the
+        # DMS) subscribes to this event instead of being called directly —
+        # see modules/documents/backend/events/subscribers.py.
         publish(PURCHASE_BILL_INGESTED, instance=bill)
         if bill.status == BillStatus.PROCESSED:
             publish(PURCHASE_BILL_PROCESSED, instance=bill)
@@ -234,19 +276,26 @@ class PurchaseBillService(BaseService):
         return bill
 
     def _index_search(self, bill: PurchaseBill) -> None:
-        """Connect to Search Service."""
-        try:
-            from search.services import SearchService
+        """Push the bill into the Search Service so it's findable via Global
+        Search. See purchase.backend.search.adapter for the registered index."""
+        from search.services import SearchService
 
-            SearchService().index(
+        reference = bill.invoice_number or f"{bill.currency} {bill.total_rate}"
+        body = (
+            f"Vendor: {bill.seller_name}, Invoice #: {bill.invoice_number}, "
+            f"GST: {bill.gst_number}, Total: {bill.total_rate}"
+        )
+        try:
+            SearchService().upsert(
+                index="purchase",
+                doc_id=str(bill.id),
+                title=f"Purchase: {bill.seller_name} ({reference})",
+                body=body,
+                url="/purchase",
                 tenant=bill.tenant,
-                module="purchase",
-                title=f"Purchase: {bill.seller_name} ({bill.invoice_number or bill.currency + ' ' + str(bill.total_rate)})",
-                content=f"Vendor: {bill.seller_name}, Invoice #: {bill.invoice_number}, GST: {bill.gst_number}, Total: {bill.total_rate}",
-                url=f"/purchase",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Search indexing failed for purchase bill %s: %s", bill.id, exc)
 
     def _notify_operator(self, bill: PurchaseBill) -> None:
         """Notify operator when a purchase bill needs attention."""
@@ -261,12 +310,17 @@ class PurchaseBillService(BaseService):
             "user", flat=True
         )
 
+        confidence_pct = int(bill.confidence_score * 100)
+        body = (
+            f"{bill.seller_name} — {bill.currency} {bill.total_rate} "
+            f"(Low confidence: {confidence_pct}%)"
+        )
         for recipient in User.objects.filter(id__in=recipients):
             NotificationService().create(
                 recipient=recipient,
                 tenant=bill.tenant,
                 title="Purchase document requires review",
-                body=f"{bill.seller_name} — {bill.currency} {bill.total_rate} (Low confidence: {int(bill.confidence_score * 100)}%)",
+                body=body,
                 category="purchase",
                 data={"bill_id": str(bill.id)},
             )

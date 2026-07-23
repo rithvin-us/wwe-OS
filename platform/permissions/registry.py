@@ -47,6 +47,9 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     # Reporting
     PermissionDef("reporting.export", "Export reports", "Reporting"),
     PermissionDef("reporting.view", "View export history", "Reporting"),
+    # Tags
+    PermissionDef("tags.read", "View tags", "Tags"),
+    PermissionDef("tags.manage", "Create, edit, and delete tags", "Tags"),
     # Dashboard
     PermissionDef("dashboard.view", "View dashboard", "Dashboard"),
 ]

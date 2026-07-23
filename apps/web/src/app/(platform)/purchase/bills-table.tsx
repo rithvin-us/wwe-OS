@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { deleteBillAction, markBillPaidAction, updateBillAction } from "@/app/(platform)/purchase/actions";
 import { BillDetailsDialog } from "@/app/(platform)/purchase/bill-details-dialog";
 import type { PurchaseBill } from "@/lib/purchase";
+import type { Tag } from "@/lib/tags";
 
 const STATUS_LABEL: Record<PurchaseBill["status"], string> = {
   processed: "Processed",
@@ -180,7 +181,7 @@ function RowActions({
   );
 }
 
-export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
+export function BillsTable({ bills, allTags }: { bills: PurchaseBill[]; allTags: Tag[] }) {
   const [selectedBill, setSelectedBill] = useState<PurchaseBill | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -310,6 +311,7 @@ export function BillsTable({ bills }: { bills: PurchaseBill[] }) {
 
       <BillDetailsDialog
         bill={selectedBill}
+        allTags={allTags}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
       />

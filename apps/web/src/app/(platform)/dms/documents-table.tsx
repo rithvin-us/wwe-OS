@@ -5,6 +5,7 @@ import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { DataTable } from "@bop/ui/components/data-table";
+import { TagPill } from "@bop/ui/components/tag-pill";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useState } from "react";
@@ -78,6 +79,27 @@ const columns: ColumnDef<DocumentRecord, unknown>[] = [
       ),
   },
   {
+    id: "tags",
+    header: "Tags",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const tags = row.original.tags;
+      if (tags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+      const shown = tags.slice(0, 2);
+      const overflow = tags.length - shown.length;
+      return (
+        <div className="flex flex-wrap items-center gap-1">
+          {shown.map((tag) => (
+            <TagPill key={tag.id} tag={tag} />
+          ))}
+          {overflow > 0 ? (
+            <span className="text-xs text-muted-foreground">+{overflow}</span>
+          ) : null}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "created_at",
     header: "Added",
     cell: ({ row }) => (
@@ -119,7 +141,8 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
       const matchDesc = (d.description || "").toLowerCase().includes(q);
       const matchFile = (d.file_name || "").toLowerCase().includes(q);
       const matchSummary = (d.ai_summary || "").toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchFile && !matchSummary) return false;
+      const matchTags = d.tags.some((tag) => tag.name.toLowerCase().includes(q));
+      if (!matchTitle && !matchDesc && !matchFile && !matchSummary && !matchTags) return false;
     }
 
     return true;
@@ -144,7 +167,7 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
           {/* Category Dropdown */}
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as any)}
+            onChange={(e) => setCategoryFilter(e.target.value as DocumentCategory | "all")}
             className="h-9 rounded-md border border-input bg-transparent px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="all">All Categories</option>
@@ -158,7 +181,7 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
           {/* AI Filter */}
           <select
             value={aiFilter}
-            onChange={(e) => setAiFilter(e.target.value as any)}
+            onChange={(e) => setAiFilter(e.target.value as "all" | "ready" | "pending")}
             className="h-9 rounded-md border border-input bg-transparent px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="all">All AI States</option>

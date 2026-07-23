@@ -31,10 +31,13 @@ from shared.events import publish
 from shared.exceptions import ConflictError, ValidationError
 from shared.services import BaseService
 from storage.services import StorageService
+from tagging.services import TagService
 
 WORKFLOW_KEY = "document-approval"
 TEXT_CONTENT_TYPES = ("text/plain", "text/csv", "text/html", "application/json")
 SUMMARY_INPUT_LIMIT = 6000
+TAG_MODULE = "documents"
+TAG_OBJECT_TYPE = "Document"
 
 
 class DocumentService(BaseService):
@@ -71,9 +74,10 @@ class DocumentService(BaseService):
             title=title.strip(),
             category=category,
             description=description.strip(),
-            tags=tags or [],
             file=stored,
         )
+        if tags:
+            self.set_tags(document=document, tag_names=tags)
         publish(DOCUMENT_CREATED, instance=document, actor=owner)
         self._index(document)
         if summarize:
@@ -101,11 +105,11 @@ class DocumentService(BaseService):
             if value is not None and getattr(document, field) != value:
                 setattr(document, field, value)
                 fields.append(field)
-        if tags is not None:
-            document.tags = tags
-            fields.append("tags")
         if fields:
             document.save(update_fields=[*fields, "updated_at"])
+        if tags is not None:
+            self.set_tags(document=document, tag_names=tags)
+        if fields or tags is not None:
             publish(DOCUMENT_UPDATED, instance=document, actor=actor)
             self._index(document)
         return document
@@ -165,6 +169,26 @@ class DocumentService(BaseService):
         SearchService().remove(index=INDEX, doc_id=str(document.id), tenant=document.tenant)
         StorageService().delete(document.file, actor=actor)
         document.delete()  # soft delete — audit still knows it existed
+
+    # ------------------------------------------------------------------ #
+    # Tags (through the platform tagging capability — see platform/tagging)
+    # ------------------------------------------------------------------ #
+    def set_tags(self, *, document: Document, tag_names: list[str]):
+        return TagService().set_tags_for_object(
+            tenant=document.tenant,
+            module=TAG_MODULE,
+            object_type=TAG_OBJECT_TYPE,
+            object_id=str(document.id),
+            tag_names=tag_names,
+        )
+
+    def tags_for(self, document: Document):
+        return TagService().tags_for_object(
+            tenant=document.tenant,
+            module=TAG_MODULE,
+            object_type=TAG_OBJECT_TYPE,
+            object_id=str(document.id),
+        )
 
     # ------------------------------------------------------------------ #
     # Reporting (through the platform reporting engine)
