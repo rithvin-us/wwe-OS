@@ -135,3 +135,56 @@ def test_ingest_survives_a_document_fetch_failure(service_client, tenant, monkey
     bill = PurchaseBill.objects.get()
     assert bill.storage_key == ""
     assert Document.objects.count() == 0
+
+
+# --------------------------------------------------------------------------- #
+# Business periods (platform/periods integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_ingest_files_bill_into_its_purchase_date_period_not_upload_date(
+    service_client, tenant, monkeypatch
+):
+    from periods.models import BusinessPeriod
+
+    monkeypatch.setattr(
+        "purchase.backend.services.purchase_bill.httpx.get",
+        lambda url, timeout: _fake_response(),
+    )
+    # purchase_date (2026-07-20) is in the past relative to "today" in any
+    # real test run — proves the period comes from the business date, not
+    # from when ingestion happened.
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-file-period-1"}
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+
+    bill = PurchaseBill.objects.get()
+    assert bill.storage_key.startswith(f"{tenant.slug}/2026/July/Purchase Bills/")
+
+    period = BusinessPeriod.objects.get(tenant=tenant, year=2026, month=7)
+    assert period.manifest.document_counts == {"purchase_bill": 1}
+
+
+def test_ingest_reuses_existing_storage_key_without_re_resolving(
+    service_client, tenant, monkeypatch
+):
+    """A second ingest for the same external_ref (e.g. the bot's phase-2
+    re-post with OCR results) must not re-file the already-stored document
+    even if its extracted invoice_date differs — retroactive re-filing is
+    Rules Engine scope, not this subsystem."""
+    monkeypatch.setattr(
+        "purchase.backend.services.purchase_bill.httpx.get",
+        lambda url, timeout: _fake_response(),
+    )
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-file-period-2"}
+    first = service_client.post(INGEST_URL, payload, format="json")
+    assert first.status_code == 201
+    first_key = PurchaseBill.objects.get().storage_key
+
+    second_payload = {
+        **payload,
+        "raw_extraction": {**payload["raw_extraction"], "invoice_date": "2026-01-05"},
+    }
+    second = service_client.post(INGEST_URL, second_payload, format="json")
+    assert second.status_code == 201
+    assert PurchaseBill.objects.get().storage_key == first_key

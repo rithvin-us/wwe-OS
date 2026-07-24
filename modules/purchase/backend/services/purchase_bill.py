@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import re
 import time
 from decimal import Decimal
 from typing import Any
@@ -23,10 +24,12 @@ import httpx
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
+from periods.resolution import DocumentContext, resolve_location
+from periods.services import PeriodService
 from shared.events import publish
 from shared.exceptions import ConflictError
 from shared.services import BaseService
-from storage.services import StorageService
+from storage.services import StorageService, safe_filename
 from tenancy.models import Tenant
 from tenancy.services import TenancyService
 
@@ -63,11 +66,24 @@ def _resolve_ingest_tenant() -> Tenant:
     return tenant
 
 
-def _fetch_and_store_document(document_url: str, *, tenant: Tenant, external_ref: str) -> str:
+def _fetch_and_store_document(
+    document_url: str,
+    *,
+    tenant: Tenant,
+    external_ref: str,
+    business_date: datetime.date,
+    source_channel: str = "telegram",
+) -> str:
     """Downloads the source document's real bytes and stores them via the
     platform Storage service. Returns the storage key, or "" if the document
     couldn't be fetched or stored — a storage hiccup must not block
-    ingestion, since `document_url` is retained on the bill either way."""
+    ingestion, since `document_url` is retained on the bill either way.
+
+    business_date decides which business period the bill files under — the
+    caller's purchase_date (already defaulted to today() if the ingest
+    channel didn't supply one), never upload time. If OCR later finds a
+    different invoice date, this file is not retroactively re-filed —
+    that's Rules Engine scope, not this one."""
     if not document_url:
         return ""
 
@@ -101,13 +117,29 @@ def _fetch_and_store_document(document_url: str, *, tenant: Tenant, external_ref
     ext = _EXT_BY_CONTENT_TYPE.get(content_type, "")
     filename = f"purchase_{external_ref or 'doc'}" + (f".{ext}" if ext else "")
     try:
+        resolved = resolve_location(
+            DocumentContext(
+                document_type="purchase_bill",
+                document_name=safe_filename(filename),
+                tenant_slug=tenant.slug,
+                business_date=business_date,
+                source_channel=source_channel,
+            )
+        )
         stored = StorageService().store(
             data=data,
             filename=filename,
             content_type=content_type,
             module="purchase",
-            category="bill",
+            category="purchase_bill",
             tenant=tenant,
+            key=resolved.key,
+            period_year=resolved.period_year,
+            period_month=resolved.period_month,
+            is_library=resolved.is_library,
+        )
+        PeriodService().record_document(
+            tenant=tenant, resolved=resolved, document_type="purchase_bill"
         )
         return stored.key
     except Exception as exc:
@@ -115,6 +147,34 @@ def _fetch_and_store_document(document_url: str, *, tenant: Tenant, external_ref
             "Storage rejected purchase document for %s: %s", external_ref or "(no ref)", exc
         )
         return ""
+
+
+def extract_tags_from_caption(caption: str, tenant=None) -> list[str]:
+    """Extract hashtags (#Auditor, #GST) and match existing system tags from caption text."""
+    if not caption:
+        return []
+    tags: list[str] = []
+    # 1. Extract hashtags
+    hashtags = re.findall(r"#([A-Za-z0-9_-]+)", caption)
+    for h in hashtags:
+        h_clean = h.strip()
+        if h_clean and h_clean not in tags:
+            tags.append(h_clean)
+
+    # 2. Match existing tags in the system if tenant is present
+    if tenant:
+        try:
+            from tagging.models import Tag
+
+            existing_tags = list(Tag.objects.filter(tenant=tenant).values_list("name", flat=True))
+            caption_lower = caption.lower()
+            for tag_name in existing_tags:
+                if tag_name.lower() in caption_lower and tag_name not in tags:
+                    tags.append(tag_name)
+        except Exception:
+            pass
+
+    return tags
 
 
 class PurchaseBillService(BaseService):
@@ -145,7 +205,11 @@ class PurchaseBillService(BaseService):
         storage_key = existing.storage_key if existing else ""
         if not storage_key:
             storage_key = _fetch_and_store_document(
-                document_url, tenant=tenant, external_ref=external_ref
+                document_url,
+                tenant=tenant,
+                external_ref=external_ref,
+                business_date=purchase_date,
+                source_channel=source_channel,
             )
 
         try:
@@ -176,6 +240,29 @@ class PurchaseBillService(BaseService):
                         raw_extraction=raw_extraction or {},
                         status=BillStatus.PROCESSED,
                     )
+
+                # Process caption & tags
+                caption = (data.get("caption") or "").strip()
+                provided_tags = list(data.get("tags") or [])
+                caption_tags = extract_tags_from_caption(caption, tenant=tenant)
+                all_tags = []
+                for t in provided_tags + caption_tags:
+                    if t and t not in all_tags:
+                        all_tags.append(t)
+
+                if all_tags:
+                    try:
+                        from tagging.services import TagService
+
+                        TagService().set_tags_for_object(
+                            tenant=tenant,
+                            module="purchase",
+                            object_type="PurchaseBill",
+                            object_id=str(bill.id),
+                            tag_names=all_tags,
+                        )
+                    except Exception as err:
+                        logger.warning("Failed to tag ingested bill %s: %s", bill.id, err)
 
                 # Step 3: Run AI OCR extraction or parse raw extraction
                 ocr_service = PurchaseOCRService()
