@@ -219,3 +219,27 @@ def test_create_updates_the_periods_manifest(tenant, owner):
     period = BusinessPeriod.objects.get(tenant=tenant, year=today.year, month=today.month)
     assert period.manifest.document_counts == {"policy": 1}
     assert period.manifest.total_count == 1
+
+
+# --------------------------------------------------------------------------- #
+# Source identity (platform/identity integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_create_resolves_a_manual_identity_for_the_owner(tenant, owner):
+    from identity.models import IdentityChannel, SourceIdentity
+
+    _create(tenant, owner)
+
+    identity = SourceIdentity.objects.get(
+        tenant=tenant, channel=IdentityChannel.MANUAL, external_id=str(owner.id)
+    )
+    assert identity.display_name == owner.email
+
+
+def test_create_without_an_owner_skips_identity_resolution(tenant):
+    from identity.models import SourceIdentity
+
+    _create(tenant, None)
+
+    assert SourceIdentity.objects.count() == 0

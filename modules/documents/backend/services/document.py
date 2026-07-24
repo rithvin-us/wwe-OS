@@ -27,6 +27,8 @@ from documents.backend.events.registry import (
 )
 from documents.backend.models import Document, DocumentStatus, SummaryStatus
 from documents.backend.search.adapter import INDEX, to_document
+from identity.models import IdentityChannel
+from identity.services import IdentityService
 from periods.resolution import DocumentContext, resolve_location
 from periods.services import PeriodService
 from search.services import SearchService
@@ -84,6 +86,13 @@ class DocumentService(BaseService):
             is_library=resolved.is_library,
         )
         PeriodService().record_document(tenant=tenant, resolved=resolved, document_type=category)
+        if owner is not None:
+            IdentityService().resolve_identity(
+                tenant=tenant,
+                channel=IdentityChannel.MANUAL,
+                external_id=str(owner.id),
+                display_name=owner.email,
+            )
         document = Document.objects.create(
             tenant=tenant,
             owner=owner,
