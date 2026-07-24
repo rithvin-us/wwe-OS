@@ -41,12 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+      DJANGO_SETTINGS_MODULE: config.settings_test
+      SECRET_KEY: test-ci-secret-key-1234567890-placeholder
     defaults:
       run:
         working-directory: platform
-    env:
-      DJANGO_SETTINGS_MODULE: config.settings_test
-      SECRET_KEY: test-ci-secret-key-1234567890-placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
