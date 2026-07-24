@@ -25,6 +25,9 @@ venv/
 # Local file storage backend (platform/storage's STORAGE_LOCAL_PATH)
 .storage/
 
+# impeccable skill's critique snapshots — tool-runtime scratch, not app code
+.impeccable/
+
 # Database
 database/backups/*
 !database/backups/.gitkeep
