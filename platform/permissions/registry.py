@@ -59,6 +59,8 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     # Workflow (pipeline execution engine)
     PermissionDef("workflow.view", "View pipeline runs", "Workflow"),
     PermissionDef("workflow.control", "Pause, resume, cancel, or retry a pipeline run", "Workflow"),
+    # Periods (business period manager & document library)
+    PermissionDef("periods.view", "View business periods and the document library", "Periods"),
 ]
 
 ALL_CODES = frozenset(p.code for p in PLATFORM_PERMISSIONS)
