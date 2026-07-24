@@ -18,6 +18,7 @@ api_v1 = [
     path("audit/", include("audit.urls")),
     path("notifications/", include("notifications.urls")),
     path("storage/", include("storage.urls")),
+    path("periods/", include("periods.urls")),
     path("ai/", include("ai.urls")),
     path("search/", include("search.urls")),
     path("reporting/", include("reporting.urls")),
