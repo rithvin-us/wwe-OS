@@ -41,7 +41,9 @@ if str(REPO_ROOT / "modules") not in sys.path:
 # --------------------------------------------------------------------------- #
 # Core
 # --------------------------------------------------------------------------- #
-SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", required=True)
+SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str(
+    "SECRET_KEY", default="django-insecure-development-placeholder-key-change-in-production-12345"
+)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")

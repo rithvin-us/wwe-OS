@@ -44,6 +44,7 @@ jobs:
         working-directory: platform
     env:
       DJANGO_SETTINGS_MODULE: config.settings_test
+      SECRET_KEY: test-ci-secret-key-1234567890-placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
