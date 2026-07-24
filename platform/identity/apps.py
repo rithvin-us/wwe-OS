@@ -5,3 +5,6 @@ class IdentityConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "identity"
     verbose_name = "Platform · Identity"
+
+    def ready(self) -> None:
+        from identity import subscribers  # noqa: F401
