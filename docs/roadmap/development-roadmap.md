@@ -15,17 +15,31 @@ claimed — a partial build is labeled partial, explicitly.
 
 ## 1. What's actually built, right now
 
-| Area                                                                                                                           | Status                                                                                                             |
-| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Platform kernel (auth, users, roles, permissions, tenancy, audit, notifications)                                               | **Built.** Real cookie-based BFF auth (login/logout/refresh), tenant auto-bootstrap on first registration.         |
-| Frontend shell (sidebar, header, command palette, login, executive dashboard UI)                                               | **Built.** Renders, builds clean, KPIs/procurement/approvals/alerts/activity backed by live Purchase data.         |
-| Purchase (bill ingestion + review queue + vendor directory + payment tracking)                                                 | **Built.** 27 tests, full verification gate green, verified against a live running server (not just mocked tests). |
-| Service-to-service auth (`ServiceTokenAuthentication`)                                                                         | **Built.** Reusable by every future ingestion channel.                                                             |
-| Design system (motion tokens, elevation, semantic colors, `DataTable`/`Toaster` primitives)                                    | **Built.** WCAG-checked contrast, documented in `docs/design/design-bible.md`.                                     |
-| Google/Microsoft SSO                                                                                                           | **Not built.** Email+password auth is real; social sign-in is still a gap.                                         |
-| Everything else in the original brief (DMS, Reports, AI Layer, full Workflow Engine, Mobile app, CI/CD, production deployment) | **Not built.** Specs exist in `docs/specs/`.                                                                       |
+_Last verified 2026-07-24 by a full pipeline run (`ruff check`, `ruff format
+--check`, `manage.py check`, `pytest`, `pnpm lint`, `pnpm format:check`,
+`pnpm --filter web build`, `pre-commit run --all-files`) — see § 7._
 
-56 tests total, 0 failures, as of this stage.
+| Area                                                                                    | Status                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Platform kernel (auth, users, roles, permissions, tenancy, audit, notifications, storage, search, tagging, reporting, automation, ai) | **Built.** Cookie-based BFF auth (login/logout/refresh), tenant auto-bootstrap, brute-force lockout, JWT rotation+blacklist.        |
+| Frontend shell (sidebar, header, command palette, login, executive dashboard)            | **Built.** Renders, builds clean, KPIs/procurement/approvals/alerts/activity/timeline backed by live data.                          |
+| Purchase (bill ingestion + review queue + vendor directory + payment tracking)           | **Built.** Telegram OCR ingestion wired end to end.                                                                                  |
+| Documents (DMS: upload, categorize, tag, AI-summarize)                                   | **Built.** Route: `/dms`.                                                                                                            |
+| Assets — Delivery Challans (generate/track DCs, PDF via Word template, verification hash) | **Built.** Route: `/assets`. Backend also has a broader generic asset registry (models/services/tests) with no dedicated frontend yet. |
+| Contracts (backend + `/contracts` route + expiry alerts on the dashboard)                | **Built**, but **not in the app registry/sidebar** (`apps/web/src/config/modules.ts`) — reachable only by direct URL or dashboard alert link. Flagged for a product decision, not auto-fixed. |
+| Inventory (backend + `/inventory` route)                                                 | **Built**, but **deliberately excluded from the app registry** (commit `aaee965`: "single-operator, inventory not essential yet"). Its `getItems()`/constants are still used by the DC feature. |
+| Reports (on-demand + scheduled)                                                          | **Built.** Route: `/reports`.                                                                                                        |
+| Business Timeline (cross-module activity feed)                                           | **Built.** Route: `/timeline`.                                                                                                       |
+| Automation engine (rules, execution, history)                                            | **Built.** Route: `/automation`.                                                                                                     |
+| Service-to-service auth (`ServiceTokenAuthentication`)                                   | **Built.** Constant-time token compare, reused by every ingestion channel.                                                          |
+| Design system (motion tokens, elevation, semantic colors, `DataTable`/`Toaster`/`Avatar`/`StatusChip` primitives) | **Built.** Documented in `docs/design/design-bible.md`.                                                                              |
+| Google/Microsoft SSO                                                                     | **Not built.** Email+password auth is real; social sign-in is still a gap.                                                          |
+| HR                                                                                        | **Not built here, by design.** A separate HR Automation app is deployed independently; WWE OS integrates with it (`docs/specs/hr-integration-strategy.md`) rather than rebuilding it. |
+| Analytics                                                                                 | **Not built.** Listed as "coming soon" in the app registry.                                                                          |
+| Independent services (`services/*`: ai-engine, email-service, ocr, scheduler, telegram-bot's Django-side counterpart, webhook-engine, worker) | **Scaffolding only** — Dockerfile + empty `src/`/`tests/` per service, except `telegram-bot` which is implemented (`main.py`).      |
+| CI (`​.github/workflows/ci.yml`)                                                          | **Built and green.** Lints frontend + Python, runs `manage.py check` + `pytest` on every push/PR.                                    |
+
+200 backend tests passing, 0 failures, as of this verification pass.
 
 ---
 
@@ -70,25 +84,22 @@ single-operator value, not by the order it happened to be listed in.
    payment tracking (mark-paid), dashboard activity/alerts wired to it.
 3. ~~Tenant/company bootstrap~~ — **done.** First registration auto-creates
    the tenant and becomes Owner.
-4. ~~Dashboard data wiring~~ — **done**, for everything Purchase can supply
-   (KPIs, procurement summary, pending approvals, operational alerts,
-   recent activity). Areas with no backing module (Financial, People,
-   Inventory, Contracts) still read honest `—`, correctly — they need their
-   own modules first, not more Purchase wiring.
+4. ~~Dashboard data wiring~~ — **done**, wired to Purchase, Contracts,
+   Automation, and the Business Timeline. Financial and People still read
+   honest `—` — no backing module yet (People stays external, per the
+   single-operator plan's HR-integration decision).
 5. **Google/Microsoft SSO** — email+password auth is real and working;
    social sign-in is the one auth gap left. Smaller now that the auth
    plumbing (BFF cookies, refresh, route guard) already exists.
 6. **HR integration, Phase 0–1** (discovery + read-only API) — per
    `docs/specs/hr-integration-strategy.md`; the biggest unknown, start early
    so its real scope is known before committing to a timeline.
-7. **Document Management** — the next module with clear standalone value
-   and no unmet dependencies.
-8. **CI/CD** (`infrastructure/github-actions/`) — currently zero automated
-   checks run on push; every gate described in this document is manual
-   today. Should move up in priority as soon as more than one contributor
-   (human or AI session) touches the repo.
+7. ~~Document Management~~ — **done.** Upload, categorize, tag, AI-summarize.
+8. ~~CI/CD~~ — **done.** `.github/workflows/ci.yml` runs lint (frontend +
+   Python) and backend tests on every push/PR.
 9. **Native mobile app** — start once there's a second real screen (beyond
-   dashboard + purchase) worth putting on a phone.
+   dashboard + purchase) worth putting on a phone. `apps/mobile` is still a
+   README-only placeholder.
 10. **Reports, AI Layer, remaining apps** — as each becomes the next highest
     real-world value, not in a fixed order.
 
@@ -118,9 +129,8 @@ calendar time with a team.
 
 | Risk                                                                      | Likelihood                                  | Impact                                                                     | Mitigation                                                                                                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Ingested documents have no durable storage (Telegram-hosted URL only)     | **Certain (already true)**                  | Medium — original files could become unrecoverable; extracted data is safe | Build `platform/storage` before ingestion volume matters; flagged in `docs/specs/document-ingestion.md`                         |
 | "GPT-5 mini" as specified may not be a real/available model               | Possible                                    | Low — the gateway design doesn't hardcode it                               | Verify actual OpenAI model availability/pricing before AI Layer implementation; flagged in `docs/specs/ai-layer.md`             |
-| No CI — every gate is run manually                                        | **Certain (already true)**                  | Medium — a regression could ship unnoticed                                 | Build CI early (§ 3, item 7)                                                                                                    |
+| A developer's local `.env` (real API keys/model names) leaks into the test suite | **Happened once, now fixed**         | High while unfixed — burns real API quota, non-deterministic tests         | `config/settings_test.py` now hard-pins `AI_DEFAULT_MODEL="mock"` and clears the API keys, independent of what `.env` contains  |
 | HR integration scope is unknown (no discovery done yet)                   | Certain                                     | Medium — time estimate for this phase is genuinely low-confidence          | Phase 0 discovery before any commitment (§ HR spec)                                                                             |
 | Docker daemon unavailable in this session — full container run unverified | Known, scoped                               | Low — `docker compose config` validated; migrations are DB-agnostic        | Run `docker compose up -d --build` + smoke test at the next opportunity Docker is available                                     |
 | Single point of failure (one operator, no backup admin)                   | Inherent to the confirmed product direction | Medium                                                                     | Accepted tradeoff per `docs/roadmap/single-operator-plan.md` — RBAC/multi-user is dormant, not deleted, for exactly this reason |
@@ -131,22 +141,30 @@ calendar time with a team.
 
 Real gaps found or already known, stated plainly:
 
-1. **No durable document storage.** `platform/storage` is README-only;
-   ingested bills reference a temporary, channel-hosted URL. See risk table.
-2. **No CI/CD.** Every check in § 7 below is run manually. A push to `main`
-   today runs nothing automatically.
-3. **No production deployment has been executed.** Render/Vercel configs
-   are designed (`docs/deployment/backend.md`) but no live deployment
-   exists — this repository has never served real production traffic.
-4. **`packages/sdk`, `packages/utils`, `packages/config` are empty
+1. **No production deployment has been verified this session.** Render/Vercel
+   configs are designed (`docs/deployment/backend.md`); whether a live
+   deployment currently exists wasn't re-checked as part of this pass —
+   confirm directly with the hosting dashboards rather than trusting this
+   document's history.
+2. **`packages/sdk`, `packages/utils`, `packages/config` are empty
    placeholders** — fine for now (nothing needs them yet), but will need
    real content once the mobile app or a second frontend consumer exists.
-5. **No performance, load, or dedicated security testing** — see
-   `docs/specs/testing-strategy.md` §§ 15–16.
-6. **Vendor auto-matching is exact-name-only** — a minor, known limitation
+3. **No performance, load, or dedicated security testing beyond this
+   pass's manual review** — see `docs/specs/testing-strategy.md` §§ 15–16
+   and `SECURITY.md` (repo root) for what was actually checked.
+4. **`services/*` (ai-engine, email-service, ocr, scheduler, webhook-engine,
+   worker) are Dockerfile + empty `src/`/`tests/` scaffolding** — only
+   `telegram-bot` is implemented. No test coverage exists for any of them
+   because there's no code to test yet.
+5. **Vendor auto-matching is exact-name-only** — a minor, known limitation
    in the Purchase module (`docs/specs/purchase.md` § 20).
-7. **No Google/Microsoft SSO** — email+password auth is real; social
+6. **No Google/Microsoft SSO** — email+password auth is real; social
    sign-in is the remaining auth gap (§ 3, item 5).
+7. **Contracts and Inventory are fully built (backend + tested + frontend
+   route) but excluded from the app registry** (`apps/web/src/config/
+   modules.ts`) — Inventory deliberately (commit `aaee965`), Contracts for
+   an undocumented reason. Worth a deliberate decision on whether either
+   should be exposed in the sidebar/command palette.
 
 ---
 
@@ -156,24 +174,23 @@ Real gaps found or already known, stated plainly:
 | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `ruff check` clean (frontend + backend)                                                         | ✅ Pass                                                                                 |
 | `manage.py check` clean                                                                         | ✅ Pass                                                                                 |
-| `makemigrations --check --dry-run` clean                                                        | ✅ Pass                                                                                 |
-| `pytest` — 82/82 passing (incl. workflow engine, observability, ingest dedupe)                  | ✅ Pass                                                                                 |
-| `manage.py spectacular` — 0 warnings/errors                                                     | ✅ Pass                                                                                 |
-| `manage.py check --deploy` — 0 issues                                                           | ✅ Pass                                                                                 |
-| `pnpm build` (frontend)                                                                         | ✅ Pass (verified earlier this session)                                                 |
-| `docker compose config --quiet`                                                                 | ✅ Pass                                                                                 |
-| Live `docker compose up` + container smoke test                                                 | ⬜ **Not run** (Docker daemon unavailable this session)                                 |
+| `pytest` — 200/200 passing                                                                      | ✅ Pass                                                                                 |
+| `pnpm lint` (ESLint)                                                                              | ✅ Pass                                                                                 |
+| `pnpm format:check` (Prettier)                                                                    | ✅ Pass                                                                                 |
+| `pnpm --filter web build`                                                                        | ✅ Pass                                                                                 |
+| `pre-commit run --all-files`                                                                     | ✅ Pass — was previously configured but empty (`repos: []`, a silent no-op); now runs real checks |
+| Live `docker compose up` + container smoke test                                                 | ⬜ **Not re-verified this pass** — `docker-compose.yml` was edited (see `SECURITY.md`), re-run before relying on it |
 | Tenant/company bootstrap flow                                                                   | ✅ **Done** — first registration auto-bootstraps the tenant and becomes Owner           |
-| Durable document storage                                                                        | 🟡 **Capability built** (`platform/storage`, local + R2/S3) — bot/module wiring pending |
-| CI pipeline running these checks automatically                                                  | ✅ **Done** — `test-backend` job runs `manage.py check` + pytest on every push/PR       |
-| Production deployment executed (Render/Vercel/DB provisioned)                                   | ⬜ **Not done** (§ 6.3)                                                                 |
-| Real domain, HTTPS, `DJANGO_ALLOWED_HOSTS`/`CORS_ALLOWED_ORIGINS` set for it                    | ⬜ **Not done** — depends on the above                                                  |
-| Secrets rotated from local-dev defaults (`INGESTION_SERVICE_TOKENS`, `DJANGO_SECRET_KEY`, etc.) | ⬜ **Not done** — `.env.example` defaults are for local dev only, never for production  |
+| Durable document storage                                                                        | ✅ **Built and in use** (`platform/storage`, local + R2/S3 backends)                    |
+| CI pipeline running these checks automatically                                                  | ✅ **Done** — `ci.yml` runs lint (frontend + Python) + `manage.py check` + pytest on every push/PR |
+| Production deployment executed (Render/Vercel/DB provisioned)                                   | ❔ **Not verified this pass** — check hosting dashboards directly, don't trust this doc |
+| Secrets rotated from local-dev defaults (`INGESTION_SERVICE_TOKENS`, `DJANGO_SECRET_KEY`, etc.) | 🔴 **Action required** — real-looking credentials were found hardcoded in `docker-compose.yml` (committed to git since the first commit) and must be rotated; see `SECURITY.md` |
 
-**This platform is not production-ready today.** It is a verified,
-tested foundation with one working end-to-end feature (Purchase ingestion).
-The unchecked items above are the actual remaining work before "production"
-is an honest claim.
+**This platform's foundation is verified and green as of this pass** —
+production-readiness beyond that is a decision the operator makes, not
+something this document can certify, since a live deployment wasn't
+re-checked as part of this audit. See `SECURITY.md` for the
+credential-rotation item above before any deploy.
 
 ---
 
@@ -292,18 +309,22 @@ hidden — which is the state you want before scaling up module count.
 
 ## 12. Suggestions for improvement
 
-1. **Fix the tenant/company bootstrap gap next**, before building more
-   features on top of an assumption ("a tenant exists") that isn't
-   actually guaranteed by any code path yet.
+Tenant bootstrap, CI, and the Purchase review queue (formerly items here)
+are done — see § 1. Current suggestions:
+
+1. **Rotate the credentials found hardcoded in `docker-compose.yml`**
+   (Telegram bot token, Gemini API key) — see `SECURITY.md`. Highest
+   priority open item from this pass.
 2. **Add a test that Owner's permission set equals the full Permission
    table** — turns the fragile `INSTALLED_APPS` ordering (§ 11) into a
-   loud failure instead of a silent one if it's ever gotten wrong.
-3. **Stand up CI before adding a third module** — the manual verification
-   gate is doing real work today; automating it is cheap now and expensive
-   to retrofit once there's more surface area to break.
-4. **Verify AI provider pricing/model availability before writing any AI
-   Layer code** — the brief's cost target and model names need confirming
-   against current reality, not this document's possibly-stale knowledge.
-5. **Build the Purchase review queue frontend next** — it's the single
-   highest ratio of "user-visible value" to "already-done backend work"
-   available right now.
+   loud failure instead of a silent one if it's ever gotten wrong. Still
+   not built.
+3. **Decide on Contracts/Inventory app-registry visibility** (§ 6, item 7)
+   — both are fully built and tested; only a sidebar entry is missing.
+4. **Verify AI provider pricing/model availability** — the cost table in
+   § 8 needs confirming against current reality, not this document's
+   possibly-stale knowledge.
+5. **Give `services/*` (ai-engine, email-service, ocr, scheduler,
+   webhook-engine, worker) real implementations** — they're currently
+   Dockerfile + empty scaffolding; `telegram-bot` is the only one built,
+   and is the reference pattern to follow.
