@@ -273,3 +273,16 @@ def test_api_run_now_requires_automation_run_permission(
 
     response = auth_client(user).post(f"{RULES_URL}{rule.id}/run-now/")
     assert response.status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+# Pipeline registration (workflow engine migration)
+# --------------------------------------------------------------------------- #
+
+
+def test_automation_pipelines_are_registered():
+    from workflow.registry import all_pipelines
+
+    keys = {p.key for p in all_pipelines()}
+    assert "automation.rule_execution.package" in keys
+    assert "automation.rule_execution.report" in keys
