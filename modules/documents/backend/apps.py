@@ -29,6 +29,7 @@ class DocumentsConfig(AppConfig):
         from documents.backend.collectible import register_collectible
         from documents.backend.document_types import register_document_types
         from documents.backend.events.subscribers import register_subscribers
+        from documents.backend.metadata_provider import register_metadata_provider_for_documents
         from documents.backend.prompts import register_prompts
         from documents.backend.reports import register_reports
         from documents.backend.search.adapter import register_search
@@ -39,3 +40,4 @@ class DocumentsConfig(AppConfig):
         register_collectible()
         register_subscribers()
         register_document_types()
+        register_metadata_provider_for_documents()

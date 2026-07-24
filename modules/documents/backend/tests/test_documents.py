@@ -243,3 +243,20 @@ def test_create_without_an_owner_skips_identity_resolution(tenant):
     _create(tenant, None)
 
     assert SourceIdentity.objects.count() == 0
+
+
+# --------------------------------------------------------------------------- #
+# Unified metadata (platform/metadata integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_metadata_service_resolves_document_fields_and_tags(tenant, owner):
+    from metadata.services import MetadataService
+
+    document = _create(tenant, owner, category="policy", tags=["Auditor"])
+
+    metadata = MetadataService().get_metadata(stored_file=document.file, tenant=tenant)
+    assert metadata["title"] == document.title
+    assert metadata["status"] == document.status
+    assert metadata["extra"]["category"] == "policy"
+    assert metadata["tags"] == ["Auditor"]

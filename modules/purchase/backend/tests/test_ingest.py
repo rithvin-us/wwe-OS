@@ -234,3 +234,30 @@ def test_ingest_maps_identity_to_the_resolved_vendor(service_client, tenant):
     assert identity.mapped_module == "purchase"
     assert identity.mapped_object_type == "Vendor"
     assert identity.mapped_object_id == str(bill.vendor_id)
+
+
+# --------------------------------------------------------------------------- #
+# Unified metadata (platform/metadata integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_metadata_service_resolves_bill_fields_by_storage_key(service_client, tenant, monkeypatch):
+    from metadata.services import MetadataService
+    from storage.models import StoredFile
+
+    from purchase.backend.models import PurchaseBill
+
+    monkeypatch.setattr(
+        "purchase.backend.services.purchase_bill.httpx.get",
+        lambda url, timeout: _fake_response(),
+    )
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-metadata-1"}
+    service_client.post(INGEST_URL, payload, format="json")
+
+    bill = PurchaseBill.objects.get()
+    stored = StoredFile.objects.get(key=bill.storage_key)
+
+    metadata = MetadataService().get_metadata(stored_file=stored, tenant=tenant)
+    assert metadata["extra"]["vendor"] == "Vendor Inc."
+    assert metadata["extra"]["invoice_number"] == bill.invoice_number
+    assert metadata["extra"]["source_channel"] == "telegram"
