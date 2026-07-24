@@ -67,26 +67,36 @@
 
 ### B. Purchases & Telegram Receipt Ingestion (`/purchase`)
 
-- **Ingestion Channel:** Telegram Bot (`bop-telegram-bot`) listens for receipt images/documents sent via mobile.
+- **Ingestion Channel & Caption Tagging:** Telegram Bot (`bop-telegram-bot`) listens for receipt images and documents sent via mobile. Extracts message captions and hashtags (`#Auditor`, `#GST`, `#Monthly`, `#Urgent`) and passes `caption` and `tags` to `/api/v1/purchase/bills/ingest/` to automatically tag purchase bills upon ingestion.
 - **AI OCR Processing:** Extracts vendor, date, line items, tax, and total amount via Gemini / OpenAI Vision models.
 - **Backend API Sync:** Posts structured receipt data directly to `PLATFORM_API_URL` (`http://backend:8000`) using shared service token `PLATFORM_SERVICE_TOKEN`.
 - **Payment Lifecycle Endpoints:** REST API supports full payment transitions including `POST /api/v1/purchase/bills/{id}/mark-paid/` and `POST /api/v1/purchase/bills/{id}/unmark-paid/`.
 - **Purchase Review UI & Safety Controls:** Next.js application displays incoming bills with mandatory confirmation modals before Mark Paid, Unmark Paid, Deactivate Vendor, or Delete operations.
 - **Standardized UI Vocabulary & Design Tokens:** Extracted monetary/date formatters (`format.ts`), reusable `DeleteBillWarning` component, and `SectionCard`-based AI Insights cards adhering to design tokens.
 
-### C. Inventory Management (`/inventory`)
+### C. Automation Engine & Routine Scheduling (`/automation`)
 
-- Stock tracking, receipts, and issues. Low-stock alerts and reorder level thresholds removed for single-operator speed.
+- **Recurring Schedules:** Supports `ONCE`, `DAILY`, `WEEKLY`, and `MONTHLY` cadences with automatic `next_run_at` frequency calculation upon execution.
+- **File Package Generation:** Package destinations (`downloaded_package`, `auditor_folder`) generate structured `.zip` file bundles stored via `StorageService`. Report destinations (`generate_report`) generate `.csv`/`.pdf`/`.xlsx` files.
+- **1-Click Artifact Downloads:** `AutomationRun` records expose `download_url` for direct access to generated file packages.
+- **Full Rule Editing:** `EditRuleDialog` component (`edit-rule-dialog.tsx`) and `PATCH /api/v1/automation/rules/{id}/` API endpoint allowing operators to modify rule metadata, cadence, trigger schedule, sources, and required tags at any time.
 
 ### D. Document Management System — DMS (`/dms`)
 
-- Upload, store, categorize (`CONTRACT`, `INVOICE`, `COMPLIANCE`, `TECHNICAL`, etc.), and AI-summarize company documents (`src/lib/dms.ts`). Document statuses simplified to `ACTIVE` and `ARCHIVED`.
+- **Document Categories:** Extended categories list including `Invoice`, `Policy`, `PO`, `Report`, `Purchase Bill`, `Contract`, `Correspondence`, and `Other` across frontend (`dms-constants.ts`) and backend (`DocumentCategory` in `models/document.py`).
+- **Custom File Selector:** Clean drag-and-drop file dropzone displaying filename and size (`DC_28_2026-27-1.pdf (0.45 MB)`) without native browser default "Browse..." button text.
+- **Multipart Tags List Extraction:** `DocumentViewSet` `create` and `partial_update` endpoints extract `request.data.getlist("tags")` for seamless multi-tag upload processing.
+- **AI Summarization:** Upload, store, categorize, and AI-summarize company documents (`src/lib/dms.ts`). Document statuses simplified to `ACTIVE` and `ARCHIVED`.
 
-### E. System Maintenance (`/maintenance`)
+### E. Inventory Management (`/inventory`)
+
+- Stock tracking, receipts, and issues. Low-stock alerts and reorder level thresholds removed for single-operator speed.
+
+### F. System Maintenance (`/maintenance`)
 
 - System diagnostics, health checks (`/healthz`), tenant settings, and AI token usage monitoring.
 
-### F. Platform Reliability & Error Resilience (`(platform)`)
+### G. Platform Reliability & Error Resilience (`(platform)`)
 
 - **Error Boundaries:** Platform-wide `apps/web/src/app/(platform)/error.tsx` catches client and server rendering exceptions, presenting an `EmptyState` fallback with recovery actions while leaving header/sidebar active.
 - **Dashboard Relative Freshness:** Dashboard greeting tracks data resolution (`dataAsOf`) and renders a live relative time indicator ("Updated Xm ago") with smooth crossfade transitions.

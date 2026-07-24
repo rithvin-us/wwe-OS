@@ -38,19 +38,29 @@ WWE OS is a single-operator business operations platform tailored for service pr
 - **Purchase Review & Safety Controls:** Direct confirmation modals for Mark Paid, Unmark Paid, Deactivate Vendor, and Delete Bill. Reusable `DeleteBillWarning` component and standardized formatters (`format.ts`).
 - **Design Token Integration:** Rebuilt Purchase AI insights grid using `SectionCard` primitive and token-driven tone highlights (`warning`).
 
-### C. Inventory (`/inventory`)
+### C. Automation Engine & Routine Scheduling (`/automation`)
 
-- Track items, stock receipts, and stock issues. Low-stock checks removed for single-operator simplicity.
+- **Recurring Schedules:** Supports `ONCE`, `DAILY`, `WEEKLY`, and `MONTHLY` cadences with automatic `next_run_at` frequency calculation upon execution.
+- **File Package Generation:** Package destinations (`downloaded_package`, `auditor_folder`) generate structured `.zip` file bundles stored via `StorageService`. Report destinations (`generate_report`) generate `.csv`/`.pdf`/`.xlsx` files.
+- **1-Click Artifact Downloads:** `AutomationRun` records expose `download_url` for direct access to generated file packages.
+- **Full Rule Editing:** `EditRuleDialog` component (`edit-rule-dialog.tsx`) and `PATCH /api/v1/automation/rules/{id}/` API endpoint allowing operators to modify rule metadata, cadence, trigger schedule, sources, and required tags at any time.
 
 ### D. Document Management (`/dms`)
 
-- Upload, store, categorize (`CONTRACT`, `INVOICE`, `COMPLIANCE`, `TECHNICAL`), and AI-summarize company documents (`src/lib/dms.ts`). Approval workflows simplified to `ACTIVE` and `ARCHIVED`.
+- **Extended Categories:** Categories list expanded to `Invoice`, `Policy`, `PO`, `Report`, `Purchase Bill`, `Contract`, `Correspondence`, and `Other` across frontend (`dms-constants.ts`) and backend (`DocumentCategory` in `models/document.py`).
+- **Custom File Dropzone:** Clean drag-and-drop file dropzone displaying selected file name and size (`DC_28_2026-27-1.pdf (0.45 MB)`) without native browser default "Browse..." button text.
+- **Multipart Tags List Extraction:** `DocumentViewSet` `create` and `partial_update` endpoints extract `request.data.getlist("tags")` for multi-tag upload processing.
+- **AI Summarization:** Upload, store, categorize, and AI-summarize company documents (`src/lib/dms.ts`). Document approval workflows simplified to `ACTIVE` and `ARCHIVED`.
 
-### E. System Maintenance (`/maintenance`)
+### E. Inventory (`/inventory`)
+
+- Track items, stock receipts, and stock issues. Low-stock checks removed for single-operator simplicity.
+
+### F. System Maintenance (`/maintenance`)
 
 - System diagnostics, health checks (`/healthz`), tenant configuration, and AI usage monitoring.
 
-### F. Shell & Resilience (`(platform)`)
+### G. Shell & Resilience (`(platform)`)
 
 - **Error Boundary:** Platform-wide `error.tsx` catches exceptions gracefully with `EmptyState` fallback UI.
 - **Dashboard Freshness:** Greeting renders dynamic `dataAsOf` relative timestamp ("Updated Xm ago") with smooth crossfade.
@@ -59,29 +69,38 @@ WWE OS is a single-operator business operations platform tailored for service pr
 
 ## 3. Key File Locations
 
-| Component                   | File Path                                                          |
-| :-------------------------- | :----------------------------------------------------------------- |
-| **DC Service (Backend)**    | `modules/assets/backend/services/dc.py`                            |
-| **DC Views (DRF API)**      | `modules/assets/backend/api/dc_views.py`                           |
-| **DC Model (Django)**       | `modules/assets/backend/models/dc.py`                              |
-| **DC Serializers**          | `modules/assets/backend/serializers/dc.py`                         |
-| **DC Template (Word)**      | `modules/assets/backend/templates/dc_template.docx` / `DC 26.docx` |
-| **DC Page (Frontend)**      | `apps/web/src/app/(platform)/assets/page.tsx`                      |
-| **DC Dialog (Frontend)**    | `apps/web/src/app/(platform)/assets/generate-dc-dialog.tsx`        |
-| **DC Table (Frontend)**     | `apps/web/src/app/(platform)/assets/dc-table.tsx`                  |
-| **DC Analytics (Frontend)** | `apps/web/src/app/(platform)/assets/dc-analytics.tsx`              |
-| **DC Server Actions**       | `apps/web/src/app/(platform)/assets/actions.ts`                    |
-| **Purchase Unmark Paid**    | `modules/purchase/backend/api/bill_views.py`                       |
-| **Purchase Formatters**     | `apps/web/src/app/(platform)/purchase/format.ts`                   |
-| **Delete Bill Warning**     | `apps/web/src/app/(platform)/purchase/delete-bill-warning.tsx`     |
-| **Platform Error Boundary** | `apps/web/src/app/(platform)/error.tsx`                            |
-| **CI/CD Workflow**          | `.github/workflows/ci.yml`                                         |
-| **Auth Proxy Route**        | `apps/web/src/app/api/auth/login/route.ts`                         |
-| **Server API Fetcher**      | `apps/web/src/lib/api/server.ts`                                   |
-| **API Response Envelope**   | `apps/web/src/lib/api/envelope.ts`                                 |
-| **DMS Library**             | `apps/web/src/lib/dms.ts`                                          |
-| **Telegram Bot Service**    | `services/telegram-bot/main.py`                                    |
-| **Docker Composition**      | `docker-compose.yml`                                               |
+| Component                    | File Path                                                          |
+| :--------------------------- | :----------------------------------------------------------------- |
+| **Automation Rules UI**      | `apps/web/src/app/(platform)/automation/rules-table.tsx`           |
+| **Automation Edit Dialog**   | `apps/web/src/app/(platform)/automation/edit-rule-dialog.tsx`      |
+| **Automation Create Dialog** | `apps/web/src/app/(platform)/automation/create-rule-dialog.tsx`    |
+| **Automation Actions**       | `apps/web/src/app/(platform)/automation/actions.ts`                |
+| **Automation Service (Py)**  | `platform/automation/services.py`                                  |
+| **Automation API (Views)**   | `platform/automation/views.py`                                     |
+| **DC Service (Backend)**     | `modules/assets/backend/services/dc.py`                            |
+| **DC Views (DRF API)**       | `modules/assets/backend/api/dc_views.py`                           |
+| **DC Model (Django)**        | `modules/assets/backend/models/dc.py`                              |
+| **DC Serializers**           | `modules/assets/backend/serializers/dc.py`                         |
+| **DC Template (Word)**       | `modules/assets/backend/templates/dc_template.docx` / `DC 26.docx` |
+| **DC Page (Frontend)**       | `apps/web/src/app/(platform)/assets/page.tsx`                      |
+| **DC Dialog (Frontend)**     | `apps/web/src/app/(platform)/assets/generate-dc-dialog.tsx`        |
+| **DC Table (Frontend)**      | `apps/web/src/app/(platform)/assets/dc-table.tsx`                  |
+| **DC Analytics (Frontend)**  | `apps/web/src/app/(platform)/assets/dc-analytics.tsx`              |
+| **DC Server Actions**        | `apps/web/src/app/(platform)/assets/actions.ts`                    |
+| **Purchase Unmark Paid**     | `modules/purchase/backend/api/bill_views.py`                       |
+| **Purchase Formatters**      | `apps/web/src/app/(platform)/purchase/format.ts`                   |
+| **Delete Bill Warning**      | `apps/web/src/app/(platform)/purchase/delete-bill-warning.tsx`     |
+| **DMS Upload Dialog**        | `apps/web/src/app/(platform)/dms/upload-dialog.tsx`                |
+| **DMS Constants**            | `apps/web/src/lib/dms-constants.ts`                                |
+| **DMS Model (Backend)**      | `modules/documents/backend/models/document.py`                     |
+| **Platform Error Boundary**  | `apps/web/src/app/(platform)/error.tsx`                            |
+| **CI/CD Workflow**           | `.github/workflows/ci.yml`                                         |
+| **Auth Proxy Route**         | `apps/web/src/app/api/auth/login/route.ts`                         |
+| **Server API Fetcher**       | `apps/web/src/lib/api/server.ts`                                   |
+| **API Response Envelope**    | `apps/web/src/lib/api/envelope.ts`                                 |
+| **DMS Library**              | `apps/web/src/lib/dms.ts`                                          |
+| **Telegram Bot Service**     | `services/telegram-bot/main.py`                                    |
+| **Docker Composition**       | `docker-compose.yml`                                               |
 
 ---
 
