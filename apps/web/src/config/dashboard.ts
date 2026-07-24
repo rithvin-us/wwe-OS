@@ -106,6 +106,7 @@ export interface AlertItem {
   message: string;
   severity: "info" | "warning" | "critical";
   area: string;
+  href: string;
 }
 
 export function operationalAlerts(
@@ -122,6 +123,7 @@ export function operationalAlerts(
       } flagged for low OCR confidence`,
       severity: "warning",
       area: "Purchases",
+      href: "/purchase",
     });
   }
   if (purchase !== null && purchase.unpaid > 0) {
@@ -132,6 +134,7 @@ export function operationalAlerts(
       } awaiting payment`,
       severity: "info",
       area: "Purchases",
+      href: "/purchase",
     });
   }
   if (contractsExpiringCount > 0) {
@@ -142,6 +145,7 @@ export function operationalAlerts(
       } expiring within 30 days`,
       severity: "warning",
       area: "Contracts",
+      href: "/contracts",
     });
   }
   if (automationDueCount > 0) {
@@ -152,6 +156,7 @@ export function operationalAlerts(
       } due to run`,
       severity: "info",
       area: "Automation",
+      href: "/automation",
     });
   }
   return alerts;

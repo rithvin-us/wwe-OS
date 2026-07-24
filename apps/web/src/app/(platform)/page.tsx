@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
+import { AlertRow } from "@/components/dashboard/alert-row";
 import { Greeting } from "@/components/dashboard/greeting";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
@@ -202,12 +203,9 @@ export default async function DashboardPage() {
                 All clear. Overdue bills and pending reviews are flagged here.
               </PanelEmpty>
             ) : (
-              <ul className="space-y-3">
+              <ul className="space-y-1">
                 {alerts.map((item) => (
-                  <li key={item.id} className="text-sm">
-                    <span className="text-foreground">{item.message}</span>
-                    <span className="ml-1 text-xs text-muted-foreground">— {item.area}</span>
-                  </li>
+                  <AlertRow key={item.id} alert={item} />
                 ))}
               </ul>
             )}
