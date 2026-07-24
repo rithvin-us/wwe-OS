@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@bop/ui/components/page-header";
-import { Send, Zap, FileText, AlertTriangle, TrendingUp } from "@bop/icons";
+import { Send, Wallet, FileText, AlertTriangle, TrendingUp } from "@bop/icons";
 
 import { BillsTable } from "@/app/(platform)/purchase/bills-table";
 import { VendorsPanel } from "@/app/(platform)/purchase/vendors-panel";
+import { SectionCard } from "@/components/dashboard/section-card";
 import {
   getPurchaseBills,
   getPurchaseBillStats,
@@ -56,6 +57,7 @@ export default async function PurchasePage() {
 
   const totalSpendFormatted = formatINR(insights?.overview?.total_spend || 0);
   const totalGstFormatted = formatINR(insights?.overview?.total_gst || 0);
+  const duplicatesCount = insights?.duplicate_detection?.duplicates_count || 0;
 
   return (
     <div className="space-y-8">
@@ -76,16 +78,12 @@ export default async function PurchasePage() {
         <StatTile label="Total Digitized Spend" value={totalSpendFormatted} icon={TrendingUp} />
       </div>
 
-      {/* AI Insights Widget Panel */}
+      {/* AI insights */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Zap className="size-4 text-amber-500" />
-            <h3 className="font-medium text-sm">Vendor Spend Analysis</h3>
-          </div>
-          <div className="space-y-2">
-            {insights?.vendor_analysis?.length ? (
-              insights.vendor_analysis.map((v) => (
+        <SectionCard title="Vendor spend analysis" icon={Wallet}>
+          {insights?.vendor_analysis?.length ? (
+            <div className="space-y-2">
+              {insights.vendor_analysis.map((v) => (
                 <div key={v.id} className="flex items-center justify-between text-xs">
                   <span className="font-medium text-foreground truncate max-w-[140px]">
                     {v.name}
@@ -94,42 +92,32 @@ export default async function PurchasePage() {
                     {formatINR(v.total_spend)} ({v.bills_count})
                   </span>
                 </div>
-              ))
-            ) : (
-              <p className="text-xs text-muted-foreground">No vendor analysis available yet.</p>
-            )}
-          </div>
-        </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No vendor analysis available yet.</p>
+          )}
+        </SectionCard>
 
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-4 text-blue-500" />
-            <h3 className="font-medium text-sm">GST & Tax Summary</h3>
-          </div>
-          <div className="space-y-1">
-            <p className="font-display text-xl font-semibold tabular-nums">{totalGstFormatted}</p>
-            <p className="text-xs text-muted-foreground">
-              Claimable tax across {insights?.gst_summary?.bills_with_gst || 0} bills with GST IDs.
-            </p>
-          </div>
-        </div>
+        <SectionCard title="GST & tax summary" icon={TrendingUp}>
+          <p className="font-display text-xl font-semibold tabular-nums">{totalGstFormatted}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Claimable tax across {insights?.gst_summary?.bills_with_gst || 0} bills with GST IDs.
+          </p>
+        </SectionCard>
 
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="size-4 text-rose-500" />
-            <h3 className="font-medium text-sm">Duplicate Detection</h3>
-          </div>
-          <div className="space-y-1">
-            <p className="font-display text-xl font-semibold tabular-nums">
-              {insights?.duplicate_detection?.duplicates_count || 0}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {insights?.duplicate_detection?.duplicates_count === 0
-                ? "No duplicate invoices detected."
-                : "Duplicate invoices automatically flagged for review."}
-            </p>
-          </div>
-        </div>
+        <SectionCard
+          title="Duplicate detection"
+          icon={AlertTriangle}
+          tone={duplicatesCount > 0 ? "warning" : "default"}
+        >
+          <p className="font-display text-xl font-semibold tabular-nums">{duplicatesCount}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {duplicatesCount === 0
+              ? "No duplicate invoices detected."
+              : "Duplicate invoices automatically flagged for review."}
+          </p>
+        </SectionCard>
       </div>
 
       <section className="space-y-3">
