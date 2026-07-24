@@ -166,7 +166,7 @@ export default async function DashboardPage() {
             <SummaryRows rows={FINANCIAL_SUMMARY} />
           </SectionCard>
 
-          <SectionCard title="Procurement & Bills" icon={ShoppingCart} href="/purchase">
+          <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase">
             <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
           </SectionCard>
 

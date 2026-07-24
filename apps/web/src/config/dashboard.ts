@@ -51,7 +51,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
     },
     {
       key: "digitized-purchases",
-      label: "Digitized Purchases",
+      label: "Digitized purchases",
       icon: ShoppingCart,
       format: "count",
       value: purchase?.processed ?? null,
@@ -81,12 +81,6 @@ export const FINANCIAL_SUMMARY: SummaryRow[] = [
   { label: "Expenses (month)", value: null, format: "currency" },
   { label: "Net", value: null, format: "currency" },
   { label: "Cash position", value: null, format: "currency" },
-];
-
-export const INVENTORY_SUMMARY: SummaryRow[] = [
-  { label: "Service equipment tracked", value: null, format: "count" },
-  { label: "Active in service", value: null, format: "count" },
-  { label: "Depleted spare parts", value: null, format: "count" },
 ];
 
 export function procurementSummary(

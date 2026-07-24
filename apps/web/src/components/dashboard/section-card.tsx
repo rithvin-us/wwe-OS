@@ -40,7 +40,7 @@ export function SectionCard({
         {href ? (
           <Link
             href={href}
-            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-sm text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             Open
           </Link>
