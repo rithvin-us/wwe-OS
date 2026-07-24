@@ -17,7 +17,16 @@ export async function AiInsightsPanel({
   const insights = buildAiInsights(summary);
 
   return (
-    <SectionCard title="AI insights" icon={Sparkles}>
+    <SectionCard
+      title="AI insights"
+      icon={Sparkles}
+      // This section can genuinely resolve well after the rest of the page
+      // (isolated behind its own Suspense boundary in the dashboard so a
+      // cold AI cache never blocks first paint) — the fade confirms this
+      // specific arrival rather than decorating a mount that already
+      // happened moments ago.
+      className="animate-in fade-in duration-(--duration-base) ease-out-quart"
+    >
       {insights.length === 0 ? (
         <PanelEmpty>
           Once there&rsquo;s activity to learn from, you&rsquo;ll see trends and suggestions here.

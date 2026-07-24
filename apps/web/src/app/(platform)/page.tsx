@@ -152,8 +152,8 @@ export default async function DashboardPage() {
       {/* Operational pulse */}
       <section aria-label="Key figures">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {kpis.map((kpi, index) => (
-            <KpiTile key={kpi.key} kpi={kpi} index={index} />
+          {kpis.map((kpi) => (
+            <KpiTile key={kpi.key} kpi={kpi} />
           ))}
         </div>
       </section>
