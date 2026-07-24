@@ -34,6 +34,12 @@ module, permission, build_spec(tenant) -> ReportSpec)`. Registered so far:
 - **Permissions**: `reporting.view` (see the catalog + history) / `reporting.export`
   (run), plus each report's module permission.
 
+- **Automation & Scheduled Exports** (`platform/automation`): Automation Engine schedules recurring routine reports and package file bundles.
+  - **Cadence Frequency**: Supports `ONCE`, `DAILY`, `WEEKLY`, and `MONTHLY` cadences with automatic `next_run_at` frequency calculation upon execution.
+  - **File Package Generation**: Package destinations (`downloaded_package`, `auditor_folder`) generate structured `.zip` file bundles stored via `StorageService`. Report destinations (`generate_report`) generate `.csv`/`.pdf`/`.xlsx` files.
+  - **1-Click Artifact Access**: `AutomationRun` records expose `download_url` for direct file artifact downloads.
+  - **Rule Editing UI**: `EditRuleDialog` component (`edit-rule-dialog.tsx`) and `PATCH /api/v1/automation/rules/{id}/` endpoint allowing operators to modify rule metadata, cadence, sources, and required tags at any time.
+
 **Adding a report**: a module registers a `ReportDefinition` in its `ready()`
 (see `modules/*/backend/reports.py`) — it appears in the catalog automatically.
 

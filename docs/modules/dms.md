@@ -16,8 +16,9 @@ build-verified).
 
 - **Entity**: one `Document` (UUID, tenant-scoped, soft-delete) wrapping a
   platform `storage.StoredFile`. Fields: title, description, category
-  (contract/invoice/policy/report/correspondence/other), status
-  (draft→in_review→approved / archived), tags, ai_summary, owner, approval link.
+  (`contract`, `invoice`, `policy`, `po`, `report`, `purchase_bill`, `correspondence`, `other`), status
+  (`active` / `archived`), tags, ai_summary, owner, approval link.
+- **Custom Upload Dropzone & Multi-Tag Ingestion**: Upload modal features a clean drag-and-drop file dropzone displaying filename and size (`DC_28_2026-27-1.pdf (0.45 MB)`) without native browser default "Browse..." button text. Handles multi-tag uploads cleanly via multipart `request.data.getlist("tags")` in `DocumentViewSet`.
 - **Storage** (platform): bytes go to `StorageService` (local / Cloudflare R2 /
   S3), never to the module. sha256 integrity, MIME + size validation, signed
   downloads through the BFF proxy.

@@ -9,12 +9,18 @@ Register company equipment, track who holds it and its servicing, and record its
 ## Built (v1) — shipped surface
 
 Live end to end. Backend: `modules/assets/backend` (12 tests). Frontend:
-`apps/web/src/app/(platform)/assets` (register + detail with maintenance log +
-lifecycle actions, build-verified).
+`apps/web/src/app/(platform)/assets` (register + detail with maintenance log + Delivery Challan generator, build-verified).
 
+- **Delivery Challan (DC) Engine**: Microsoft Word `.docx` template rendering (`dc_template.docx` / `DC 26.docx`) into client-ready PDFs.
+  - **Free-Text Products & Items**: Arbitrary line item descriptions without rigid inventory lookups.
+  - **Custom Measurement Units (UOM)**: Accepts arbitrary units (`2 Kg`, `5 Litre`, `1 Lot`, `10 Nos`, `3 Mtr`, `12 Pcs`).
+  - **Deliver To Address**: Free-text delivery address field.
+  - **Tamper-Proof Verification Hash**: Generates a SHA-256 hash (`verification_hash`) for every PDF document.
+  - **DC REST APIs**: Supports creation (`POST /api/v1/assets/dcs/`), deletion (`DELETE /api/v1/assets/dcs/{id}/`), and PDF download (`/api/assets/dcs/{id}/download/`).
+  - **Analytics Banner**: `DCAnalytics` header displays total DC count, Returnable vs. Non-Returnable metrics, monthly output, and visual ratio bar.
 - **Entities**: `Asset` (UUID, tenant-scoped, soft-delete; asset tag unique per
   tenant; category, purchase cost/date, supplier & assignee as free text,
-  optional warranty/invoice file) and a `MaintenanceRecord` log.
+  optional warranty/invoice file), `DeliveryChallan`, and a `MaintenanceRecord` log.
 - **Lifecycle state machine**: in stock → assigned → (return) → in stock; in
   stock/assigned → in maintenance → (complete, logs a record) → in stock; any
   active state → disposed (terminal). Every transition validates the current

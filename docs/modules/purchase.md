@@ -1,10 +1,17 @@
 # Module Intelligence · Purchase Orders
 
-Route `/purchase` · Domain: Operations · Status: Planned
+Route `/purchase` · Domain: Operations · Status: **Built (v1) — 2026-07-24**
 
 ## 1. Business purpose
 
-Take a purchase from requisition to approved order to received goods with a controlled, auditable trail and no off-system spending.
+Digitize, analyze, and track purchase bills and receipts uploaded via mobile Telegram bot or web interface, managing vendor records and payment lifecycles.
+
+## Built (v1) — shipped surface
+
+- **Mobile Telegram Receipt Ingestion**: `bop-telegram-bot` processes incoming receipt photos and documents, extracts fields using Gemini Vision OCR, and auto-tags purchase bills using caption hashtags (`#Auditor`, `#GST`, `#Monthly`, `#Urgent`).
+- **Payment Lifecycle Management**: Supports full state transitions: `pending_review` → `processed` → `paid` / `unmark-paid`.
+- **Backend APIs**: `POST /api/v1/purchase/bills/ingest/`, `POST /api/v1/purchase/bills/{id}/mark-paid/`, `POST /api/v1/purchase/bills/{id}/unmark-paid/`, `DELETE /api/v1/purchase/bills/{id}/`.
+- **Operator Review UI & Safety Controls**: Next.js dashboard with `BillDetailsDialog`, `DeleteBillWarning` confirmation modal, vendor management panel, and token-styled `SectionCard` AI insight widgets.
 
 ## 2. Problems it solves
 
