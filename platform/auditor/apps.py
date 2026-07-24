@@ -9,6 +9,8 @@ class AuditorConfig(AppConfig):
     def ready(self) -> None:
         from periods.registry import DocumentTypeDef, register_document_type
 
+        from auditor.pipelines import register_auditor_pipeline
+
         register_document_type(
             DocumentTypeDef(
                 key="auditor_package",
@@ -18,3 +20,4 @@ class AuditorConfig(AppConfig):
                 module="auditor",
             )
         )
+        register_auditor_pipeline()
