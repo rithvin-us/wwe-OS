@@ -4,8 +4,16 @@ retries, compensation, crash recovery, and batch ticking."""
 from __future__ import annotations
 
 import pytest
-from workflow.engine import _claim_step
-from workflow.models import PipelineRun, PipelineStepRun, StepRunStatus
+from django.utils import timezone
+from workflow.engine import AdvanceOutcome, _claim_step, advance_one
+from workflow.models import PipelineRun, PipelineRunStatus, PipelineStepRun, StepRunStatus
+from workflow.registry import (
+    PipelineDefinition,
+    StepContext,
+    StepDefinition,
+    StepResult,
+    register_pipeline,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -63,3 +71,169 @@ def test_claim_supports_a_different_target_status(tenant):
     assert claimed is True
     step.refresh_from_db()
     assert step.status == StepRunStatus.COMPENSATING
+
+
+# --------------------------------------------------------------------------- #
+# Forward execution (advance_one)
+# --------------------------------------------------------------------------- #
+
+
+def _register_single_step_pipeline(key, *, run, max_attempts=1, backoff=None):
+    kwargs = dict(key="only", label="Only step", run=run, max_attempts=max_attempts)
+    if backoff is not None:
+        kwargs["backoff"] = backoff
+    register_pipeline(
+        PipelineDefinition(
+            key=key,
+            label="Test",
+            module="test",
+            permission="test.run",
+            version=1,
+            steps=[StepDefinition(**kwargs)],
+        )
+    )
+
+
+def _start_run(tenant, pipeline_key, *, step_keys=("only",)) -> PipelineRun:
+    run = PipelineRun.objects.create(
+        tenant=tenant, pipeline_key=pipeline_key, step_keys=list(step_keys)
+    )
+    for index, key in enumerate(step_keys):
+        PipelineStepRun.objects.create(tenant=tenant, run=run, step_index=index, step_key=key)
+    return run
+
+
+def test_advance_one_runs_step_and_finishes_a_single_step_pipeline(tenant):
+    _register_single_step_pipeline(
+        "test.advance.success", run=lambda ctx: StepResult(output={"ok": True})
+    )
+    run = _start_run(tenant, "test.advance.success")
+
+    outcome = advance_one(run)
+    assert outcome == AdvanceOutcome.STEP_SUCCEEDED
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.RUNNING
+    assert run.current_step_index == 1
+    assert run.context == {"only": {"ok": True}}
+
+    outcome = advance_one(run)
+    assert outcome == AdvanceOutcome.RUN_FINISHED
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.SUCCESS
+    assert run.finished_at is not None
+
+
+def test_advance_one_runs_multi_step_pipeline_in_order(tenant):
+    order: list[str] = []
+
+    def step_a(ctx: StepContext) -> StepResult:
+        order.append("a")
+        return StepResult(output={})
+
+    def step_b(ctx: StepContext) -> StepResult:
+        order.append("b")
+        return StepResult(output={})
+
+    register_pipeline(
+        PipelineDefinition(
+            key="test.advance.multi",
+            label="Multi",
+            module="test",
+            permission="test.run",
+            version=1,
+            steps=[
+                StepDefinition(key="a", label="A", run=step_a),
+                StepDefinition(key="b", label="B", run=step_b),
+            ],
+        )
+    )
+    run = _start_run(tenant, "test.advance.multi", step_keys=("a", "b"))
+
+    advance_one(run)
+    run.refresh_from_db()
+    advance_one(run)
+    run.refresh_from_db()
+    assert order == ["a", "b"]
+    # 2 steps done, but "no more steps" is only discovered on the next call.
+    assert run.status == PipelineRunStatus.RUNNING
+
+    advance_one(run)
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.SUCCESS
+
+
+def test_step_failure_retries_up_to_max_attempts_respecting_backoff(tenant):
+    calls = {"count": 0}
+
+    def flaky(ctx: StepContext) -> StepResult:
+        calls["count"] += 1
+        raise RuntimeError("transient")
+
+    _register_single_step_pipeline(
+        "test.advance.retry", run=flaky, max_attempts=2, backoff=lambda attempt: 3600
+    )
+    run = _start_run(tenant, "test.advance.retry")
+
+    outcome = advance_one(run)
+    assert outcome == AdvanceOutcome.RETRYING
+    step = run.steps.get(step_index=0)
+    assert step.status == StepRunStatus.PENDING
+    assert step.attempt == 1
+    assert step.next_attempt_at > timezone.now()
+
+    # Backoff hasn't elapsed (3600s) — a second tick right now must not retry yet.
+    outcome = advance_one(run)
+    assert outcome == AdvanceOutcome.NOT_DUE
+    assert calls["count"] == 1
+
+
+def test_step_failure_after_exhausted_retries_enters_compensating(tenant):
+    def always_fails(ctx: StepContext) -> StepResult:
+        raise RuntimeError("permanent")
+
+    _register_single_step_pipeline("test.advance.exhausted", run=always_fails, max_attempts=1)
+    run = _start_run(tenant, "test.advance.exhausted")
+
+    advance_one(run)
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.COMPENSATING
+    assert run.termination_reason == "failed"
+    assert "permanent" in run.error_message
+    step = run.steps.get(step_index=0)
+    assert step.status == StepRunStatus.FAILED
+
+
+def test_advance_one_is_a_noop_when_paused(tenant):
+    _register_single_step_pipeline("test.advance.paused", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.advance.paused")
+    run.status = PipelineRunStatus.PAUSED
+    run.save(update_fields=["status"])
+
+    outcome = advance_one(run)
+
+    assert outcome == AdvanceOutcome.PAUSED
+    step = run.steps.get(step_index=0)
+    assert step.status == StepRunStatus.PENDING  # untouched
+
+
+def test_concurrent_finish_only_publishes_once(tenant, monkeypatch):
+    """Two racing callers both discovering 'no more steps' must not both
+    publish the completion event (and, in automation's later migration,
+    must not both create an AutomationRun for the same rule execution)."""
+    from workflow import engine
+
+    published = []
+    monkeypatch.setattr(engine, "publish", lambda event, **payload: published.append(event))
+
+    _register_single_step_pipeline("test.advance.race", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.advance.race")
+    advance_one(run)  # completes the only step
+    run.refresh_from_db()
+
+    # Two callers both see "no more steps" and both call _finish_run.
+    from workflow.engine import _finish_run
+
+    _finish_run(run, PipelineRunStatus.SUCCESS)
+    _finish_run(run, PipelineRunStatus.SUCCESS)
+
+    assert len(published) == 1
