@@ -260,6 +260,30 @@ def test_ingest_with_malformed_gst_needs_attention_and_records_the_reason(servic
     assert "invalid_gst_format" in bill.raw_extraction["rule_reasons"]
 
 
+# --------------------------------------------------------------------------- #
+# Search facets (platform/search integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_search_index_carries_vendor_and_period_facets(service_client, tenant, monkeypatch):
+    from search.models import SearchDocument
+
+    monkeypatch.setattr(
+        "purchase.backend.services.purchase_bill.httpx.get",
+        lambda url, timeout: _fake_response(),
+    )
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-search-1"}
+    service_client.post(INGEST_URL, payload, format="json")
+
+    bill = PurchaseBill.objects.get()
+    entry = SearchDocument.objects.get(index="purchase", doc_id=str(bill.id))
+    assert entry.extra["document_type"] == "purchase_bill"
+    assert entry.extra["vendor"] == "Vendor Inc."
+    assert entry.extra["source_channel"] == "telegram"
+    assert entry.extra["period_year"] == 2026
+    assert entry.extra["period_month"] == 7
+
+
 def test_metadata_service_resolves_bill_fields_by_storage_key(service_client, tenant, monkeypatch):
     from metadata.services import MetadataService
     from storage.models import StoredFile

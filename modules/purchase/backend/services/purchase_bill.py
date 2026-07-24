@@ -418,23 +418,16 @@ class PurchaseBillService(BaseService):
 
     def _index_search(self, bill: PurchaseBill) -> None:
         """Push the bill into the Search Service so it's findable via Global
-        Search. See purchase.backend.search.adapter for the registered index."""
+        Search. Reuses the registered adapter (purchase.backend.search.adapter)
+        rather than rebuilding title/body/extra here — the adapter is the
+        single source of truth for what a purchase bill looks like as a
+        search document, also used by SearchService.rebuild()."""
         from search.services import SearchService
 
-        reference = bill.invoice_number or f"{bill.currency} {bill.total_rate}"
-        body = (
-            f"Vendor: {bill.seller_name}, Invoice #: {bill.invoice_number}, "
-            f"GST: {bill.gst_number}, Total: {bill.total_rate}"
-        )
+        from purchase.backend.search.adapter import to_document
+
         try:
-            SearchService().upsert(
-                index="purchase",
-                doc_id=str(bill.id),
-                title=f"Purchase: {bill.seller_name} ({reference})",
-                body=body,
-                url="/purchase",
-                tenant=bill.tenant,
-            )
+            SearchService().upsert(index="purchase", tenant=bill.tenant, **to_document(bill))
         except Exception as exc:
             logger.warning("Search indexing failed for purchase bill %s: %s", bill.id, exc)
 
