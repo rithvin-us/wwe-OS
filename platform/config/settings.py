@@ -93,6 +93,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "identity",
     "metadata",
     "rules",
+    "auditor",  # Auditor Package Generator — distinct from "audit" (the audit log app)
     "ai",
     "search",
     "reporting",

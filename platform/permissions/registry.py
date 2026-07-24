@@ -65,6 +65,10 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("identity.view", "View source identities", "Identity"),
     # Metadata (unified document metadata)
     PermissionDef("metadata.view", "View unified document metadata", "Metadata"),
+    # Auditor (auditor package generator)
+    PermissionDef(
+        "auditor.generate", "Generate an auditor package for a business period", "Auditor"
+    ),
 ]
 
 ALL_CODES = frozenset(p.code for p in PLATFORM_PERMISSIONS)
