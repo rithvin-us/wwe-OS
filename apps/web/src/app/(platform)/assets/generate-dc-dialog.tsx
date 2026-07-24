@@ -17,13 +17,7 @@ import { Input } from "@bop/ui/components/input";
 import { Label } from "@bop/ui/components/label";
 import { generateDCAction } from "./actions";
 
-export function GenerateDCDialog({
-  sites,
-  inventoryItems: _inventoryItems,
-}: {
-  sites: { id: string; name: string }[];
-  inventoryItems: { id: string; name: string; sku: string; unit: string }[];
-}) {
+export function GenerateDCDialog({ sites }: { sites: { id: string; name: string }[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([{ id: "", qty: 1, unit: "Nos" }]);

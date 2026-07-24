@@ -68,8 +68,3 @@ def publish(event: str, **payload: Any) -> None:
             handler(event=event, **payload)
         except Exception:  # noqa: BLE001 - one bad subscriber must not cascade
             logger.exception("Event subscriber failed for %s", event)
-
-
-def clear() -> None:
-    """Test helper — drop all subscriptions."""
-    _subscribers.clear()

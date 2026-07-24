@@ -54,11 +54,6 @@ def all_prompts() -> list[PromptDef]:
     return sorted(_REGISTRY.values(), key=lambda p: p.key)
 
 
-def clear() -> None:
-    """Test helper."""
-    _REGISTRY.clear()
-
-
 def _template_variables(prompt: PromptDef) -> set[str]:
     """Placeholders actually used in the templates; must equal the declared
     variables so documentation and reality cannot drift."""

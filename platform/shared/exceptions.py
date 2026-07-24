@@ -90,7 +90,7 @@ def standard_exception_handler(exc: Exception, context: dict[str, Any]) -> Respo
         # validation failures, matching the platform ValidationError above.
         # Normalize so every validation failure looks the same over the API,
         # regardless of which layer raised it.
-        print("DRF VALIDATION ERROR:", exc.detail, flush=True)
+        logger.debug("DRF validation error normalized to 422: %s", exc.detail)
         response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
         code = "validation_error"
 

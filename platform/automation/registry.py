@@ -56,8 +56,3 @@ def get_source(module: str) -> SourceAdapter:
 
 def all_sources() -> list[SourceAdapter]:
     return sorted(_REGISTRY.values(), key=lambda a: a.module)
-
-
-def clear() -> None:
-    """Test helper."""
-    _REGISTRY.clear()

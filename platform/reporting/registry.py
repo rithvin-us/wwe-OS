@@ -48,8 +48,3 @@ def get_report(key: str) -> ReportDefinition:
 
 def all_reports() -> list[ReportDefinition]:
     return sorted(_REGISTRY.values(), key=lambda d: (d.module, d.key))
-
-
-def clear() -> None:
-    """Test helper."""
-    _REGISTRY.clear()

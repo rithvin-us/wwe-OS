@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from roles.models import Role, UserRole
+from roles.models import Role
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -34,10 +34,3 @@ class SetPermissionsSerializer(serializers.Serializer):
 
 class AssignRoleSerializer(serializers.Serializer):
     user_id = serializers.UUIDField()
-
-
-class UserRoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserRole
-        fields = ("id", "user", "role", "assigned_by", "created_at")
-        read_only_fields = fields
