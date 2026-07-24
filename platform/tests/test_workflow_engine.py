@@ -237,3 +237,119 @@ def test_concurrent_finish_only_publishes_once(tenant, monkeypatch):
     _finish_run(run, PipelineRunStatus.SUCCESS)
 
     assert len(published) == 1
+
+
+# --------------------------------------------------------------------------- #
+# Compensation (rollback)
+# --------------------------------------------------------------------------- #
+
+
+def test_compensation_runs_prior_successful_steps_in_reverse_order(tenant):
+    compensated: list[str] = []
+
+    def make_step(key, *, fail=False):
+        def run(ctx: StepContext) -> StepResult:
+            if fail:
+                raise RuntimeError("boom")
+            return StepResult(output={})
+
+        def compensate(ctx: StepContext) -> None:
+            compensated.append(key)
+
+        return StepDefinition(key=key, label=key, run=run, compensate=compensate, max_attempts=1)
+
+    register_pipeline(
+        PipelineDefinition(
+            key="test.compensate.order",
+            label="Order",
+            module="test",
+            permission="test.run",
+            version=1,
+            steps=[make_step("a"), make_step("b"), make_step("c", fail=True)],
+        )
+    )
+    run = _start_run(tenant, "test.compensate.order", step_keys=("a", "b", "c"))
+
+    advance_one(run)
+    run.refresh_from_db()  # a succeeds
+    advance_one(run)
+    run.refresh_from_db()  # b succeeds
+    advance_one(run)
+    run.refresh_from_db()  # c fails, exhausts retries -> COMPENSATING
+    assert run.status == PipelineRunStatus.COMPENSATING
+
+    advance_one(run)
+    run.refresh_from_db()  # unwind b
+    advance_one(run)
+    run.refresh_from_db()  # unwind a
+    advance_one(run)
+    run.refresh_from_db()  # nothing left -> FAILED
+
+    assert compensated == ["b", "a"]
+    assert run.status == PipelineRunStatus.FAILED
+    assert run.steps.get(step_key="c").status == StepRunStatus.FAILED
+    assert run.steps.get(step_key="b").status == StepRunStatus.COMPENSATED
+    assert run.steps.get(step_key="a").status == StepRunStatus.COMPENSATED
+
+
+def test_compensation_error_on_one_step_does_not_block_unwinding_earlier_steps(tenant):
+    def ok_run(ctx: StepContext) -> StepResult:
+        return StepResult(output={})
+
+    def failing_compensate(ctx: StepContext) -> None:
+        raise RuntimeError("compensate failed")
+
+    def fails(ctx: StepContext) -> StepResult:
+        raise RuntimeError("boom")
+
+    register_pipeline(
+        PipelineDefinition(
+            key="test.compensate.partial",
+            label="Partial",
+            module="test",
+            permission="test.run",
+            version=1,
+            steps=[
+                StepDefinition(key="a", label="a", run=ok_run, compensate=lambda ctx: None),
+                StepDefinition(key="b", label="b", run=ok_run, compensate=failing_compensate),
+                StepDefinition(key="c", label="c", run=fails, max_attempts=1),
+            ],
+        )
+    )
+    run = _start_run(tenant, "test.compensate.partial", step_keys=("a", "b", "c"))
+    advance_one(run)
+    run.refresh_from_db()
+    advance_one(run)
+    run.refresh_from_db()
+    advance_one(run)
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.COMPENSATING
+
+    advance_one(run)
+    run.refresh_from_db()  # unwind b -> fails
+    advance_one(run)
+    run.refresh_from_db()  # unwind a -> succeeds anyway
+    advance_one(run)
+    run.refresh_from_db()  # finish
+
+    assert run.steps.get(step_key="b").status == StepRunStatus.COMPENSATION_FAILED
+    assert run.steps.get(step_key="a").status == StepRunStatus.COMPENSATED
+    assert run.status == PipelineRunStatus.FAILED
+
+
+def test_cancelling_a_run_lands_on_cancelled_not_failed(tenant):
+    _register_single_step_pipeline("test.compensate.cancel", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.compensate.cancel")
+    advance_one(run)
+    run.refresh_from_db()  # only step succeeds, run still RUNNING
+
+    run.status = PipelineRunStatus.COMPENSATING
+    run.termination_reason = "cancelled"
+    run.save(update_fields=["status", "termination_reason"])
+
+    advance_one(run)
+    run.refresh_from_db()  # unwind the one succeeded step
+    advance_one(run)
+    run.refresh_from_db()  # finish
+
+    assert run.status == PipelineRunStatus.CANCELLED

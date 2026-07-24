@@ -167,4 +167,41 @@ def _handle_step_failure(
 
 
 def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
-    raise NotImplementedError  # implemented in Task 6
+    next_row = run.steps.filter(status=StepRunStatus.SUCCESS).order_by("-step_index").first()
+    if next_row is None:
+        run.steps.filter(status=StepRunStatus.PENDING).update(status=StepRunStatus.SKIPPED)
+        final = (
+            PipelineRunStatus.CANCELLED
+            if run.termination_reason == TerminationReason.CANCELLED
+            else PipelineRunStatus.FAILED
+        )
+        return _finish_run(run, final)
+
+    if not _claim_step(
+        next_row.id, from_status=StepRunStatus.SUCCESS, to_status=StepRunStatus.COMPENSATING
+    ):
+        return AdvanceOutcome.ALREADY_CLAIMED
+
+    definition = get_pipeline(run.pipeline_key)
+    step_def = next((s for s in definition.steps if s.key == next_row.step_key), None)
+    ctx = StepContext(
+        tenant=run.tenant,
+        run_id=str(run.id),
+        actor=actor,
+        data=dict(run.context),
+        attempt=next_row.attempt,
+    )
+    try:
+        if step_def is not None and step_def.compensate is not None:
+            step_def.compensate(ctx)
+        next_row.status = StepRunStatus.COMPENSATED
+    except Exception as exc:  # noqa: BLE001 - logged; unwind of earlier steps still continues
+        next_row.status = StepRunStatus.COMPENSATION_FAILED
+        next_row.error_message = str(exc)
+        logger.exception("Compensation failed for step %s of run %s", next_row.step_key, run.id)
+    next_row.finished_at = timezone.now()
+    next_row.locked_at = None
+    next_row.save(
+        update_fields=["status", "error_message", "finished_at", "locked_at", "updated_at"]
+    )
+    return AdvanceOutcome.COMPENSATED
