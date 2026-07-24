@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import re
 
 import httpx
 from dotenv import load_dotenv
@@ -316,6 +317,15 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await message.edit_text("❌ Failed to receive document. Please try sending again.")
         return
 
+    # Extract caption & hashtags if provided with document
+    caption = (update.message.caption or update.message.text or "").strip()
+    tags: list[str] = []
+    if caption:
+        hashtags = re.findall(r"#([A-Za-z0-9_-]+)", caption)
+        for h in hashtags:
+            if h and h not in tags:
+                tags.append(h)
+
     # STEP 1: Save document to backend FIRST through Storage Service (never blocked)
     user_handle = update.effective_user.username or update.effective_user.full_name or ""
     initial_payload = {
@@ -328,6 +338,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "document_url": document_url,
         "external_ref": file_unique_id,
         "source_channel": "telegram",
+        "caption": caption,
+        "tags": tags,
     }
 
     try:
@@ -367,6 +379,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             "document_url": document_url,
             "external_ref": file_unique_id,
             "source_channel": "telegram",
+            "caption": caption,
+            "tags": tags,
             "raw_extraction": extracted,
         }
         res = await _post_to_platform(update_payload)

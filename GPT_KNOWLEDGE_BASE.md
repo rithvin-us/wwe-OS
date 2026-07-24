@@ -70,7 +70,9 @@
 - **Ingestion Channel:** Telegram Bot (`bop-telegram-bot`) listens for receipt images/documents sent via mobile.
 - **AI OCR Processing:** Extracts vendor, date, line items, tax, and total amount via Gemini / OpenAI Vision models.
 - **Backend API Sync:** Posts structured receipt data directly to `PLATFORM_API_URL` (`http://backend:8000`) using shared service token `PLATFORM_SERVICE_TOKEN`.
-- **Purchase Review UI:** Next.js application displays incoming bills for manual review, edit, approval, or rejection.
+- **Payment Lifecycle Endpoints:** REST API supports full payment transitions including `POST /api/v1/purchase/bills/{id}/mark-paid/` and `POST /api/v1/purchase/bills/{id}/unmark-paid/`.
+- **Purchase Review UI & Safety Controls:** Next.js application displays incoming bills with mandatory confirmation modals before Mark Paid, Unmark Paid, Deactivate Vendor, or Delete operations.
+- **Standardized UI Vocabulary & Design Tokens:** Extracted monetary/date formatters (`format.ts`), reusable `DeleteBillWarning` component, and `SectionCard`-based AI Insights cards adhering to design tokens.
 
 ### C. Inventory Management (`/inventory`)
 
@@ -84,12 +86,20 @@
 
 - System diagnostics, health checks (`/healthz`), tenant settings, and AI token usage monitoring.
 
+### F. Platform Reliability & Error Resilience (`(platform)`)
+
+- **Error Boundaries:** Platform-wide `apps/web/src/app/(platform)/error.tsx` catches client and server rendering exceptions, presenting an `EmptyState` fallback with recovery actions while leaving header/sidebar active.
+- **Dashboard Relative Freshness:** Dashboard greeting tracks data resolution (`dataAsOf`) and renders a live relative time indicator ("Updated Xm ago") with smooth crossfade transitions.
+
 ---
 
 ## 5. Master Repository File Map
 
 ```
 wwe-OS/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                           # GitHub Actions CI (lint, pytest, build)
 ├── apps/
 │   └── web/                                 # Platform Next.js Frontend Shell
 │       ├── src/
@@ -101,45 +111,54 @@ wwe-OS/
 │       │   │   │   │   ├── dc-table.tsx     # DC Data Table & Actions
 │       │   │   │   │   ├── generate-dc-dialog.tsx # DC Form Modal
 │       │   │   │   │   └── actions.ts       # DC Server Actions
-│       │   │   │   ├── purchase/            # Purchase Review UI
+│       │   │   │   ├── purchase/            # Purchase Review UI & Vendor Management
+│       │   │   │   │   ├── bill-details-dialog.tsx # Bill Detail Dialog
+│       │   │   │   │   ├── bills-table.tsx  # Bills Table & Actions
+│       │   │   │   │   ├── delete-bill-warning.tsx # Delete Confirmation Modal
+│       │   │   │   │   ├── format.ts        # Money/Date Formatters (formatINR, etc.)
+│       │   │   │   │   └── vendors-panel.tsx# Vendor Management Panel
 │       │   │   │   ├── inventory/           # Inventory Tracking UI
 │       │   │   │   ├── dms/                 # Document Management UI
 │       │   │   │   ├── maintenance/         # System Health UI
+│       │   │   │   ├── error.tsx            # Platform-wide Error Boundary Fallback
 │       │   │   │   └── page.tsx             # Main Command Center Dashboard
 │       │   │   └── api/
 │       │   │       └── auth/                # Auth Proxy Routes (login/logout/me)
-│       │   ├── components/                  # Shared Shell Components
+│       │   ├── components/                  # Shared Shell Components & Dashboard Greeting
 │       │   ├── config/                      # Platform Configs (company, modules, nav, dashboard)
 │       │   └── lib/
 │       │       ├── api/                     # Server fetch wrapper (`server.ts`, `envelope.ts`)
 │       │       └── dms.ts                   # DMS Client/Server Helpers
-├── modules/                                 # Business Modules (Domain Logic)
-│   ├── assets/
-│   │   └── backend/
-│   │       ├── api/dc_views.py              # DRF API ViewSets for DCs
-│   │       ├── models/dc.py                 # Django DeliveryChallan Models
-│   │       ├── serializers/dc.py            # DRF Serializers for DCs
-│   │       ├── services/dc.py               # DC & PDF Generation Service
-│   │       └── templates/                   # Word (.docx) Templates for DCs
-│   ├── purchase/                            # Purchase Backend Module
-│   ├── inventory/                           # Inventory Backend Module
-│   └── dms/                                 # Document Management Backend Module
-├── platform/                                # Django Platform Kernel
-│   ├── auth/                                # JWT Auth & User Management
-│   ├── storage/                             # Abstract Storage Interface
-│   └── tenancy/                             # Multi-Tenancy Middleware & Base Models
-├── packages/                                # Shared Monorepo UI Packages
-│   ├── design-system/                       # CSS Tokens (`tokens.css`)
-│   ├── ui/                                  # Component Library
-│   └── icons/                               # Lucide Icons Gate
-├── services/
-│   └── telegram-bot/                        # Telegram Bot Ingestion Service
-│       └── main.py                          # Telegram Listener & OCR Ingestion
-├── docker-compose.yml                       # Dev Container Orchestration
-├── CLAUDE.md                                # Development Rules & Instructions
-├── GPT_PROJECT_CONTEXT.md                   # Quick Context Summary
-└── GPT_KNOWLEDGE_BASE.md                    # Master Copy-Pasteable Knowledge Base
 ```
+
+├── modules/ # Business Modules (Domain Logic)
+│ ├── assets/
+│ │ └── backend/
+│ │ ├── api/dc_views.py # DRF API ViewSets for DCs
+│ │ ├── models/dc.py # Django DeliveryChallan Models
+│ │ ├── serializers/dc.py # DRF Serializers for DCs
+│ │ ├── services/dc.py # DC & PDF Generation Service
+│ │ └── templates/ # Word (.docx) Templates for DCs
+│ ├── purchase/ # Purchase Backend Module
+│ ├── inventory/ # Inventory Backend Module
+│ └── dms/ # Document Management Backend Module
+├── platform/ # Django Platform Kernel
+│ ├── auth/ # JWT Auth & User Management
+│ ├── storage/ # Abstract Storage Interface
+│ └── tenancy/ # Multi-Tenancy Middleware & Base Models
+├── packages/ # Shared Monorepo UI Packages
+│ ├── design-system/ # CSS Tokens (`tokens.css`)
+│ ├── ui/ # Component Library
+│ └── icons/ # Lucide Icons Gate
+├── services/
+│ └── telegram-bot/ # Telegram Bot Ingestion Service
+│ └── main.py # Telegram Listener & OCR Ingestion
+├── docker-compose.yml # Dev Container Orchestration
+├── CLAUDE.md # Development Rules & Instructions
+├── GPT_PROJECT_CONTEXT.md # Quick Context Summary
+└── GPT_KNOWLEDGE_BASE.md # Master Copy-Pasteable Knowledge Base
+
+````
 
 ---
 
@@ -156,7 +175,7 @@ pnpm --filter web dev
 
 # Production build check (TypeScript & lint verification)
 pnpm --filter web build
-```
+````
 
 ### Docker Infrastructure & Django Backend
 

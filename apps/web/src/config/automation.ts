@@ -62,6 +62,7 @@ export interface AutomationRun {
   items: AutomationRunItem[];
   filename: string | null;
   report_export_id: string | null;
+  download_url: string | null;
   error_message: string;
   created_at: string;
 }

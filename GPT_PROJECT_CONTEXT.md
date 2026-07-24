@@ -34,7 +34,9 @@ WWE OS is a single-operator business operations platform tailored for service pr
 
 - **Ingestion Channel:** Telegram bot (`bop-telegram-bot`) listens for receipt photos/documents.
 - **OCR Processing:** Converts receipt images into structured purchase records and posts to `PLATFORM_API_URL` (`http://backend:8000`) using `PLATFORM_SERVICE_TOKEN`.
-- **Purchase Review:** Web platform supports reviewing, confirming, editing, or rejecting incoming bills.
+- **Unmark Paid & Payment Lifecycle:** Backend `POST /api/v1/purchase/bills/{id}/unmark-paid/` endpoint and server action `unmarkBillPaidAction` back payment status toggling.
+- **Purchase Review & Safety Controls:** Direct confirmation modals for Mark Paid, Unmark Paid, Deactivate Vendor, and Delete Bill. Reusable `DeleteBillWarning` component and standardized formatters (`format.ts`).
+- **Design Token Integration:** Rebuilt Purchase AI insights grid using `SectionCard` primitive and token-driven tone highlights (`warning`).
 
 ### C. Inventory (`/inventory`)
 
@@ -47,6 +49,11 @@ WWE OS is a single-operator business operations platform tailored for service pr
 ### E. System Maintenance (`/maintenance`)
 
 - System diagnostics, health checks (`/healthz`), tenant configuration, and AI usage monitoring.
+
+### F. Shell & Resilience (`(platform)`)
+
+- **Error Boundary:** Platform-wide `error.tsx` catches exceptions gracefully with `EmptyState` fallback UI.
+- **Dashboard Freshness:** Greeting renders dynamic `dataAsOf` relative timestamp ("Updated Xm ago") with smooth crossfade.
 
 ---
 
@@ -64,6 +71,11 @@ WWE OS is a single-operator business operations platform tailored for service pr
 | **DC Table (Frontend)**     | `apps/web/src/app/(platform)/assets/dc-table.tsx`                  |
 | **DC Analytics (Frontend)** | `apps/web/src/app/(platform)/assets/dc-analytics.tsx`              |
 | **DC Server Actions**       | `apps/web/src/app/(platform)/assets/actions.ts`                    |
+| **Purchase Unmark Paid**    | `modules/purchase/backend/api/bill_views.py`                       |
+| **Purchase Formatters**     | `apps/web/src/app/(platform)/purchase/format.ts`                   |
+| **Delete Bill Warning**     | `apps/web/src/app/(platform)/purchase/delete-bill-warning.tsx`     |
+| **Platform Error Boundary** | `apps/web/src/app/(platform)/error.tsx`                            |
+| **CI/CD Workflow**          | `.github/workflows/ci.yml`                                         |
 | **Auth Proxy Route**        | `apps/web/src/app/api/auth/login/route.ts`                         |
 | **Server API Fetcher**      | `apps/web/src/lib/api/server.ts`                                   |
 | **API Response Envelope**   | `apps/web/src/lib/api/envelope.ts`                                 |

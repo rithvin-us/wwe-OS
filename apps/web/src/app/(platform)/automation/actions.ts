@@ -41,6 +41,30 @@ export async function createRuleAction(input: CreateRuleInput): Promise<ActionRe
     return { ok: false, message: errorMessage(error) };
   }
 }
+export interface UpdateRuleInput {
+  name?: string;
+  description?: string;
+  destination?: AutomationDestination;
+  source_modules?: string[];
+  report_key?: string;
+  export_format?: string;
+  required_tags?: string[];
+  cadence?: AutomationCadence;
+  next_run_at?: string;
+}
+
+export async function updateRuleAction(id: string, input: UpdateRuleInput): Promise<ActionResult> {
+  try {
+    await djangoFetch(`${BASE}/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+    revalidatePath("/automation");
+    return { ok: true, message: "Rule updated." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
 
 export async function toggleRuleActiveAction(id: string, isActive: boolean): Promise<ActionResult> {
   try {

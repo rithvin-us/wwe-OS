@@ -4,7 +4,14 @@
 
 export type DocumentStatus = "active" | "archived";
 export type DocumentCategory =
-  "contract" | "invoice" | "policy" | "report" | "correspondence" | "other";
+  | "contract"
+  | "invoice"
+  | "policy"
+  | "po"
+  | "report"
+  | "purchase_bill"
+  | "correspondence"
+  | "other";
 export type SummaryStatus = "none" | "ready" | "failed";
 
 // A tag as the API returns it — see packages/ui/src/components/tag-pill.tsx
@@ -40,7 +47,9 @@ export const DOCUMENT_CATEGORIES: { value: DocumentCategory; label: string }[] =
   { value: "contract", label: "Contract" },
   { value: "invoice", label: "Invoice" },
   { value: "policy", label: "Policy" },
+  { value: "po", label: "PO" },
   { value: "report", label: "Report" },
+  { value: "purchase_bill", label: "Purchase Bill" },
   { value: "correspondence", label: "Correspondence" },
   { value: "other", label: "Other" },
 ];

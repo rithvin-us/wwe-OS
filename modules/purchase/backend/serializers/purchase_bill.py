@@ -8,7 +8,7 @@ from purchase.backend.models import PurchaseBill, Vendor
 
 
 class IngestBillSerializer(serializers.Serializer):
-    """What an ingestion channel (Telegram bot, email, web upload) posts."""
+    """What an ingestion channel (Telegram bot, WhatsApp, email, web upload) posts."""
 
     seller_name = serializers.CharField(
         max_length=200, required=False, default="Pending OCR Processing"
@@ -29,6 +29,11 @@ class IngestBillSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
         help_text="Stable source-document id (e.g. Telegram file_unique_id) used for dedupe.",
+    )
+    source_channel = serializers.CharField(max_length=50, required=False, default="telegram")
+    caption = serializers.CharField(required=False, allow_blank=True, default="")
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=50), required=False, default=list
     )
 
     def validate_currency(self, value: str) -> str:
@@ -55,6 +60,7 @@ class VendorSerializer(serializers.ModelSerializer):
 
 class PurchaseBillSerializer(serializers.ModelSerializer):
     vendor = VendorSerializer(read_only=True)
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = PurchaseBill
@@ -82,10 +88,25 @@ class PurchaseBillSerializer(serializers.ModelSerializer):
             "status",
             "payment_status",
             "paid_at",
+            "tags",
             "created_at",
             "updated_at",
         )
         read_only_fields = fields
+
+    def get_tags(self, obj: PurchaseBill) -> list[dict]:
+        try:
+            from tagging.services import TagService
+
+            tags_qs = TagService().tags_for_object(
+                tenant=obj.tenant,
+                module="purchase",
+                object_type="PurchaseBill",
+                object_id=str(obj.id),
+            )
+            return [{"id": str(t.id), "name": t.name, "color": t.color} for t in tags_qs]
+        except Exception:
+            return []
 
 
 class UpdatePurchaseBillSerializer(serializers.Serializer):

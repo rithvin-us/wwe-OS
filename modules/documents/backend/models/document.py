@@ -20,7 +20,9 @@ class DocumentCategory(models.TextChoices):
     CONTRACT = "contract", "Contract"
     INVOICE = "invoice", "Invoice"
     POLICY = "policy", "Policy"
+    PO = "po", "PO"
     REPORT = "report", "Report"
+    PURCHASE_BILL = "purchase_bill", "Purchase Bill"
     CORRESPONDENCE = "correspondence", "Correspondence"
     OTHER = "other", "Other"
 

@@ -24,6 +24,7 @@ function formatDateTime(iso: string): string {
 }
 
 async function resolveDownloadUrl(run: AutomationRun): Promise<string | null> {
+  if (run.download_url) return run.download_url;
   try {
     if (run.filename) {
       const res = await djangoFetch<{ url: string }>(`/api/v1/automation/runs/${run.id}/url/`);

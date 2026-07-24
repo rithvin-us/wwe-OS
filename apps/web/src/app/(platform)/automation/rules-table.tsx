@@ -16,6 +16,7 @@ import {
   toggleRuleActiveAction,
 } from "@/app/(platform)/automation/actions";
 import { CreateRuleDialog } from "@/app/(platform)/automation/create-rule-dialog";
+import { EditRuleDialog } from "@/app/(platform)/automation/edit-rule-dialog";
 import {
   DESTINATION_LABELS,
   STUB_DESTINATIONS,
@@ -34,7 +35,17 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
-function RuleActions({ rule }: { rule: AutomationRule }) {
+function RuleActions({
+  rule,
+  sources,
+  reports,
+  allTags,
+}: {
+  rule: AutomationRule;
+  sources: AutomationSource[];
+  reports: ReportCatalogEntry[];
+  allTags: TagLike[];
+}) {
   const [pending, startTransition] = useTransition();
   const isStub = STUB_DESTINATIONS.includes(rule.destination);
 
@@ -74,12 +85,14 @@ function RuleActions({ rule }: { rule: AutomationRule }) {
       >
         <PlayCircle aria-hidden />
       </Button>
+      <EditRuleDialog rule={rule} sources={sources} reports={reports} allTags={allTags} />
       <Button
         size="icon-sm"
         variant="ghost"
         onClick={toggleActive}
         disabled={pending}
         aria-label={rule.is_active ? "Pause" : "Resume"}
+        title={rule.is_active ? "Pause rule" : "Resume rule"}
       >
         {rule.is_active ? <Pause aria-hidden /> : <Play aria-hidden />}
       </Button>
@@ -89,52 +102,13 @@ function RuleActions({ rule }: { rule: AutomationRule }) {
         onClick={remove}
         disabled={pending}
         aria-label="Delete rule"
+        title="Delete rule"
       >
         <Trash2 aria-hidden />
       </Button>
     </div>
   );
 }
-
-const columns: ColumnDef<AutomationRule, unknown>[] = [
-  {
-    accessorKey: "name",
-    header: "Rule",
-    cell: ({ row }) => (
-      <div>
-        <p className="font-medium text-foreground">{row.original.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {DESTINATION_LABELS[row.original.destination]}
-          {STUB_DESTINATIONS.includes(row.original.destination) ? " · coming soon" : ""}
-        </p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "next_run_at",
-    header: "Next run",
-    cell: ({ row }) => formatDateTime(row.original.next_run_at),
-  },
-  {
-    accessorKey: "last_run_at",
-    header: "Last run",
-    cell: ({ row }) => formatDateTime(row.original.last_run_at),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_active ? "success" : "secondary"}>
-        {row.original.is_active ? "Active" : "Paused"}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }) => <RuleActions rule={row.original} />,
-  },
-];
 
 export function RulesTable({
   rules,
@@ -147,6 +121,48 @@ export function RulesTable({
   reports: ReportCatalogEntry[];
   allTags: TagLike[];
 }) {
+  const columns: ColumnDef<AutomationRule, unknown>[] = [
+    {
+      accessorKey: "name",
+      header: "Rule",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-foreground">{row.original.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {DESTINATION_LABELS[row.original.destination]}
+            {STUB_DESTINATIONS.includes(row.original.destination) ? " · coming soon" : ""}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "next_run_at",
+      header: "Next run",
+      cell: ({ row }) => formatDateTime(row.original.next_run_at),
+    },
+    {
+      accessorKey: "last_run_at",
+      header: "Last run",
+      cell: ({ row }) => formatDateTime(row.original.last_run_at),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.original.is_active ? "success" : "secondary"}>
+          {row.original.is_active ? "Active" : "Paused"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <RuleActions rule={row.original} sources={sources} reports={reports} allTags={allTags} />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
