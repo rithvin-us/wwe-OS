@@ -49,6 +49,8 @@ class Events:
     TAG_DELETED = "tags.deleted"
     TAG_ATTACHED = "tags.attached"
     TAG_DETACHED = "tags.detached"
+    IDENTITY_RESOLVED = "identity.resolved"
+    IDENTITY_MAPPED = "identity.mapped"
 
 
 def subscribe(event: str, handler: EventHandler) -> None:

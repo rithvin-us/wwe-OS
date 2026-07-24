@@ -90,6 +90,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "permissions",
     "storage",
     "periods",
+    "identity",
     "ai",
     "search",
     "reporting",
