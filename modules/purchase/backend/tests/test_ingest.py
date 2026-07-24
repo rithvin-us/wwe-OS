@@ -241,6 +241,25 @@ def test_ingest_maps_identity_to_the_resolved_vendor(service_client, tenant):
 # --------------------------------------------------------------------------- #
 
 
+# --------------------------------------------------------------------------- #
+# Rules Engine (platform/rules integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_ingest_with_malformed_gst_needs_attention_and_records_the_reason(service_client, tenant):
+    payload = {
+        **VALID_PAYLOAD,
+        "external_ref": "tg-rules-1",
+        "raw_extraction": {**VALID_PAYLOAD["raw_extraction"], "gst_number": "not-a-gst"},
+    }
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+    assert resp.json()["data"]["status"] == "needs_attention"
+
+    bill = PurchaseBill.objects.get()
+    assert "invalid_gst_format" in bill.raw_extraction["rule_reasons"]
+
+
 def test_metadata_service_resolves_bill_fields_by_storage_key(service_client, tenant, monkeypatch):
     from metadata.services import MetadataService
     from storage.models import StoredFile

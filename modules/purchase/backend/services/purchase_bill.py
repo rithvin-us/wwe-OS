@@ -26,8 +26,10 @@ from django.db.models import Q
 from django.utils import timezone
 from identity.models import IdentityChannel
 from identity.services import IdentityService
+from periods.models import BusinessPeriod
 from periods.resolution import DocumentContext, resolve_location
 from periods.services import PeriodService
+from rules.services import RuleOutcome, RulesEngine
 from shared.events import publish
 from shared.exceptions import ConflictError
 from shared.services import BaseService
@@ -46,8 +48,6 @@ from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Ven
 from purchase.backend.services.purchase_ocr import PurchaseOCRService
 
 logger = logging.getLogger(__name__)
-
-CONFIDENCE_THRESHOLD = Decimal("0.80")
 
 DOCUMENT_FETCH_RETRIES = 2
 DOCUMENT_FETCH_TIMEOUT = 15.0
@@ -353,9 +353,10 @@ class PurchaseBillService(BaseService):
 
                 confidence = Decimal(str(extracted.get("confidence_score") or "0.85"))
                 bill.confidence_score = confidence
-                bill.raw_extraction = extracted
 
-                # Duplicate detection check
+                # Duplicate detection check (the query stays here — Rules
+                # Engine decides what the *fact* means, it doesn't run the
+                # lookup itself; see design §2a).
                 if bill.invoice_number:
                     duplicate_exists = (
                         PurchaseBill.objects.filter(
@@ -369,12 +370,32 @@ class PurchaseBillService(BaseService):
                     if duplicate_exists:
                         bill.is_duplicate = True
 
-                # Step 4: Auto-classification based on OCR confidence score
-                is_identified = bill.seller_name != "Pending OCR Processing"
-                if confidence >= CONFIDENCE_THRESHOLD and is_identified:
-                    bill.status = BillStatus.PROCESSED
-                else:
-                    bill.status = BillStatus.NEEDS_ATTENTION
+                period_status = None
+                try:
+                    period_status = (
+                        BusinessPeriod.objects.filter(
+                            tenant=tenant, year=purchase_date.year, month=purchase_date.month
+                        )
+                        .values_list("status", flat=True)
+                        .first()
+                    )
+                except Exception:  # noqa: BLE001 - a period lookup hiccup must not block ingestion
+                    period_status = None
+
+                # Step 4: only the Rules Engine approves a state transition.
+                evaluation = RulesEngine().evaluate_purchase_bill(
+                    confidence=confidence,
+                    seller_name=bill.seller_name,
+                    gst_number=bill.gst_number,
+                    is_duplicate=bill.is_duplicate,
+                    period_status=period_status,
+                )
+                bill.status = (
+                    BillStatus.PROCESSED
+                    if evaluation.outcome == RuleOutcome.APPROVED
+                    else BillStatus.NEEDS_ATTENTION
+                )
+                bill.raw_extraction = {**extracted, "rule_reasons": evaluation.reasons}
 
                 bill.save()
 
