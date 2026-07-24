@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "Purchases & AI Insights",
 };
 
+function formatINR(amount: number): string {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
+}
+
 function StatTile({
   label,
   value,
@@ -50,15 +54,8 @@ export default async function PurchasePage() {
     listTags(),
   ]);
 
-  const totalSpendFormatted = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-  }).format(insights?.overview?.total_spend || 0);
-
-  const totalGstFormatted = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-  }).format(insights?.overview?.total_gst || 0);
+  const totalSpendFormatted = formatINR(insights?.overview?.total_spend || 0);
+  const totalGstFormatted = formatINR(insights?.overview?.total_gst || 0);
 
   return (
     <div className="space-y-8">
@@ -94,7 +91,7 @@ export default async function PurchasePage() {
                     {v.name}
                   </span>
                   <span className="font-mono tabular-nums text-muted-foreground">
-                    ${v.total_spend.toFixed(2)} ({v.bills_count})
+                    {formatINR(v.total_spend)} ({v.bills_count})
                   </span>
                 </div>
               ))
