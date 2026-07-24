@@ -5,6 +5,7 @@
 **WWE OS** is an Enterprise Business Operations Platform tailored for single-operator business workflows (service providers, asset maintenance, and equipment logistics).
 
 The platform combines multi-tenant infrastructure with modular business domain contexts tailored for a service provider:
+
 - Equipment & Asset Movement via **Delivery Challans (DC)**.
 - Automated **Purchase Bill Ingestion** via Telegram bot & OCR.
 - **Service Equipment & Tools Tracking** for internal tools, spare parts, and equipment.
@@ -17,6 +18,7 @@ The platform combines multi-tenant infrastructure with modular business domain c
 To keep operations frictionless for a single-operator environment, specific enterprise complexities have been intentionally streamlined.
 
 ### In-Scope Features
+
 - **Delivery Challan Engine:** Custom Word template rendering (`DC 26.docx`), free-text product inputs, customizable measurement units (Kg, Litre, Lot, Nos, Mtr, Set), free-text delivery site addresses, PDF generation, tamper-proof SHA-256 document hashing (`verification_hash`), deletion, and downloadable history.
 - **Telegram Receipt Ingestion:** Automated purchase bill capture via Telegram bot, non-blocking Storage Service file save, structured AI OCR extraction via Platform AI Gateway (Gemini/OpenAI), auto-classification (Processed vs Needs Attention), and AI spend insights.
 - **Service Tools & Equipment Tracking:** Internal spare parts, tools, and equipment tracking (no saleable product stock).
@@ -25,6 +27,7 @@ To keep operations frictionless for a single-operator environment, specific ente
 - **Dark/Light Theming:** Custom color palette with light mode (`t` key shortcut toggle).
 
 ### Intentionally Out-of-Scope (Streamlined)
+
 - **Multi-Level Approval Workflows:** Removed multi-stage document approval states (draft, in-review, approved) to avoid blocking single-operator actions.
 - **Inventory Low-Stock Threshold Alerts:** Removed reorder level tracking (`reorder_level`) and low-stock warning triggers.
 - **Strict Product DB Validation on DCs:** Delivery Challans bypass forced inventory database checks, allowing arbitrary text items and custom quantities.

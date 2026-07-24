@@ -199,10 +199,10 @@
      that are genuinely above the page (popovers, dialogs, dropdowns). */
   --shadow-xs: 0 1px 2px 0 oklch(0.19 0.015 250 / 0.05);
   --shadow-sm: 0 1px 2px 0 oklch(0.19 0.015 250 / 0.06), 0 1px 3px 0 oklch(0.19 0.015 250 / 0.04);
-  --shadow-md: 0 2px 4px -1px oklch(0.19 0.015 250 / 0.06),
-    0 4px 8px -2px oklch(0.19 0.015 250 / 0.06);
-  --shadow-lg: 0 4px 8px -2px oklch(0.19 0.015 250 / 0.08),
-    0 12px 24px -4px oklch(0.19 0.015 250 / 0.1);
+  --shadow-md:
+    0 2px 4px -1px oklch(0.19 0.015 250 / 0.06), 0 4px 8px -2px oklch(0.19 0.015 250 / 0.06);
+  --shadow-lg:
+    0 4px 8px -2px oklch(0.19 0.015 250 / 0.08), 0 12px 24px -4px oklch(0.19 0.015 250 / 0.1);
 
   /* Confirmed against Tailwind v4's own theme.css: --ease-* is a real
      namespace (generates ease-out-quart etc). --duration-* is not — there's

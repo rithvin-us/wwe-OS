@@ -41,11 +41,7 @@ async function resolveDownloadUrl(run: AutomationRun): Promise<string | null> {
   return null;
 }
 
-export default async function RunDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function RunDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const run = await getRun(id);
 

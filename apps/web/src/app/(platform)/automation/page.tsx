@@ -52,8 +52,7 @@ export default async function AutomationPage() {
         </h2>
         {history.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border px-5 py-8 text-center text-sm text-muted-foreground">
-            Runs — scheduled or manual — will be listed here, with exactly what each one
-            collected.
+            Runs — scheduled or manual — will be listed here, with exactly what each one collected.
           </p>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border bg-card">

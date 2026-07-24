@@ -45,9 +45,7 @@ export function GenerateDCDialog({ sites }: { sites: { id: string; name: string 
       });
 
       if (!result.success) {
-        const detailsMsg = result.details
-          ? JSON.stringify(result.details)
-          : result.error;
+        const detailsMsg = result.details ? JSON.stringify(result.details) : result.error;
         alert("Failed to generate DC: " + detailsMsg);
         return;
       }

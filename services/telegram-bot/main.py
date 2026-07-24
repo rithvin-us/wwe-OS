@@ -75,9 +75,9 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Check the processing status of your recent purchase uploads."""
     user_id = update.effective_user.id
     url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
-    headers = (
-        {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
-    )
+    headers = {}
+    if PLATFORM_SERVICE_TOKEN:
+        headers["Authorization"] = f"Service {PLATFORM_SERVICE_TOKEN}"
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -114,9 +114,9 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     """View your recently submitted purchase bills."""
     user_id = update.effective_user.id
     url = f"{PLATFORM_API_URL.rstrip('/')}/api/v1/purchase/bills/?telegram_user_id={user_id}"
-    headers = (
-        {"Authorization": f"Service {PLATFORM_SERVICE_TOKEN}"} if PLATFORM_SERVICE_TOKEN else {}
-    )
+    headers = {}
+    if PLATFORM_SERVICE_TOKEN:
+        headers["Authorization"] = f"Service {PLATFORM_SERVICE_TOKEN}"
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

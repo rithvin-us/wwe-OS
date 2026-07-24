@@ -1,1 +1,11 @@
-*
+node_modules
+dist
+build
+.next
+pnpm-lock.yaml
+database/backups
+*.py
+*.html
+.venv
+.superpowers
+platform/staticfiles

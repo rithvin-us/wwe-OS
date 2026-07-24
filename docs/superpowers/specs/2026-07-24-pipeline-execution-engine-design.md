@@ -1,17 +1,17 @@
 # Pipeline Execution Engine — Design
 
 **Status:** Proposed, awaiting approval before implementation.
-**Scope:** Subsystem 1 of the larger "Business Operations Orchestrator" redesign. This spec covers *only* the generic pipeline execution engine and the redesign of `platform/automation` to run on it. Invoice generation, the Business Period Manager, the Auditor Package pipeline, the visual canvas dashboard, WhatsApp ingestion, universal tagging, search improvements, and "Business Recipes" are later, separate sub-projects — see § Out of scope.
+**Scope:** Subsystem 1 of the larger "Business Operations Orchestrator" redesign. This spec covers _only_ the generic pipeline execution engine and the redesign of `platform/automation` to run on it. Invoice generation, the Business Period Manager, the Auditor Package pipeline, the visual canvas dashboard, WhatsApp ingestion, universal tagging, search improvements, and "Business Recipes" are later, separate sub-projects — see § Out of scope.
 
 ---
 
 ## 1. Context
 
-The current automation engine (`platform/automation`) collects tagged records on a schedule and delivers them to a destination (a downloaded zip, a generated report, an auditor folder). It works, but it's built the only way this codebase currently knows how to run background work: one synchronous function call, triggered by an external cron, that either fully succeeds or fully fails by the time it returns. There is no in-flight state — `AutomationRun.status` is only ever `success` or `failed`, written *after* the fact, because nothing is ever paused, resumed, or recovered mid-flight today.
+The current automation engine (`platform/automation`) collects tagged records on a schedule and delivers them to a destination (a downloaded zip, a generated report, an auditor folder). It works, but it's built the only way this codebase currently knows how to run background work: one synchronous function call, triggered by an external cron, that either fully succeeds or fully fails by the time it returns. There is no in-flight state — `AutomationRun.status` is only ever `success` or `failed`, written _after_ the fact, because nothing is ever paused, resumed, or recovered mid-flight today.
 
 The broader Business Operations Orchestrator vision (invoice generation, purchase ingestion, delivery challans, auditor packages, reports, all running as trackable, recoverable pipelines) needs properties this synchronous model can't provide: retries, rollback of partial work, crash recovery, and live pause/resume/cancel of a running pipeline. Building each future pipeline (invoices, auditor packages, …) with its own bespoke retry/crash-handling logic would violate this repo's own "never duplicate a platform capability" rule. This spec is the shared foundation those future pipelines will run on, proven first against the one pipeline that already exists — automation.
 
-**Why automation is redesigned to *use* the engine rather than the engine being built as a feature of automation:** the orchestrator vision explicitly describes invoice generation, purchase ingestion, and auditor packages as pipelines too — none of those are "automation" in the current sense (tag-based collection + delivery). The generic step/retry/crash-recovery machinery belongs in `platform/` as its own capability; automation becomes its first, most mature consumer.
+**Why automation is redesigned to _use_ the engine rather than the engine being built as a feature of automation:** the orchestrator vision explicitly describes invoice generation, purchase ingestion, and auditor packages as pipelines too — none of those are "automation" in the current sense (tag-based collection + delivery). The generic step/retry/crash-recovery machinery belongs in `platform/` as its own capability; automation becomes its first, most mature consumer.
 
 ---
 
@@ -19,7 +19,7 @@ The broader Business Operations Orchestrator vision (invoice generation, purchas
 
 The features above (crash recovery, pause/resume/cancel, live progress) sound like they need Celery/RQ and a broker. They don't, and adopting one would go against a pattern this codebase has already chosen twice, explicitly:
 
-- `modules/contracts/backend/services/contract.py`'s `run_expiry_scan()`: *"synchronous and pull-based by design... no background worker or queue is introduced here."*
+- `modules/contracts/backend/services/contract.py`'s `run_expiry_scan()`: _"synchronous and pull-based by design... no background worker or queue is introduced here."_
 - `platform/automation/services.py`: the same shape, citing the contracts precedent by name.
 
 Both exist for the same stated reason: single-operator, low-volume, no ops team to run and monitor a broker. A third capability (this engine) reaching for Celery would be the inconsistent choice, not the safe one — and `services/worker`/`services/scheduler` (currently empty Dockerfile-only scaffolding) explicitly **cannot** import `platform/`/`modules/` source per their own README contracts and this repo's architecture rule 5 (`services/` integrate via API/queue only, never source imports). Filling either in as a queue consumer would mean either duplicating step logic into a separate service or making it a slow HTTP client calling back into Django per step — strictly worse than running the loop where the data already lives.
@@ -64,7 +64,7 @@ get_pipeline(key) -> PipelineDefinition          # NotFoundError if unknown
 all_pipelines() -> list[PipelineDefinition]
 ```
 
-`workflow/apps.py` has no `ready()` override — it's the registry *host*, the same role `automation/apps.py` plays for `SourceAdapter` today.
+`workflow/apps.py` has no `ready()` override — it's the registry _host_, the same role `automation/apps.py` plays for `SourceAdapter` today.
 
 ---
 
@@ -80,7 +80,7 @@ all_pipelines() -> list[PipelineDefinition]
 6. Run the step's `run(ctx)` function inside a try/except.
    - **Success**: record `output`, merge into `run.context`, advance `current_step_index`. Re-check `run.status` before persisting — if an operator paused/cancelled between the claim and now, don't silently keep advancing.
    - **Failure**: if attempts remain, reset the step to `PENDING` with `next_attempt_at = now() + backoff(attempt)` (retry on a later tick, possibly a different process — this is why backoff is a persisted deadline, not an in-process sleep). If attempts are exhausted, mark the step `FAILED` and put the **run** into `COMPENSATING`.
-7. An exception in the *engine* itself (not a step's business exception, which is already caught in step 6) is caught one level up in `tick_all` and logged — the run is left untouched, retried next tick. This mirrors the existing "one bad rule/item must not stop the sweep" convention already used by `automation.run_due()` and the contracts expiry scan, applied one level down.
+7. An exception in the _engine_ itself (not a step's business exception, which is already caught in step 6) is caught one level up in `tick_all` and logged — the run is left untouched, retried next tick. This mirrors the existing "one bad rule/item must not stop the sweep" convention already used by `automation.run_due()` and the contracts expiry scan, applied one level down.
 
 ### `tick_all(*, tenant=None, batch_size=None)`
 
@@ -88,7 +88,7 @@ Runs `reclaim_stale_steps()` (crash recovery, below), then calls `advance_one()`
 
 ### Crash recovery: `reclaim_stale_steps()`
 
-Any `PipelineStepRun` still `RUNNING` past its step's `timeout_seconds` almost certainly means the process executing it crashed or was killed. Reset it to `PENDING` (if retries remain) or drive it into `COMPENSATING` (if exhausted) — no special recovery process, just a check that runs at the top of every tick. This *is* what "the pipeline resumes automatically after a crash" means concretely: nothing was lost, because every step's state lives in the database before and after it runs, not in a process's memory.
+Any `PipelineStepRun` still `RUNNING` past its step's `timeout_seconds` almost certainly means the process executing it crashed or was killed. Reset it to `PENDING` (if retries remain) or drive it into `COMPENSATING` (if exhausted) — no special recovery process, just a check that runs at the top of every tick. This _is_ what "the pipeline resumes automatically after a crash" means concretely: nothing was lost, because every step's state lives in the database before and after it runs, not in a process's memory.
 
 ### Rollback, as more ticks
 
@@ -98,7 +98,7 @@ A `compensate(ctx)` callback on `StepDefinition` is optional per step. When a ru
 
 All four are just status flips guarded by atomic conditional updates (`filter(status=X).update(status=Y)`), which `advance_one`/`tick_all` naturally honor on the next tick:
 
-- **Pause** is cooperative, not preemptive — a step already executing finishes normally; the *next* step won't start. Step bodies should be short (seconds); long work should be split into more steps rather than relying on mid-step interruption.
+- **Pause** is cooperative, not preemptive — a step already executing finishes normally; the _next_ step won't start. Step bodies should be short (seconds); long work should be split into more steps rather than relying on mid-step interruption.
 - **Cancel** routes through the same `COMPENSATING` unwind as an exhausted-retries failure (just tagged `termination_reason=cancelled` instead of `failed`) — one tested code path for both.
 - **Retry** (operator-triggered, on an already-`FAILED` run) re-arms the failed step and any steps after it back to `PENDING`, without re-running already-`COMPENSATED` steps or a full restart from step zero (that's a distinct, out-of-scope action).
 
@@ -119,7 +119,7 @@ The existing `/automation` dashboard (`apps/web/src/lib/automation.ts`, the rule
 
 ## 6. Fixing the double-run race
 
-`automation_run_due` today has zero concurrency guard — two overlapping cron invocations can run the same due rule twice. This is fixed with the `PipelineRun` idempotency key from § 3: `run_rule()` passes `idempotency_key=f"rule:{rule.id}:{rule.next_run_at.isoformat()}"` **only for scheduled triggers** (a manual "Run now" click keeps producing an independent run every time — that's correct, not a bug). The partial unique DB constraint means two racing calls to start the same scheduled run both resolve to the *same* `PipelineRun` row (`get_or_create` semantics); each step's own atomic claim (§ 4) then ensures only one caller actually executes any given step, while the other's `advance_one()` calls harmlessly no-op. This is a strict, DB-enforced fix — not a timing heuristic — and is independent from the stale-lock crash-recovery mechanism, which solves a different problem (a process dying mid-step, not two processes racing to start the same run).
+`automation_run_due` today has zero concurrency guard — two overlapping cron invocations can run the same due rule twice. This is fixed with the `PipelineRun` idempotency key from § 3: `run_rule()` passes `idempotency_key=f"rule:{rule.id}:{rule.next_run_at.isoformat()}"` **only for scheduled triggers** (a manual "Run now" click keeps producing an independent run every time — that's correct, not a bug). The partial unique DB constraint means two racing calls to start the same scheduled run both resolve to the _same_ `PipelineRun` row (`get_or_create` semantics); each step's own atomic claim (§ 4) then ensures only one caller actually executes any given step, while the other's `advance_one()` calls harmlessly no-op. This is a strict, DB-enforced fix — not a timing heuristic — and is independent from the stale-lock crash-recovery mechanism, which solves a different problem (a process dying mid-step, not two processes racing to start the same run).
 
 ---
 
@@ -147,4 +147,4 @@ Gate (per `CLAUDE.md`): `cd platform && pytest` green, `python -m ruff check .` 
 
 ## 9. Out of scope for this plan
 
-Business Period Manager; Invoice generation, Auditor Package, and every other future pipeline (they become later consumers of this same engine, not designed here); the visual pipeline-canvas frontend (the new read API exists so it *can* be built later — no frontend work in this plan); WhatsApp channel abstraction; universal tagging UI improvements; search improvements; "Business Recipes"; filling in `services/worker`/`services/scheduler`; Celery/Redis-as-broker adoption (revisit only if concurrent volume or per-step duration genuinely outgrows one tick process — not preemptively); a human-in-the-loop "approval" step kind; selective retry-from-an-earlier-step or full restart-from-zero; a generic `POST /workflow/pipelines/{key}/start/` endpoint for arbitrary future pipelines (add it when a second real pipeline consumer needs it).
+Business Period Manager; Invoice generation, Auditor Package, and every other future pipeline (they become later consumers of this same engine, not designed here); the visual pipeline-canvas frontend (the new read API exists so it _can_ be built later — no frontend work in this plan); WhatsApp channel abstraction; universal tagging UI improvements; search improvements; "Business Recipes"; filling in `services/worker`/`services/scheduler`; Celery/Redis-as-broker adoption (revisit only if concurrent volume or per-step duration genuinely outgrows one tick process — not preemptively); a human-in-the-loop "approval" step kind; selective retry-from-an-earlier-step or full restart-from-zero; a generic `POST /workflow/pipelines/{key}/start/` endpoint for arbitrary future pipelines (add it when a second real pipeline consumer needs it).

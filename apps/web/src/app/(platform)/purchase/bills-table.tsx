@@ -18,7 +18,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteBillAction, markBillPaidAction, updateBillAction } from "@/app/(platform)/purchase/actions";
+import {
+  deleteBillAction,
+  markBillPaidAction,
+  updateBillAction,
+} from "@/app/(platform)/purchase/actions";
 import { BillDetailsDialog } from "@/app/(platform)/purchase/bill-details-dialog";
 import type { PurchaseBill } from "@/lib/purchase";
 import type { Tag } from "@/lib/tags";
@@ -123,11 +127,7 @@ function RowActions({
 
   return (
     <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => onViewDetails(bill)}
-      >
+      <Button size="sm" variant="secondary" onClick={() => onViewDetails(bill)}>
         <Eye className="size-3.5 mr-1.5" />
         View Details & Preview
       </Button>
@@ -157,7 +157,9 @@ function RowActions({
                 <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Total Amount (₹)</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Total Amount (₹)
+                </label>
                 <Input value={totalRate} onChange={(e) => setTotalRate(e.target.value)} />
               </div>
             </div>
@@ -328,7 +330,8 @@ export function BillsTable({ bills, allTags }: { bills: PurchaseBill[]; allTags:
             <DialogDescription className="text-xs text-muted-foreground">
               Are you sure you want to delete the purchase bill for{" "}
               <strong className="text-foreground">{billToDelete?.seller_name}</strong> (
-              {billToDelete ? formatMoney(billToDelete.total_rate, billToDelete.currency) : ""})? This action cannot be undone.
+              {billToDelete ? formatMoney(billToDelete.total_rate, billToDelete.currency) : ""})?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 

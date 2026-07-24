@@ -4,13 +4,7 @@
 
 export type ContractStatus = "draft" | "active" | "expired" | "terminated";
 export type ContractCategory =
-  | "service"
-  | "lease"
-  | "nda"
-  | "employment"
-  | "supply"
-  | "license"
-  | "other";
+  "service" | "lease" | "nda" | "employment" | "supply" | "license" | "other";
 export type SummaryStatus = "none" | "ready" | "failed";
 
 export interface ContractRecord {

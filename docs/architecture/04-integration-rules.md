@@ -8,13 +8,13 @@ To maintain system integrity, scalability, and maintainability, all developers a
 
 Business modules (`modules/*`) **MUST NOT** implement their own file handling, AI API clients, search engines, or audit logging. They **MUST** consume platform shared services.
 
-| Infrastructure Task | Forbidden Pattern | Mandatory Platform Service |
-| :--- | :--- | :--- |
-| **File Storage** | Direct filesystem writes / custom AWS S3 SDK imports | `StorageService().store(...)` |
-| **AI Generation** | Direct `import openai` / `import anthropic` | `AIService().generate(...)` |
-| **Search** | Custom SQL `LIKE` queries across module tables | `SearchService().upsert(...)` / `search()` |
-| **PDF/Export Generation** | Raw `reportlab` / `csv` handling in modules | `ReportService().export(...)` |
-| **Audit Logging** | Manual table writes for security actions | `publish(event)` -> Event Bus Subscriber |
+| Infrastructure Task       | Forbidden Pattern                                    | Mandatory Platform Service                 |
+| :------------------------ | :--------------------------------------------------- | :----------------------------------------- |
+| **File Storage**          | Direct filesystem writes / custom AWS S3 SDK imports | `StorageService().store(...)`              |
+| **AI Generation**         | Direct `import openai` / `import anthropic`          | `AIService().generate(...)`                |
+| **Search**                | Custom SQL `LIKE` queries across module tables       | `SearchService().upsert(...)` / `search()` |
+| **PDF/Export Generation** | Raw `reportlab` / `csv` handling in modules          | `ReportService().export(...)`              |
+| **Audit Logging**         | Manual table writes for security actions             | `publish(event)` -> Event Bus Subscriber   |
 
 ---
 

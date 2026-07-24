@@ -189,9 +189,8 @@ export default async function TimelinePage({
 
           {data.vendorFiltered ? (
             <p className="text-xs text-muted-foreground">
-              Showing {data.count} match{data.count === 1 ? "" : "es"} on this page for that
-              vendor — the vendor filter narrows results page by page, not across the whole
-              history.
+              Showing {data.count} match{data.count === 1 ? "" : "es"} on this page for that vendor
+              — the vendor filter narrows results page by page, not across the whole history.
             </p>
           ) : data.pages > 1 ? (
             <div className="flex items-center justify-between">
@@ -207,7 +206,11 @@ export default async function TimelinePage({
                 disabled={page >= data.pages}
                 asChild={page < data.pages}
               >
-                {page < data.pages ? <Link href={pageHref(page + 1)}>Next</Link> : <span>Next</span>}
+                {page < data.pages ? (
+                  <Link href={pageHref(page + 1)}>Next</Link>
+                ) : (
+                  <span>Next</span>
+                )}
               </Button>
             </div>
           ) : null}

@@ -66,7 +66,13 @@ export interface PurchaseInsights {
   vendor_analysis: Array<{ id: string; name: string; total_spend: number; bills_count: number }>;
   duplicate_detection: {
     duplicates_count: number;
-    recent_duplicates: Array<{ id: string; seller_name: string; invoice_number: string; total_rate: number; purchase_date: string }>;
+    recent_duplicates: Array<{
+      id: string;
+      seller_name: string;
+      invoice_number: string;
+      total_rate: number;
+      purchase_date: string;
+    }>;
   };
   top_materials: Array<{ name: string; quantity: number; total_spend: number }>;
   gst_summary: {

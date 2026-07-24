@@ -202,7 +202,7 @@ if not user.is_superuser and user.tenant_id is not None:
 ```
 
 If a non-superuser user somehow has `tenant_id = None`, the tenant filter
-is **skipped entirely** and the query returns rows across *all* tenants.
+is **skipped entirely** and the query returns rows across _all_ tenants.
 This is a deliberate, already-documented design choice (to avoid spurious
 404s for edge-case users) rather than an oversight, and it's low-risk under
 the platform's current single-tenant, single-operator deployment model.

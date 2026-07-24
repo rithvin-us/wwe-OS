@@ -1,10 +1,4 @@
-import {
-  Activity,
-  CircleDollarSign,
-  ShoppingCart,
-  Sparkles,
-  TriangleAlert,
-} from "@bop/icons";
+import { Activity, CircleDollarSign, ShoppingCart, Sparkles, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
 
 import { Greeting } from "@/components/dashboard/greeting";
@@ -107,14 +101,19 @@ function buildStatsText(args: {
 }
 
 export default async function DashboardPage() {
-  const [purchaseStats, telegramCount, automationDueCount, contractsExpiringCount, activityEntries] =
-    await Promise.all([
-      loadPurchaseStats(),
-      loadTelegramCount(),
-      loadAutomationDueCount(),
-      loadContractsExpiringCount(),
-      getTodayActivity(8),
-    ]);
+  const [
+    purchaseStats,
+    telegramCount,
+    automationDueCount,
+    contractsExpiringCount,
+    activityEntries,
+  ] = await Promise.all([
+    loadPurchaseStats(),
+    loadTelegramCount(),
+    loadAutomationDueCount(),
+    loadContractsExpiringCount(),
+    getTodayActivity(8),
+  ]);
 
   const kpis = buildKpis(purchaseStats);
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);

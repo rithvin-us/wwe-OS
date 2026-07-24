@@ -38,7 +38,11 @@ export async function getAIUsage(): Promise<{
       by_module: AIUsageByModule[];
     }>("/api/v1/ai/usage/");
   } catch {
-    return { totals: { calls: 0, input_tokens: 0, output_tokens: 0, cost_usd: 0 }, by_model: [], by_module: [] };
+    return {
+      totals: { calls: 0, input_tokens: 0, output_tokens: 0, cost_usd: 0 },
+      by_model: [],
+      by_module: [],
+    };
   }
 }
 

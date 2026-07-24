@@ -123,10 +123,7 @@ export function CommandPalette({
     };
   }, [trimmed, searching]);
 
-  const groups = useMemo(
-    () => (response ? groupByIndex(response.results) : []),
-    [response],
-  );
+  const groups = useMemo(() => (response ? groupByIndex(response.results) : []), [response]);
 
   function go(href: string) {
     onOpenChange(false);

@@ -92,9 +92,7 @@ const columns: ColumnDef<DocumentRecord, unknown>[] = [
           {shown.map((tag) => (
             <TagPill key={tag.id} tag={tag} />
           ))}
-          {overflow > 0 ? (
-            <span className="text-xs text-muted-foreground">+{overflow}</span>
-          ) : null}
+          {overflow > 0 ? <span className="text-xs text-muted-foreground">+{overflow}</span> : null}
         </div>
       );
     },

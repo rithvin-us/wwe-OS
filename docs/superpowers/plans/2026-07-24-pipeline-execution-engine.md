@@ -23,18 +23,18 @@
 
 **New app `platform/workflow/`:**
 
-| File | Responsibility |
-|---|---|
-| `apps.py` | `WorkflowConfig` — no `ready()` override (registry host, not registrant) |
-| `models.py` | `PipelineRun`, `PipelineStepRun`, status/reason/trigger enums |
-| `registry.py` | `StepContext`, `StepResult`, `StepDefinition`, `PipelineDefinition`, `register_pipeline`/`get_pipeline`/`all_pipelines` |
-| `engine.py` | `advance_one`, `_advance_compensation`, `_handle_step_failure`, `_claim_step`, `_finish_run`, `tick_all`, `reclaim_stale_steps` |
-| `services.py` | `PipelineService`: `start`, `run_to_completion`, `request_pause/resume/cancel/retry`, `get_run` |
-| `serializers.py` | `PipelineStepRunSerializer`, `PipelineRunSerializer` |
-| `views.py` | `PipelineRunViewSet` (read-only + pause/resume/cancel/retry actions) |
-| `urls.py` | router → `runs` |
-| `migrations/0001_initial.py` | generated via `makemigrations`, not hand-written |
-| `management/commands/pipeline_tick.py` | one-shot / `--loop` tick driver |
+| File                                   | Responsibility                                                                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `apps.py`                              | `WorkflowConfig` — no `ready()` override (registry host, not registrant)                                                        |
+| `models.py`                            | `PipelineRun`, `PipelineStepRun`, status/reason/trigger enums                                                                   |
+| `registry.py`                          | `StepContext`, `StepResult`, `StepDefinition`, `PipelineDefinition`, `register_pipeline`/`get_pipeline`/`all_pipelines`         |
+| `engine.py`                            | `advance_one`, `_advance_compensation`, `_handle_step_failure`, `_claim_step`, `_finish_run`, `tick_all`, `reclaim_stale_steps` |
+| `services.py`                          | `PipelineService`: `start`, `run_to_completion`, `request_pause/resume/cancel/retry`, `get_run`                                 |
+| `serializers.py`                       | `PipelineStepRunSerializer`, `PipelineRunSerializer`                                                                            |
+| `views.py`                             | `PipelineRunViewSet` (read-only + pause/resume/cancel/retry actions)                                                            |
+| `urls.py`                              | router → `runs`                                                                                                                 |
+| `migrations/0001_initial.py`           | generated via `makemigrations`, not hand-written                                                                                |
+| `management/commands/pipeline_tick.py` | one-shot / `--loop` tick driver                                                                                                 |
 
 **New inside `automation/`:** `pipelines.py`, `events/__init__.py` + `events/subscribers.py`, one additive migration.
 
@@ -47,10 +47,12 @@
 ### Task 1: App skeleton, settings, permissions
 
 **Files:**
+
 - Create: `platform/workflow/__init__.py`, `platform/workflow/apps.py`, `platform/workflow/migrations/__init__.py`
 - Modify: `platform/config/settings.py`, `platform/permissions/registry.py`
 
 **Interfaces:**
+
 - Produces: the `workflow` Django app label, importable from `PLATFORM_APPS_BEFORE_MODULES`.
 
 - [ ] **Step 1: Create the app package**
@@ -58,6 +60,7 @@
 `platform/workflow/__init__.py` — empty file.
 
 `platform/workflow/apps.py`:
+
 ```python
 from django.apps import AppConfig
 
@@ -73,6 +76,7 @@ class WorkflowConfig(AppConfig):
 - [ ] **Step 2: Register the app in `INSTALLED_APPS`, immediately before `"automation"`**
 
 In `platform/config/settings.py`, find:
+
 ```python
 PLATFORM_APPS_BEFORE_MODULES = [
     "shared",
@@ -88,7 +92,9 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "automation",
 ]
 ```
+
 Replace with:
+
 ```python
 PLATFORM_APPS_BEFORE_MODULES = [
     "shared",
@@ -105,9 +111,11 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "automation",
 ]
 ```
+
 (`workflow` must precede `automation` — automation's `ready()`, added in Task 12, imports `workflow.registry`.)
 
 Add new settings near the bottom of the "Observability" section (after `METRICS_TOKEN = ...`):
+
 ```python
 # --------------------------------------------------------------------------- #
 # Pipeline execution engine (platform/workflow)
@@ -120,6 +128,7 @@ PIPELINE_TICK_INTERVAL_SECONDS = env_int("PIPELINE_TICK_INTERVAL_SECONDS", 3)
 - [ ] **Step 3: Add `workflow.view` / `workflow.control` permissions**
 
 In `platform/permissions/registry.py`, add after the `# Automation` block:
+
 ```python
     # Workflow (pipeline execution engine)
     PermissionDef("workflow.view", "View pipeline runs", "Workflow"),
@@ -146,15 +155,18 @@ git commit -m "feat(platform/workflow): scaffold the workflow app"
 ### Task 2: Models
 
 **Files:**
+
 - Create: `platform/workflow/models.py`, `platform/workflow/migrations/0001_initial.py` (generated)
 - Test: `platform/tests/test_workflow_models.py`
 
 **Interfaces:**
+
 - Produces: `PipelineRun`, `PipelineStepRun`, `PipelineRunStatus`, `StepRunStatus`, `TerminationReason`, `PipelineTriggerType`, `ACTIVE_STATUSES`, `TERMINAL_STATUSES` (all importable from `workflow.models`).
 
 - [ ] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_models.py`:
+
 ```python
 """Pipeline model constraints — idempotency dedup and per-run step ordering."""
 
@@ -200,6 +212,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'workflow.models'` (or
 - [ ] **Step 3: Write the models**
 
 `platform/workflow/models.py`:
+
 ```python
 """Pipeline execution engine storage — a PipelineRun (one execution of a
 registered PipelineDefinition, see workflow/registry.py) and its
@@ -367,16 +380,19 @@ git commit -m "feat(platform/workflow): add PipelineRun/PipelineStepRun models"
 ### Task 3: Registry
 
 **Files:**
+
 - Create: `platform/workflow/registry.py`
 - Test: `platform/tests/test_workflow_registry.py`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: `StepContext(tenant, run_id, actor, data, attempt)`, `StepResult(output={})`, `StepDefinition(key, label, run, compensate=None, max_attempts=1, backoff=default_backoff, timeout_seconds=300)`, `PipelineDefinition(key, label, module, permission, version, steps)`, `register_pipeline(definition)`, `get_pipeline(key) -> PipelineDefinition` (raises `NotFoundError`), `all_pipelines() -> list[PipelineDefinition]`, `default_backoff(attempt) -> float`.
 
 - [ ] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_registry.py`:
+
 ```python
 """Pipeline/step registry — register/get/all, same contract as
 reporting.registry and automation.registry."""
@@ -450,6 +466,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.registry'`.
 - [ ] **Step 3: Write the registry**
 
 `platform/workflow/registry.py`:
+
 ```python
 """Pipeline & step registry — pipelines are code, not database rows,
 registered once at import time from a module's AppConfig.ready(), the same
@@ -546,16 +563,19 @@ git commit -m "feat(platform/workflow): add pipeline/step registry"
 ### Task 4: Engine — the atomic claim primitive
 
 **Files:**
+
 - Create: `platform/workflow/engine.py`
 - Test: `platform/tests/test_workflow_engine.py`
 
 **Interfaces:**
+
 - Consumes: `workflow.models.{PipelineStepRun, StepRunStatus}` (Task 2).
 - Produces: `_claim_step(step_id, *, from_status, to_status=StepRunStatus.RUNNING) -> bool`.
 
 - [ ] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_engine.py` (this file grows across Tasks 4–8):
+
 ```python
 """Pipeline engine — the atomic step-claim primitive, forward execution,
 retries, compensation, crash recovery, and batch ticking."""
@@ -627,6 +647,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.engine'`.
 - [ ] **Step 3: Write the engine module (claim primitive only for now)**
 
 `platform/workflow/engine.py`:
+
 ```python
 """Pipeline execution engine — advances one step at a time, so a crashed
 process loses no state (see reclaim_stale_steps) and pause/resume/cancel are
@@ -676,16 +697,19 @@ git commit -m "feat(platform/workflow): add the atomic step-claim primitive"
 ### Task 5: Engine — forward execution (`advance_one`, retries, backoff)
 
 **Files:**
+
 - Modify: `platform/workflow/engine.py`
 - Test: `platform/tests/test_workflow_engine.py` (append)
 
 **Interfaces:**
+
 - Consumes: `_claim_step` (Task 4), `workflow.registry.{StepContext, get_pipeline}` (Task 3), `workflow.models.{PipelineRun, PipelineRunStatus, TerminationReason, ACTIVE_STATUSES}` (Task 2).
 - Produces: `AdvanceOutcome` enum, `advance_one(run, *, actor=None) -> AdvanceOutcome`, `_finish_run(run, status) -> AdvanceOutcome`, `_handle_step_failure(run, step_row, step_def, error, *, max_attempts=None) -> AdvanceOutcome`. Later tasks (6–8) call `advance_one` and `_finish_run`.
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
+
 ```python
 from workflow.engine import AdvanceOutcome, advance_one
 from workflow.registry import PipelineDefinition, StepContext, StepDefinition, StepResult, register_pipeline
@@ -841,6 +865,7 @@ Expected: FAIL — `ImportError: cannot import name 'advance_one' from 'workflow
 - [ ] **Step 3: Extend the engine module**
 
 Replace `platform/workflow/engine.py` with:
+
 ```python
 """Pipeline execution engine — advances one step at a time, so a crashed
 process loses no state (see reclaim_stale_steps) and pause/resume/cancel are
@@ -1024,16 +1049,19 @@ git commit -m "feat(platform/workflow): forward execution with retry/backoff"
 ### Task 6: Engine — compensation (rollback)
 
 **Files:**
+
 - Modify: `platform/workflow/engine.py`
 - Test: `platform/tests/test_workflow_engine.py` (append)
 
 **Interfaces:**
+
 - Consumes: `_claim_step`, `_finish_run`, `StepContext` (all from Task 5).
 - Produces: real `_advance_compensation(run, *, actor=None) -> AdvanceOutcome` (replaces the `NotImplementedError` stub).
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
+
 ```python
 def test_compensation_runs_prior_successful_steps_in_reverse_order(tenant):
     compensated: list[str] = []
@@ -1127,11 +1155,14 @@ Expected: FAIL — `NotImplementedError`.
 - [ ] **Step 3: Implement `_advance_compensation`**
 
 In `platform/workflow/engine.py`, replace:
+
 ```python
 def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
     raise NotImplementedError  # implemented in Task 6
 ```
+
 with:
+
 ```python
 def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
     next_row = run.steps.filter(status=StepRunStatus.SUCCESS).order_by("-step_index").first()
@@ -1192,16 +1223,19 @@ git commit -m "feat(platform/workflow): compensation (rollback) unwind"
 ### Task 7: Engine — crash recovery (`reclaim_stale_steps`)
 
 **Files:**
+
 - Modify: `platform/workflow/engine.py`
 - Test: `platform/tests/test_workflow_engine.py` (append)
 
 **Interfaces:**
+
 - Consumes: `PipelineRun`, `PipelineStepRun`, `PipelineRunStatus`, `StepRunStatus`, `TerminationReason` (Task 2); `workflow.registry.get_pipeline` (Task 3).
 - Produces: `reclaim_stale_steps() -> int`.
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
+
 ```python
 from datetime import timedelta
 
@@ -1270,10 +1304,13 @@ Expected: FAIL — `ImportError: cannot import name 'reclaim_stale_steps'`.
 - [ ] **Step 3: Implement `reclaim_stale_steps`**
 
 In `platform/workflow/engine.py`, add near the top of the imports:
+
 ```python
 from django.conf import settings
 ```
+
 Then append at the end of the file:
+
 ```python
 def reclaim_stale_steps() -> int:
     """Crash recovery: any step still RUNNING past its own timeout almost
@@ -1333,16 +1370,19 @@ git commit -m "feat(platform/workflow): crash recovery via stale-lock reclaim"
 ### Task 8: Engine — batch ticking (`tick_all`)
 
 **Files:**
+
 - Modify: `platform/workflow/engine.py`
 - Test: `platform/tests/test_workflow_engine.py` (append)
 
 **Interfaces:**
+
 - Consumes: `advance_one`, `reclaim_stale_steps` (Tasks 5, 7); `workflow.models.ACTIVE_STATUSES` (Task 2).
 - Produces: `TickSummary(advanced, reclaimed)`, `tick_all(*, tenant=None, batch_size=None, actor=None) -> TickSummary`.
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
+
 ```python
 from workflow.engine import tick_all
 
@@ -1425,6 +1465,7 @@ Expected: FAIL — `ImportError: cannot import name 'tick_all'`.
 - [ ] **Step 3: Implement `tick_all`**
 
 In `platform/workflow/engine.py`, add `from dataclasses import dataclass` to the imports (alongside `from enum import Enum`), then append at the end of the file:
+
 ```python
 @dataclass
 class TickSummary:
@@ -1477,16 +1518,19 @@ git commit -m "feat(platform/workflow): batch ticking across all active runs"
 ### Task 9: `PipelineService`
 
 **Files:**
+
 - Create: `platform/workflow/services.py`
 - Test: `platform/tests/test_workflow_service.py`
 
 **Interfaces:**
+
 - Consumes: `workflow.engine.advance_one` (Task 5), `workflow.registry.get_pipeline` (Task 3), `workflow.models.*` (Task 2).
 - Produces: `PipelineService.start(*, pipeline_key, tenant, actor=None, trigger_type="manual", idempotency_key="", source_module="", source_object_type="", source_object_id="", input_data=None) -> tuple[PipelineRun, bool]`, `.run_to_completion(run, *, actor=None, max_wall_seconds=30.0) -> PipelineRun`, `.get_run(run_id) -> PipelineRun`, `.request_pause(run) -> PipelineRun`, `.request_resume(run) -> PipelineRun`, `.request_cancel(run) -> PipelineRun`, `.request_retry(run) -> PipelineRun`.
 
 - [ ] **Step 1: Write the failing tests**
 
 `platform/tests/test_workflow_service.py`:
+
 ```python
 """PipelineService — starting runs (with idempotency dedup), synchronous
 draining, and the pause/resume/cancel/retry control-plane actions."""
@@ -1627,6 +1671,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.services'`.
 - [ ] **Step 3: Write the service**
 
 `platform/workflow/services.py`:
+
 ```python
 """Pipeline control-plane: starting runs, draining them synchronously for
 callers that need a blocking result today (automation's run_rule, Task 14),
@@ -1785,17 +1830,20 @@ git commit -m "feat(platform/workflow): PipelineService control plane"
 ### Task 10: API (serializers, views, urls)
 
 **Files:**
+
 - Create: `platform/workflow/serializers.py`, `platform/workflow/views.py`, `platform/workflow/urls.py`
 - Modify: `platform/config/urls.py`
 - Test: `platform/tests/test_workflow_api.py`
 
 **Interfaces:**
+
 - Consumes: `PipelineService` (Task 9), `workflow.models.*` (Task 2), `shared.views.ReadOnlyModelViewSet`, `shared.serializers.BaseModelSerializer` (existing platform conventions).
 - Produces: `GET/POST /api/v1/workflow/runs/`, `.../{id}/`, `.../{id}/pause/`, `.../{id}/resume/`, `.../{id}/cancel/`, `.../{id}/retry/`.
 
 - [ ] **Step 1: Write the failing tests**
 
 `platform/tests/test_workflow_api.py`:
+
 ```python
 """Pipeline run API — read access and the pause/resume/cancel/retry
 control-plane actions, with permission checks."""
@@ -1893,6 +1941,7 @@ Expected: FAIL — 404s (no `/workflow/` URL mounted yet).
 - [ ] **Step 3: Write serializers, views, urls**
 
 `platform/workflow/serializers.py`:
+
 ```python
 """Pipeline run API serializers."""
 
@@ -1947,6 +1996,7 @@ class PipelineRunSerializer(BaseModelSerializer):
 ```
 
 `platform/workflow/views.py`:
+
 ```python
 """Pipeline run API — read access plus the pause/resume/cancel/retry
 control-plane actions."""
@@ -2007,6 +2057,7 @@ class PipelineRunViewSet(ReadOnlyModelViewSet):
 ```
 
 `platform/workflow/urls.py`:
+
 ```python
 from rest_framework.routers import DefaultRouter
 
@@ -2019,6 +2070,7 @@ urlpatterns = router.urls
 ```
 
 In `platform/config/urls.py`, add `path("workflow/", include("workflow.urls")),` immediately before `path("automation/", include("automation.urls")),`:
+
 ```python
     path("tags/", include("tagging.urls")),
     path("workflow/", include("workflow.urls")),
@@ -2048,16 +2100,19 @@ git commit -m "feat(platform/workflow): pipeline run API with pause/resume/cance
 ### Task 11: `pipeline_tick` management command
 
 **Files:**
+
 - Create: `platform/workflow/management/__init__.py`, `platform/workflow/management/commands/__init__.py`, `platform/workflow/management/commands/pipeline_tick.py`
 - Test: append to `platform/tests/test_workflow_service.py` (a thin smoke test — the engine logic itself is already fully covered by Tasks 4–8)
 
 **Interfaces:**
+
 - Consumes: `workflow.engine.tick_all` (Task 8).
 - Produces: `python manage.py pipeline_tick` (one-shot) and `python manage.py pipeline_tick --loop --interval N`.
 
 - [ ] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_workflow_service.py`:
+
 ```python
 from io import StringIO
 
@@ -2087,6 +2142,7 @@ Expected: FAIL — `CommandError: Unknown command: 'pipeline_tick'`.
 `platform/workflow/management/commands/__init__.py` — empty file.
 
 `platform/workflow/management/commands/pipeline_tick.py`:
+
 ```python
 """Advances every active pipeline run one step. Meant to be invoked by an
 external cron (one-shot, same operational shape as automation's own
@@ -2154,11 +2210,13 @@ git commit -m "feat(platform/workflow): pipeline_tick management command"
 ### Task 12: Automation registers its pipelines
 
 **Files:**
+
 - Create: `platform/automation/pipelines.py`
 - Modify: `platform/automation/apps.py`
 - Test: append a new section to `platform/tests/test_automation.py` (new tests only — nothing existing changes)
 
 **Interfaces:**
+
 - Consumes: `workflow.registry.{PipelineDefinition, StepContext, StepDefinition, StepResult, register_pipeline}` (Task 3); `AutomationService._collect_and_package` and `ReportService().run` (existing, unmodified).
 - Produces: `automation.pipelines.PACKAGE_PIPELINE_KEY`, `REPORT_PIPELINE_KEY`, `register_pipelines()`.
 
@@ -2167,6 +2225,7 @@ Note on scope vs. the design spec: the spec sketched `collect_files`/`store_pack
 - [ ] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_automation.py` (new section at the end of the file, nothing above it changes):
+
 ```python
 # --------------------------------------------------------------------------- #
 # Pipeline registration (workflow engine migration)
@@ -2274,6 +2333,7 @@ def register_pipelines() -> None:
 - [ ] **Step 4: Wire it into `AutomationConfig.ready()`**
 
 Replace `platform/automation/apps.py`:
+
 ```python
 from django.apps import AppConfig
 
@@ -2315,17 +2375,20 @@ git commit -m "feat(automation): register rule-execution pipelines on the workfl
 ### Task 13: Event subscriber — legacy `AutomationRun` from a finished pipeline
 
 **Files:**
+
 - Modify: `platform/automation/models.py`, `platform/automation/services.py`, `platform/automation/apps.py`
 - Create: `platform/automation/events/__init__.py`, `platform/automation/events/subscribers.py`, `platform/automation/migrations/000X_automationrun_pipeline_run.py` (generated)
 - Test: append to `platform/tests/test_automation.py`
 
 **Interfaces:**
+
 - Consumes: `shared.events.{Events, subscribe}` (existing); `automation.pipelines.{PACKAGE_PIPELINE_KEY, REPORT_PIPELINE_KEY}` (Task 12); `automation.services.AutomationService._record_run` / `._advance_schedule` (existing — `_record_run`'s signature grows one optional parameter).
 - Produces: `AutomationRun.pipeline_run` FK; a working `_on_pipeline_finished` subscriber. **This task does not yet change `run_rule()`** — that's Task 14. This task is testable on its own by publishing the event directly.
 
 - [ ] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_automation.py`:
+
 ```python
 def test_subscriber_builds_automation_run_from_a_finished_pipeline(tenant, tag, tagged_asset):
     from shared.events import Events, publish
@@ -2361,6 +2424,7 @@ Expected: FAIL — `AutomationRun` has no `pipeline_run` field yet, and no subsc
 - [ ] **Step 3: Add the additive `pipeline_run` FK**
 
 In `platform/automation/models.py`, add to `AutomationRun` (after the `actor` field):
+
 ```python
     # Links to the workflow.PipelineRun that produced this row (Task 13+).
     # Nullable and not exposed in AutomationRunSerializer — purely internal,
@@ -2377,6 +2441,7 @@ Expected: a new migration adding `pipeline_run` to `AutomationRun`.
 - [ ] **Step 4: Extend `_record_run` to accept the new FK**
 
 In `platform/automation/services.py`, find `_record_run`'s signature and body:
+
 ```python
     def _record_run(
         self,
@@ -2409,7 +2474,9 @@ In `platform/automation/services.py`, find `_record_run`'s signature and body:
             actor=actor,
         )
 ```
+
 Replace with:
+
 ```python
     def _record_run(
         self,
@@ -2444,6 +2511,7 @@ Replace with:
             pipeline_run=pipeline_run,
         )
 ```
+
 (The rest of `_record_run` — the `AuditService().record(...)` call and `publish("automation.rule_executed", ...)` — is unchanged.)
 
 - [ ] **Step 5: Write the subscriber**
@@ -2451,6 +2519,7 @@ Replace with:
 `platform/automation/events/__init__.py` — empty file.
 
 `platform/automation/events/subscribers.py`:
+
 ```python
 """Wires the generic pipeline engine's completion/cancellation events into
 automation's legacy AutomationRun record — the one the current /automation
@@ -2518,6 +2587,7 @@ subscribe(Events.WORKFLOW_CANCELLED, _on_pipeline_finished)
 - [ ] **Step 6: Import the subscriber from `ready()`**
 
 In `platform/automation/apps.py`, add the import at the end of `ready()`:
+
 ```python
     def ready(self) -> None:
         from automation.pipelines import register_pipelines
@@ -2553,10 +2623,12 @@ git commit -m "feat(automation): build the legacy AutomationRun from a finished 
 ### Task 14: Switch `run_rule()` to the engine, fix the double-run race
 
 **Files:**
+
 - Modify: `platform/automation/services.py`
 - Test: append to `platform/tests/test_automation.py`
 
 **Interfaces:**
+
 - Consumes: `workflow.services.PipelineService` (Task 9); `automation.pipelines.{PACKAGE_PIPELINE_KEY, REPORT_PIPELINE_KEY}` (Task 12); the subscriber from Task 13 (already wired).
 - Produces: the final `run_rule()` — same signature and return type (`AutomationRun`) as before.
 
@@ -2565,6 +2637,7 @@ git commit -m "feat(automation): build the legacy AutomationRun from a finished 
 - [ ] **Step 1: Write the failing test (the double-run race fix)**
 
 Append to `platform/tests/test_automation.py`:
+
 ```python
 def test_automation_run_due_concurrent_invocations_do_not_double_run_same_rule(
     tenant, tag, tagged_asset,
@@ -2604,7 +2677,7 @@ def test_run_now_manual_trigger_has_no_idempotency_dedup(tenant, tag, tagged_ass
     assert AutomationRun.objects.filter(rule=rule).count() == 2
 ```
 
-Note: the test above verifies the idempotency-key *mechanism* directly (since two truly concurrent OS-level processes aren't reproducible in a single-process pytest run) — the underlying guarantee (`PipelineRun`'s partial unique constraint from Task 2, exercised via `PipelineService.start` in Task 9) is what makes real concurrent cron invocations safe; this test proves `run_rule()` wires that key through correctly for the scheduled-trigger case, and proves manual triggers deliberately opt out of it.
+Note: the test above verifies the idempotency-key _mechanism_ directly (since two truly concurrent OS-level processes aren't reproducible in a single-process pytest run) — the underlying guarantee (`PipelineRun`'s partial unique constraint from Task 2, exercised via `PipelineService.start` in Task 9) is what makes real concurrent cron invocations safe; this test proves `run_rule()` wires that key through correctly for the scheduled-trigger case, and proves manual triggers deliberately opt out of it.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -2614,6 +2687,7 @@ Expected: FAIL — `run_rule()` doesn't use the pipeline engine yet, so no match
 - [ ] **Step 3: Rewrite `run_rule()`**
 
 In `platform/automation/services.py`, replace:
+
 ```python
     def run_rule(
         self, *, rule: AutomationRule, actor=None, triggered_by: str = TriggerType.SCHEDULE
@@ -2675,7 +2749,9 @@ In `platform/automation/services.py`, replace:
         self._advance_schedule(rule=rule, finished=finished)
         return run
 ```
+
 with:
+
 ```python
     def run_rule(
         self, *, rule: AutomationRule, actor=None, triggered_by: str = TriggerType.SCHEDULE
@@ -2764,9 +2840,11 @@ Expected: succeeds unchanged — this plan touched no files under `apps/web/`, s
 - [ ] **Step 3: Manual smoke test of the new API surface**
 
 With the dev server running (`cd platform && python manage.py runserver`) and a valid JWT for an Owner user:
+
 ```bash
 curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/workflow/runs/
 ```
+
 Expected: `200` with a JSON envelope containing (at minimum) any `PipelineRun`s created by the automation tests run against a real dev database, each with a nested `steps` array.
 
 - [ ] **Step 4: Confirm `pre-commit` passes**

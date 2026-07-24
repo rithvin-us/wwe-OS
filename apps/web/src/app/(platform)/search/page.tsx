@@ -78,12 +78,7 @@ export default async function SearchPage({
           </div>
           {data.meta.pages > 1 ? (
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                asChild={page > 1}
-              >
+              <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
                 {page > 1 ? (
                   <Link href={`/search?q=${encodeURIComponent(query)}&page=${page - 1}`}>
                     Previous

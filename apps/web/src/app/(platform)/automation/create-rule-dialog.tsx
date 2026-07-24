@@ -130,7 +130,12 @@ export function CreateRuleDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="rule-name">Name</Label>
-            <Input id="rule-name" name="name" placeholder="e.g. Quarterly auditor bundle" required />
+            <Input
+              id="rule-name"
+              name="name"
+              placeholder="e.g. Quarterly auditor bundle"
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rule-description">Description</Label>
@@ -191,7 +196,12 @@ export function CreateRuleDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rule-format">Format</Label>
-                <select id="rule-format" name="export_format" defaultValue="csv" className={SELECT_CLASS}>
+                <select
+                  id="rule-format"
+                  name="export_format"
+                  defaultValue="csv"
+                  className={SELECT_CLASS}
+                >
                   <option value="csv">CSV</option>
                   <option value="xlsx">XLSX</option>
                   <option value="pdf">PDF</option>

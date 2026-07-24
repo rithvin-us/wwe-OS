@@ -46,7 +46,8 @@ export function InventoryDashboard({
               {stats.active}
             </span>
             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              {stats.total_items > 0 ? Math.round((stats.active / stats.total_items) * 100) : 0}% active
+              {stats.total_items > 0 ? Math.round((stats.active / stats.total_items) * 100) : 0}%
+              active
             </span>
           </div>
         </div>

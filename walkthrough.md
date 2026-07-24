@@ -20,7 +20,7 @@ tool or a collection of separate apps bolted together.
 **Product mode: single-operator.** The company is run by one person who is
 HR + IT + Accounts simultaneously. Concretely, that means:
 
-- One sign-in (Google Workspace SSO *or* email+password — no separate
+- One sign-in (Google Workspace SSO _or_ email+password — no separate
   multi-user login flows).
 - No role-gated UI. The operator is the "Owner" and sees everything; the
   Users/Roles/Permissions/Audit screens are hidden from the menu on purpose
@@ -89,7 +89,7 @@ DJANGO_APPS + THIRD_PARTY_APPS
 The ordering is load-bearing, not cosmetic: `permissions` must sync before
 any module registers its own permissions, and `roles` (which grants the
 Owner role every `Permission` row that exists at that point) must sync
-*after* every module's permissions are in the table — otherwise Owner would
+_after_ every module's permissions are in the table — otherwise Owner would
 silently miss whatever a module registers. If a future module's permission
 coverage looks wrong, check this list's order first.
 
@@ -162,19 +162,19 @@ weak or leaked default. See `SECURITY.md`.
 ## 5. Everyday commands
 
 | Task                   | Command                                                              |
-| ---------------------- | ---------------------------------------------------------------------- |
-| Install JS deps        | `pnpm install` (repo root)                                            |
-| Install Python tooling | `pip install --group dev`                                             |
-| Run web app            | `pnpm --filter web dev` (http://localhost:3000)                       |
-| Build web app          | `pnpm --filter web build` — must pass before any UI work is "done"    |
-| Lint / format TS       | `pnpm lint` / `pnpm format`                                           |
-| Lint / format Python   | `python -m ruff check .` / `python -m ruff format .`                  |
-| Backend dev server     | `cd platform && python manage.py runserver` (http://localhost:8000)   |
-| Backend migrate        | `cd platform && python manage.py migrate`                             |
-| Backend tests          | `cd platform && pytest` — 200 tests, must pass before backend "done"  |
-| Pre-commit (all hooks) | `python -m pre_commit run --all-files`                                |
-| Local infra            | `docker compose up -d` (Postgres, Redis, Mailpit UI on :8025)         |
-| Full stack (Docker)    | `docker compose up -d --build` (adds `backend` + `telegram-bot`)      |
+| ---------------------- | -------------------------------------------------------------------- |
+| Install JS deps        | `pnpm install` (repo root)                                           |
+| Install Python tooling | `pip install --group dev`                                            |
+| Run web app            | `pnpm --filter web dev` (http://localhost:3000)                      |
+| Build web app          | `pnpm --filter web build` — must pass before any UI work is "done"   |
+| Lint / format TS       | `pnpm lint` / `pnpm format`                                          |
+| Lint / format Python   | `python -m ruff check .` / `python -m ruff format .`                 |
+| Backend dev server     | `cd platform && python manage.py runserver` (http://localhost:8000)  |
+| Backend migrate        | `cd platform && python manage.py migrate`                            |
+| Backend tests          | `cd platform && pytest` — 200 tests, must pass before backend "done" |
+| Pre-commit (all hooks) | `python -m pre_commit run --all-files`                               |
+| Local infra            | `docker compose up -d` (Postgres, Redis, Mailpit UI on :8025)        |
+| Full stack (Docker)    | `docker compose up -d --build` (adds `backend` + `telegram-bot`)     |
 
 Note: `pytest` run bare from the **repo root** intentionally only discovers
 `services/` and `tests/` (both empty today) — the Django-dependent suite
@@ -189,16 +189,16 @@ under `platform/`/`modules/` needs `platform/.venv` and only runs via
 Driven by `apps/web/src/config/modules.ts` — the single source of truth for
 the sidebar, home launcher, and command palette.
 
-| App | Route | Availability | What it does |
-| --- | --- | --- | --- |
-| HR | `/hr` | In progress | Employees, leave, attendance, onboarding — integrates with the separately-deployed HR Automation app rather than rebuilding HR logic here (`docs/specs/hr-integration-strategy.md`). |
-| Purchases | `/purchase` | Ready | Review bills sent in from the Telegram bot: OCR extraction → review queue → vendor directory → payment tracking. The most mature, most-tested module. |
-| Documents (DMS) | `/dms` | Ready | Store, categorize, tag, and AI-summarize company documents. |
-| Delivery Challans | `/assets` | Ready | Generate and track Delivery Challans — a Word-template-driven PDF workflow with a SHA-256 verification hash per document. |
-| Analytics | `/analytics` | Coming soon | Not built. |
-| Reports | `/reports` | Ready | On-demand and scheduled reports. |
-| Business Timeline | `/timeline` | Ready | Cross-module activity feed — everything that happened, in one place. |
-| Automation | `/automation` | Ready | Rule-based automation: define a trigger, an action, see execution history. |
+| App               | Route         | Availability | What it does                                                                                                                                                                         |
+| ----------------- | ------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HR                | `/hr`         | In progress  | Employees, leave, attendance, onboarding — integrates with the separately-deployed HR Automation app rather than rebuilding HR logic here (`docs/specs/hr-integration-strategy.md`). |
+| Purchases         | `/purchase`   | Ready        | Review bills sent in from the Telegram bot: OCR extraction → review queue → vendor directory → payment tracking. The most mature, most-tested module.                                |
+| Documents (DMS)   | `/dms`        | Ready        | Store, categorize, tag, and AI-summarize company documents.                                                                                                                          |
+| Delivery Challans | `/assets`     | Ready        | Generate and track Delivery Challans — a Word-template-driven PDF workflow with a SHA-256 verification hash per document.                                                            |
+| Analytics         | `/analytics`  | Coming soon  | Not built.                                                                                                                                                                           |
+| Reports           | `/reports`    | Ready        | On-demand and scheduled reports.                                                                                                                                                     |
+| Business Timeline | `/timeline`   | Ready        | Cross-module activity feed — everything that happened, in one place.                                                                                                                 |
+| Automation        | `/automation` | Ready        | Rule-based automation: define a trigger, an action, see execution history.                                                                                                           |
 
 **Built but not in the app registry today** (reachable only by direct URL or
 a dashboard alert link, not from the sidebar/command palette):
@@ -225,14 +225,14 @@ rules, event publishing) → `repositories/` (data access, where used) →
 `models/`. `modules/purchase/backend` is the reference implementation this
 pattern is copied from.
 
-| Module | Wired into Django (`MODULE_APPS`)? | Status |
-| --- | --- | --- |
-| `purchase` | Yes | Built — bill ingestion, review, vendors, payments. |
-| `documents` | Yes | Built — DMS backend. |
-| `contracts` | Yes | Built — see § 6 for the frontend-visibility gap. |
-| `inventory` | Yes | Built — see § 6 for the frontend-visibility gap. |
-| `assets` | Yes | Built — Delivery Challans, plus a broader generic asset registry (models/services/tests exist) with no dedicated frontend beyond the DC flow. |
-| `analytics`, `chatbot`, `dms`\*, `finance`, `hr`, `maintenance`, `reports`\*, `vendors`, `visitors` | No | `.gitkeep`-only scaffolding — prepared shells, not implemented. (`dms`/`reports` here are placeholder dirs distinct from the real `documents`/`reporting` apps that already ship the DMS and Reports features.) |
+| Module                                                                                              | Wired into Django (`MODULE_APPS`)? | Status                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `purchase`                                                                                          | Yes                                | Built — bill ingestion, review, vendors, payments.                                                                                                                                                              |
+| `documents`                                                                                         | Yes                                | Built — DMS backend.                                                                                                                                                                                            |
+| `contracts`                                                                                         | Yes                                | Built — see § 6 for the frontend-visibility gap.                                                                                                                                                                |
+| `inventory`                                                                                         | Yes                                | Built — see § 6 for the frontend-visibility gap.                                                                                                                                                                |
+| `assets`                                                                                            | Yes                                | Built — Delivery Challans, plus a broader generic asset registry (models/services/tests exist) with no dedicated frontend beyond the DC flow.                                                                   |
+| `analytics`, `chatbot`, `dms`\*, `finance`, `hr`, `maintenance`, `reports`\*, `vendors`, `visitors` | No                                 | `.gitkeep`-only scaffolding — prepared shells, not implemented. (`dms`/`reports` here are placeholder dirs distinct from the real `documents`/`reporting` apps that already ship the DMS and Reports features.) |
 
 `modules/*/frontend/` directories are all empty `.gitkeep` placeholders —
 the actual UI for every shipped app lives centrally in `apps/web/src`, not
@@ -246,10 +246,10 @@ per-module `frontend/` directories are reserved for a future split.
 Shown to the operator only on the quiet `/services` page — nothing to click,
 nothing to manage, plain-language descriptions only.
 
-| Service | Status |
-| --- | --- |
-| `telegram-bot` | **Implemented.** Receives purchase-bill photos/documents, runs OCR (Gemini/OpenAI Vision), posts structured data to the platform via the service-token scheme. |
-| `ai-engine`, `email-service`, `ocr`, `scheduler`, `webhook-engine`, `worker` | **Scaffolding only** — a `Dockerfile` and empty `src/`/`tests/` per service. No code, no tests, because there's nothing to test yet. |
+| Service                                                                      | Status                                                                                                                                                         |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `telegram-bot`                                                               | **Implemented.** Receives purchase-bill photos/documents, runs OCR (Gemini/OpenAI Vision), posts structured data to the platform via the service-token scheme. |
+| `ai-engine`, `email-service`, `ocr`, `scheduler`, `webhook-engine`, `worker` | **Scaffolding only** — a `Dockerfile` and empty `src/`/`tests/` per service. No code, no tests, because there's nothing to test yet.                           |
 
 Platform-side capabilities that back these (and are already built,
 independent of whether the standalone service exists yet): `platform/ai`
@@ -307,19 +307,19 @@ webhook, WhatsApp, etc.), not something to reinvent per channel.
 
 ## 11. Where to find more
 
-| Question | Look here |
-| --- | --- |
-| Is X built, and how well tested? | `docs/roadmap/development-roadmap.md` |
-| What's the product direction / why single-operator? | `docs/roadmap/single-operator-plan.md` |
-| What does module Y do, who uses it, what are its KPIs? | `docs/modules/<slug>.md` |
-| How is module Y actually built (schema, API, events)? | `docs/specs/<slug>.md` |
-| UI rules (color, spacing, components) | `docs/design/design-bible.md` |
-| Auth / RBAC internals | `docs/architecture/authentication.md`, `docs/architecture/rbac.md` |
-| Platform kernel internals | `docs/architecture/platform-kernel.md` |
-| API reference | `docs/api/platform-api.md` |
-| Deploying the backend | `docs/deployment/backend.md` |
-| What's the security posture, what was fixed, what's still open? | `SECURITY.md` (repo root) |
-| Onboarding as a new contributor | `docs/development/onboarding.md` |
+| Question                                                        | Look here                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Is X built, and how well tested?                                | `docs/roadmap/development-roadmap.md`                              |
+| What's the product direction / why single-operator?             | `docs/roadmap/single-operator-plan.md`                             |
+| What does module Y do, who uses it, what are its KPIs?          | `docs/modules/<slug>.md`                                           |
+| How is module Y actually built (schema, API, events)?           | `docs/specs/<slug>.md`                                             |
+| UI rules (color, spacing, components)                           | `docs/design/design-bible.md`                                      |
+| Auth / RBAC internals                                           | `docs/architecture/authentication.md`, `docs/architecture/rbac.md` |
+| Platform kernel internals                                       | `docs/architecture/platform-kernel.md`                             |
+| API reference                                                   | `docs/api/platform-api.md`                                         |
+| Deploying the backend                                           | `docs/deployment/backend.md`                                       |
+| What's the security posture, what was fixed, what's still open? | `SECURITY.md` (repo root)                                          |
+| Onboarding as a new contributor                                 | `docs/development/onboarding.md`                                   |
 
 ---
 

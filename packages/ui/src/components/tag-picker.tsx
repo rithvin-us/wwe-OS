@@ -40,14 +40,10 @@ export function TagPicker({ tags, allTags, onChange, disabled, className }: TagP
 
   const selectedIds = useMemo(() => new Set(tags.map((t) => t.id)), [tags]);
   const trimmedQuery = query.trim();
-  const hasExactMatch = allTags.some(
-    (t) => t.name.toLowerCase() === trimmedQuery.toLowerCase(),
-  );
+  const hasExactMatch = allTags.some((t) => t.name.toLowerCase() === trimmedQuery.toLowerCase());
 
   function toggle(tag: TagLike) {
-    const next = selectedIds.has(tag.id)
-      ? tags.filter((t) => t.id !== tag.id)
-      : [...tags, tag];
+    const next = selectedIds.has(tag.id) ? tags.filter((t) => t.id !== tag.id) : [...tags, tag];
     onChange({ tagIds: next.map((t) => t.id), tagNames: [] });
   }
 
@@ -76,7 +72,12 @@ export function TagPicker({ tags, allTags, onChange, disabled, className }: TagP
           }}
         >
           <PopoverTrigger asChild>
-            <Button type="button" variant="outline" size="sm" className="h-6 gap-1 rounded-full px-2 text-xs">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-6 gap-1 rounded-full px-2 text-xs"
+            >
               <Plus className="size-3" aria-hidden />
               Tag
             </Button>

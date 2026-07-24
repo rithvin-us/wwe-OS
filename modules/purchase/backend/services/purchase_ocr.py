@@ -20,9 +20,9 @@ Return ONLY a valid JSON object without any Markdown formatting code blocks.
 
 The JSON object must contain EXACTLY the following keys:
 - "vendor": String. Name of the selling company, store, or vendor.
-- "invoice_number": String. Unique invoice/bill identifier. Return "" if not present.
-- "invoice_date": String. Date formatted YYYY-MM-DD. Return transaction date if missing.
-- "gst_number": String. Vendor's Tax Identification / GST / VAT ID if available, else "".
+- "invoice_number": String. Unique invoice/bill ID. Return "" if not present.
+- "invoice_date": String. Date formatted YYYY-MM-DD.
+- "gst_number": String. Vendor's Tax Identification / GST / VAT ID, else "".
 - "items": Array of Objects. Line items extracted. Each item object must have:
     - "item_name": String (e.g. "Steel Beams", "Office Supplies")
     - "quantity": Number (e.g. 10)
@@ -31,10 +31,10 @@ The JSON object must contain EXACTLY the following keys:
     - "total": Number (e.g. 500.00)
 - "total_quantity": Number. Total quantity of items purchased.
 - "tax_amount": Number. Total tax or GST amount in plain numbers.
-- "grand_total": Number. Final payable total amount as a plain number (e.g. 150.00).
-- "currency": String. 3-letter ISO 4217 currency code (e.g. INR, USD, EUR). Default "INR".
-- "payment_method": String. E.g. "Credit Card", "Bank Transfer", "Cash", "UPI", "Unspecified".
-- "confidence_score": Number between 0.00 and 1.00 indicating confidence level in extraction.
+- "grand_total": Number. Final payable total amount as a number (e.g. 150.00).
+- "currency": String. 3-letter ISO code (e.g. INR, USD, EUR). Default "INR".
+- "payment_method": String. E.g. "Credit Card", "Bank Transfer", "Cash", "UPI".
+- "confidence_score": Number between 0.00 and 1.00 for confidence level.
 """
 
 
@@ -42,9 +42,7 @@ class PurchaseOCRService:
     def extract_from_text(self, document_text: str, tenant=None) -> dict[str, Any]:
         """Call AI Gateway to extract structured purchase fields from text."""
         ai_service = AIService()
-        user_prompt = (
-            f"Extract structured purchase invoice data from the following text:\n\n{document_text}"
-        )
+        user_prompt = f"Extract structured purchase invoice data from text:\n\n{document_text}"
 
         try:
             result = ai_service.generate(

@@ -26,7 +26,11 @@ import type { TagLike } from "@bop/ui/components/tag-pill";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteBillAction, markBillPaidAction, updateBillAction } from "@/app/(platform)/purchase/actions";
+import {
+  deleteBillAction,
+  markBillPaidAction,
+  updateBillAction,
+} from "@/app/(platform)/purchase/actions";
 import type { PurchaseBill } from "@/lib/purchase";
 import { getObjectTagsAction, setObjectTagsAction } from "@/lib/tags-actions";
 import type { Tag } from "@/lib/tags";
@@ -98,12 +102,11 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
   if (!bill) return null;
 
   const confPercent = Math.round(Number(bill.confidence_score) * 100);
-  const senderDisplay =
-    bill.telegram_username
-      ? `@${bill.telegram_username}`
-      : bill.telegram_user_id
-        ? `Telegram User (ID: ${bill.telegram_user_id})`
-        : "Direct Ingestion / Upload";
+  const senderDisplay = bill.telegram_username
+    ? `@${bill.telegram_username}`
+    : bill.telegram_user_id
+      ? `Telegram User (ID: ${bill.telegram_user_id})`
+      : "Direct Ingestion / Upload";
 
   const isImage =
     bill.document_url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) ||
@@ -208,22 +211,14 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               Confirm Permanently Deleting Purchase Bill?
             </div>
             <p className="text-xs text-muted-foreground">
-              This will remove the digitized purchase record for {bill.seller_name} ({formatMoney(bill.total_rate, bill.currency)}). This action cannot be undone.
+              This will remove the digitized purchase record for {bill.seller_name} (
+              {formatMoney(bill.total_rate, bill.currency)}). This action cannot be undone.
             </p>
             <div className="flex items-center gap-2 pt-1">
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={pending}
-              >
+              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={pending}>
                 <Trash className="size-3.5 mr-1.5" /> Permanently Delete
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setConfirmDelete(false)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
                 Cancel
               </Button>
             </div>
@@ -238,19 +233,27 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Vendor Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Vendor Name
+                </label>
                 <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Invoice Number</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Invoice Number
+                </label>
                 <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Total Amount (₹)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Total Amount (₹)
+                </label>
                 <Input value={totalRate} onChange={(e) => setTotalRate(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">GST Number</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  GST Number
+                </label>
                 <Input value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} />
               </div>
             </div>
@@ -268,25 +271,33 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
         {/* Key Financial & Metadata Tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-xl border border-border bg-card/60 p-4">
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Grand Total</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Grand Total
+            </p>
             <p className="font-display text-xl font-bold text-foreground mt-1 tabular-nums">
               {formatMoney(bill.total_rate, bill.currency)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Invoice Date</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Invoice Date
+            </p>
             <p className="text-sm font-semibold text-foreground mt-1">
               {formatDate(bill.invoice_date || bill.purchase_date)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Invoice Number</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Invoice Number
+            </p>
             <p className="text-sm font-semibold text-foreground mt-1 font-mono">
               {bill.invoice_number || "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">GST Number</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              GST Number
+            </p>
             <p className="text-sm font-semibold text-foreground mt-1 font-mono">
               {bill.gst_number || "N/A"}
             </p>
@@ -317,7 +328,9 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
                   {bill.payment_status === "paid" ? "Paid" : "Unpaid"}
                 </Badge>
                 {bill.paid_at && (
-                  <span className="text-[11px] text-muted-foreground">{formatDate(bill.paid_at)}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(bill.paid_at)}
+                  </span>
                 )}
               </div>
             </div>
@@ -340,9 +353,13 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-left p-2.5 font-medium text-muted-foreground">Item Description</th>
+                    <th className="text-left p-2.5 font-medium text-muted-foreground">
+                      Item Description
+                    </th>
                     <th className="text-right p-2.5 font-medium text-muted-foreground">Qty</th>
-                    <th className="text-right p-2.5 font-medium text-muted-foreground">Unit Price</th>
+                    <th className="text-right p-2.5 font-medium text-muted-foreground">
+                      Unit Price
+                    </th>
                     <th className="text-right p-2.5 font-medium text-muted-foreground">Tax</th>
                     <th className="text-right p-2.5 font-medium text-muted-foreground">Total</th>
                   </tr>
@@ -416,7 +433,8 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
                   <div>
                     <p className="text-sm font-semibold text-foreground">Document File Ready</p>
                     <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-                      Click below to view the document copy safely without automatic background downloading.
+                      Click below to view the document copy safely without automatic background
+                      downloading.
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3 pt-1">

@@ -88,6 +88,13 @@ export async function djangoFetchPage<T>(
   const envelope = await fetchEnvelope<T>(path, init);
   return {
     data: envelope.data,
-    meta: envelope.meta ?? { count: 0, page: 1, pages: 1, page_size: 0, next: null, previous: null },
+    meta: envelope.meta ?? {
+      count: 0,
+      page: 1,
+      pages: 1,
+      page_size: 0,
+      next: null,
+      previous: null,
+    },
   };
 }

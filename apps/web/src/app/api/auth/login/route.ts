@@ -31,7 +31,10 @@ export async function POST(request: Request) {
     envelope = JSON.parse(text) as ApiEnvelope<TokenPair>;
   } catch {
     return NextResponse.json(
-      { message: `Backend returned non-JSON response (${upstream.status})`, code: "invalid_response" },
+      {
+        message: `Backend returned non-JSON response (${upstream.status})`,
+        code: "invalid_response",
+      },
       { status: upstream.status || 500 },
     );
   }

@@ -47,7 +47,7 @@ export function LoginForm() {
       const message =
         response.status === 429
           ? "Too many attempts. Wait a few minutes before trying again."
-          : body?.message ?? "Incorrect email or password.";
+          : (body?.message ?? "Incorrect email or password.");
       setError("root", { message });
       return;
     }

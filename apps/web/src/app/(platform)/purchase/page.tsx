@@ -90,7 +90,9 @@ export default async function PurchasePage() {
             {insights?.vendor_analysis?.length ? (
               insights.vendor_analysis.map((v) => (
                 <div key={v.id} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-foreground truncate max-w-[140px]">{v.name}</span>
+                  <span className="font-medium text-foreground truncate max-w-[140px]">
+                    {v.name}
+                  </span>
                   <span className="font-mono tabular-nums text-muted-foreground">
                     ${v.total_spend.toFixed(2)} ({v.bills_count})
                   </span>

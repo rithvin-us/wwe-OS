@@ -30,7 +30,9 @@ export function ConfigForm({ config }: { config: TenantConfig }) {
         alert(`Failed to save configuration: ${res.error}`);
       }
     } catch (err: unknown) {
-      alert(`Failed to save configuration: ${err instanceof Error ? err.message : "Unknown error"}`);
+      alert(
+        `Failed to save configuration: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     } finally {
       setLoading(false);
     }

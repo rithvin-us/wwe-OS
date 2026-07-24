@@ -44,11 +44,13 @@ wwe OS/
 ## Coding Standards
 
 ### Python / Django
+
 - **Typing:** Strict type hints on public methods (`def generate_dc(...) -> DeliveryChallan:`).
 - **Exceptions:** Use custom exceptions from `shared.exceptions` (`NotFoundError`, `ValidationError`, `ConflictError`).
 - **Imports:** Absolute imports preferred (`from shared.models import TenantOwnedModel`).
 
 ### TypeScript / Next.js
+
 - **Components:** React 19 Function Components with explicit Props interfaces.
 - **Styling:** Tailwind CSS v4 utility classes with CSS variables defined in `@bop/theme`.
 - **Icons:** Import icons strictly from `@bop/icons` (e.g. `import { Plus } from "@bop/icons"`).
@@ -70,6 +72,7 @@ Unless fixing a verified bug or extending capabilities via documented interfaces
 ## Testing & Verification Commands
 
 ### Backend Tests (Django)
+
 ```bash
 # Run all backend tests inside Docker container
 docker exec bop-backend python /app/manage.py test
@@ -80,6 +83,7 @@ docker exec bop-backend python /app/manage.py test purchase.backend
 ```
 
 ### Frontend Verification (Next.js)
+
 ```bash
 # Run Next.js production build and TypeScript validation
 pnpm --filter web build
