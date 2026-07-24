@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2, Pencil, Plus } from "@bop/icons";
+import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { DataTable } from "@bop/ui/components/data-table";
 import {
@@ -156,9 +157,9 @@ const columns: ColumnDef<Vendor, unknown>[] = [
     accessorKey: "is_active",
     header: "Status",
     cell: ({ row }) => (
-      <span className={row.original.is_active ? "text-foreground" : "text-muted-foreground"}>
+      <Badge variant={row.original.is_active ? "success" : "secondary"}>
         {row.original.is_active ? "Active" : "Inactive"}
-      </span>
+      </Badge>
     ),
   },
   {

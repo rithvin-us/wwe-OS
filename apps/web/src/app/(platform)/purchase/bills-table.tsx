@@ -1,17 +1,10 @@
 "use client";
 
-import { Check, Edit, Eye, FileText, Trash, AlertTriangle } from "@bop/icons";
+import { Check, Edit, Eye, FileText, Trash } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { DataTable } from "@bop/ui/components/data-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@bop/ui/components/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@bop/ui/components/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@bop/ui/components/popover";
 import { Input } from "@bop/ui/components/input";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -24,6 +17,8 @@ import {
   updateBillAction,
 } from "@/app/(platform)/purchase/actions";
 import { BillDetailsDialog } from "@/app/(platform)/purchase/bill-details-dialog";
+import { DeleteBillWarning } from "@/app/(platform)/purchase/delete-bill-warning";
+import { formatDate, formatMoney } from "@/app/(platform)/purchase/format";
 import type { PurchaseBill } from "@/lib/purchase";
 import type { Tag } from "@/lib/tags";
 
@@ -71,26 +66,6 @@ function PaymentCell({ bill }: { bill: PurchaseBill }) {
       Mark paid
     </Button>
   );
-}
-
-function formatMoney(amount: string | number, currency = "INR") {
-  const value = Number(amount);
-  if (Number.isNaN(value)) return `₹${amount}`;
-  const curr = (currency || "INR").toUpperCase();
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: curr === "INR" || curr === "RS" ? "INR" : curr,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatDate(iso: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function RowActions({
@@ -323,31 +298,17 @@ export function BillsTable({ bills, allTags }: { bills: PurchaseBill[]; allTags:
         onOpenChange={setDetailsOpen}
       />
 
-      {/* Centered Delete Confirmation Dialog */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent className="max-w-md p-6 space-y-4">
-          <DialogHeader className="space-y-2">
-            <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
-              <AlertTriangle className="size-5 shrink-0" />
-              Delete Purchase Record
-            </div>
-            <DialogTitle className="sr-only">Delete Purchase Record</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Are you sure you want to delete the purchase bill for{" "}
-              <strong className="text-foreground">{billToDelete?.seller_name}</strong> (
-              {billToDelete ? formatMoney(billToDelete.total_rate, billToDelete.currency) : ""})?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="pt-2 flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleExecuteDelete} disabled={pending}>
-              <Trash className="size-3.5 mr-1.5" /> Confirm Delete
-            </Button>
-          </DialogFooter>
+        <DialogContent className="max-w-md p-6">
+          <DialogTitle className="sr-only">Delete purchase record</DialogTitle>
+          {billToDelete && (
+            <DeleteBillWarning
+              bill={billToDelete}
+              pending={pending}
+              onConfirm={handleExecuteDelete}
+              onCancel={() => setDeleteModalOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

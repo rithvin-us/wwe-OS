@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Check,
-  Download,
-  Edit,
-  ExternalLink,
-  FileText,
-  Trash,
-  User,
-  AlertTriangle,
-} from "@bop/icons";
+import { Check, Download, Edit, ExternalLink, FileText, Trash, User } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import {
@@ -31,32 +22,14 @@ import {
   markBillPaidAction,
   updateBillAction,
 } from "@/app/(platform)/purchase/actions";
+import { DeleteBillWarning } from "@/app/(platform)/purchase/delete-bill-warning";
+import { formatDate, formatMoney } from "@/app/(platform)/purchase/format";
 import type { PurchaseBill } from "@/lib/purchase";
 import { getObjectTagsAction, setObjectTagsAction } from "@/lib/tags-actions";
 import type { Tag } from "@/lib/tags";
 
 const TAG_MODULE = "purchase";
 const TAG_OBJECT_TYPE = "PurchaseBill";
-
-function formatMoney(amount: string | number, currency = "INR") {
-  const value = Number(amount);
-  if (Number.isNaN(value)) return `₹${amount}`;
-  const curr = (currency || "INR").toUpperCase();
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: curr === "INR" || curr === "RS" ? "INR" : curr,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatDate(iso: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 interface BillDetailsDialogProps {
   bill: PurchaseBill | null;
@@ -218,25 +191,14 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
           disabled={tagsPending}
         />
 
-        {/* Delete Confirmation Warning Box */}
         {confirmDelete && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-destructive font-semibold text-sm">
-              <AlertTriangle className="size-4 shrink-0" />
-              Confirm Permanently Deleting Purchase Bill?
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This will remove the digitized purchase record for {bill.seller_name} (
-              {formatMoney(bill.total_rate, bill.currency)}). This action cannot be undone.
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={pending}>
-                <Trash className="size-3.5 mr-1.5" /> Permanently Delete
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
-                Cancel
-              </Button>
-            </div>
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+            <DeleteBillWarning
+              bill={bill}
+              pending={pending}
+              onConfirm={handleDelete}
+              onCancel={() => setConfirmDelete(false)}
+            />
           </div>
         )}
 
@@ -306,7 +268,7 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               Invoice Number
             </p>
             <p className="text-sm font-semibold text-foreground mt-1 font-mono">
-              {bill.invoice_number || "N/A"}
+              {bill.invoice_number || "—"}
             </p>
           </div>
           <div>
@@ -314,7 +276,7 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               GST Number
             </p>
             <p className="text-sm font-semibold text-foreground mt-1 font-mono">
-              {bill.gst_number || "N/A"}
+              {bill.gst_number || "—"}
             </p>
           </div>
         </div>
@@ -411,23 +373,18 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
 
             {bill.document_url && (
               <div className="flex items-center gap-2">
-                <a
-                  href={bill.document_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-card text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                >
-                  <ExternalLink className="size-3.5 text-blue-400" />
-                  Open Preview in New Tab
-                </a>
-                <a
-                  href={bill.document_url}
-                  download
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
-                >
-                  <Download className="size-3.5" />
-                  Download File
-                </a>
+                <Button size="sm" variant="outline" asChild>
+                  <a href={bill.document_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-3.5" />
+                    Open preview in new tab
+                  </a>
+                </Button>
+                <Button size="sm" asChild>
+                  <a href={bill.document_url} download>
+                    <Download className="size-3.5" />
+                    Download file
+                  </a>
+                </Button>
               </div>
             )}
           </div>
@@ -453,21 +410,18 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3 pt-1">
-                    <a
-                      href={bill.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-                    >
-                      <ExternalLink className="size-4" /> View / Preview Document
-                    </a>
-                    <a
-                      href={bill.document_url}
-                      download
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border bg-card text-xs font-semibold text-foreground hover:bg-accent transition-colors"
-                    >
-                      <Download className="size-4" /> Download Copy
-                    </a>
+                    <Button asChild>
+                      <a href={bill.document_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="size-4" />
+                        View / preview document
+                      </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href={bill.document_url} download>
+                        <Download className="size-4" />
+                        Download copy
+                      </a>
+                    </Button>
                   </div>
                 </div>
               )
