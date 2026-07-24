@@ -1,4 +1,5 @@
 import type { LucideIcon } from "@bop/icons";
+import { Skeleton } from "@bop/ui/components/skeleton";
 import { cn } from "@bop/ui/lib/utils";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -77,4 +78,36 @@ export function SummaryRows({ rows }: { rows: SummaryRow[] }) {
 /** Quiet empty state for list panels — inviting, never an error. */
 export function PanelEmpty({ children }: { children: ReactNode }) {
   return <p className="py-6 text-center text-[13px] text-muted-foreground">{children}</p>;
+}
+
+/**
+ * Loading placeholder matching {@link SectionCard}'s exact shape (border,
+ * header height, padding) so streaming-in content never shifts layout.
+ */
+export function SectionCardSkeleton({
+  title,
+  icon: Icon,
+  rows = 3,
+  className,
+}: {
+  title: string;
+  icon: LucideIcon;
+  rows?: number;
+  className?: string;
+}) {
+  return (
+    <section className={cn("flex flex-col rounded-lg border border-border bg-card", className)}>
+      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
+          <Icon aria-hidden className="size-4 text-muted-foreground/80" />
+          {title}
+        </h2>
+      </header>
+      <div className="flex-1 space-y-2.5 p-4">
+        {Array.from({ length: rows }).map((_, i) => (
+          <Skeleton key={i} className="h-4 w-full" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
+      </div>
+    </section>
+  );
 }

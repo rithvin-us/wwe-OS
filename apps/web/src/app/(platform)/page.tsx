@@ -1,12 +1,18 @@
 import { Activity, CircleDollarSign, ShoppingCart, Sparkles, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { Greeting } from "@/components/dashboard/greeting";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
-import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/section-card";
 import {
-  buildAiInsights,
+  PanelEmpty,
+  SectionCard,
+  SectionCardSkeleton,
+  SummaryRows,
+} from "@/components/dashboard/section-card";
+import {
   buildKpis,
   FINANCIAL_SUMMARY,
   operationalAlerts,
@@ -122,8 +128,11 @@ export default async function DashboardPage() {
   // Skip the AI call entirely on a quiet/fresh install — nothing real to
   // summarize, and no reason to spend a call describing emptiness.
   const hasSignal = purchaseStats !== null || activityEntries.length > 0;
-  const summary = hasSignal
-    ? await getBusinessSummary(
+  // Deliberately not awaited — the AI round-trip (slow on a cold cache) is
+  // isolated behind its own <Suspense> boundary below so it never blocks
+  // the rest of the dashboard's first paint.
+  const summaryPromise = hasSignal
+    ? getBusinessSummary(
         buildStatsText({
           purchase: purchaseStats,
           activityCount: activityEntries.length,
@@ -131,8 +140,7 @@ export default async function DashboardPage() {
           contractsExpiringCount,
         }),
       )
-    : null;
-  const insights = buildAiInsights(summary);
+    : Promise.resolve(null);
 
   return (
     <div className="space-y-4 md:space-y-6 pb-6">
@@ -205,22 +213,9 @@ export default async function DashboardPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="AI insights" icon={Sparkles}>
-            {insights.length === 0 ? (
-              <PanelEmpty>
-                Once there&rsquo;s activity to learn from, you&rsquo;ll see trends and suggestions
-                here.
-              </PanelEmpty>
-            ) : (
-              <ul className="space-y-3">
-                {insights.map((item) => (
-                  <li key={item.id} className="text-sm text-foreground">
-                    {item.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
+          <Suspense fallback={<SectionCardSkeleton title="AI insights" icon={Sparkles} rows={2} />}>
+            <AiInsightsPanel summaryPromise={summaryPromise} />
+          </Suspense>
         </div>
       </div>
     </div>
