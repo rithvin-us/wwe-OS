@@ -83,6 +83,21 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
     getObjectTagsAction(TAG_MODULE, TAG_OBJECT_TYPE, bill.id).then(setTags);
   }, [open, bill]);
 
+  // Re-sync editable fields and dismiss any leftover edit/delete-confirm
+  // mode whenever the dialog opens or the underlying bill data changes
+  // (e.g. after a save revalidates and this same bill's record updates) —
+  // otherwise the form keeps showing whatever was typed for a previous
+  // bill, or a stale confirm-delete banner survives into a different one.
+  useEffect(() => {
+    if (!open || !bill) return;
+    setVendorName(bill.seller_name);
+    setInvoiceNumber(bill.invoice_number);
+    setTotalRate(bill.total_rate);
+    setGstNumber(bill.gst_number);
+    setIsEditing(false);
+    setConfirmDelete(false);
+  }, [open, bill]);
+
   function handleTagsChange(next: TagPickerChange) {
     if (!bill) return;
     startTagsTransition(async () => {

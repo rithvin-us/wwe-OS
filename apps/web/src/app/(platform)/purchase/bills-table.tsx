@@ -184,7 +184,12 @@ function RowActions({
 }
 
 export function BillsTable({ bills, allTags }: { bills: PurchaseBill[]; allTags: Tag[] }) {
-  const [selectedBill, setSelectedBill] = useState<PurchaseBill | null>(null);
+  // Track the id, not the bill object — a captured object goes stale the
+  // instant a server action revalidates and `bills` refreshes with an
+  // updated record for the same id. Deriving by id every render means the
+  // dialog always reflects the latest data instead of a frozen snapshot.
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
+  const selectedBill = selectedBillId ? (bills.find((b) => b.id === selectedBillId) ?? null) : null;
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [billToDelete, setBillToDelete] = useState<PurchaseBill | null>(null);
@@ -192,7 +197,7 @@ export function BillsTable({ bills, allTags }: { bills: PurchaseBill[]; allTags:
   const [pending, startTransition] = useTransition();
 
   function handleViewDetails(bill: PurchaseBill) {
-    setSelectedBill(bill);
+    setSelectedBillId(bill.id);
     setDetailsOpen(true);
   }
 
