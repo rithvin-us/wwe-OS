@@ -30,7 +30,13 @@ def to_document(doc: Document) -> dict:
         "doc_id": str(doc.id),
         "title": doc.title,
         "body": body,
-        "extra": {"status": doc.status, "category": doc.category},
+        "extra": {
+            "status": doc.status,
+            "document_type": doc.category,
+            "period_year": doc.file.period_year,
+            "period_month": doc.file.period_month,
+            "is_library": doc.file.is_library,
+        },
         "url": f"/dms/{doc.id}",
     }
 
@@ -42,6 +48,6 @@ def register_search() -> None:
             label="Documents",
             permission="documents.read",
             to_document=to_document,
-            queryset=lambda: Document.objects.all(),
+            queryset=lambda: Document.objects.select_related("file").all(),
         )
     )

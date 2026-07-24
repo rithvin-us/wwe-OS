@@ -260,3 +260,32 @@ def test_metadata_service_resolves_document_fields_and_tags(tenant, owner):
     assert metadata["status"] == document.status
     assert metadata["extra"]["category"] == "policy"
     assert metadata["tags"] == ["Auditor"]
+
+
+# --------------------------------------------------------------------------- #
+# Search facets (platform/search integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_search_index_carries_period_and_document_type_facets(tenant, owner):
+    from datetime import date
+
+    from search.models import SearchDocument
+
+    document = _create(tenant, owner, category="policy")
+
+    entry = SearchDocument.objects.get(index="documents", doc_id=str(document.id))
+    today = date.today()
+    assert entry.extra["document_type"] == "policy"
+    assert entry.extra["period_year"] == today.year
+    assert entry.extra["period_month"] == today.month
+    assert entry.extra["is_library"] is False
+
+
+def test_search_filters_by_document_type_facet(tenant, owner):
+    _create(tenant, owner, category="policy", title="Travel policy")
+
+    results = SearchService().search(
+        user=owner, query="travel", filters={"document_type": "policy"}
+    )
+    assert len(results["results"]) == 1
