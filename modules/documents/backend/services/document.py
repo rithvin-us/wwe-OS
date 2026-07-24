@@ -16,6 +16,7 @@ reimplements any of the above.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from documents.backend.events.registry import (
@@ -26,11 +27,13 @@ from documents.backend.events.registry import (
 )
 from documents.backend.models import Document, DocumentStatus, SummaryStatus
 from documents.backend.search.adapter import INDEX, to_document
+from periods.resolution import DocumentContext, resolve_location
+from periods.services import PeriodService
 from search.services import SearchService
 from shared.events import publish
 from shared.exceptions import ConflictError, ValidationError
 from shared.services import BaseService
-from storage.services import StorageService
+from storage.services import StorageService, safe_filename
 from tagging.services import TagService
 
 WORKFLOW_KEY = "document-approval"
@@ -58,16 +61,29 @@ class DocumentService(BaseService):
         tags: list[str] | None = None,
         summarize: bool = True,
     ) -> Document:
+        resolved = resolve_location(
+            DocumentContext(
+                document_type=category,
+                document_name=safe_filename(filename),
+                tenant_slug=tenant.slug,
+                business_date=date.today(),
+            )
+        )
         stored = StorageService().store(
             data=data,
             filename=filename,
             content_type=content_type,
             module="documents",
-            category="document",
+            category=category,
             tenant=tenant,
             uploaded_by=owner,
             metadata={"title": title},
+            key=resolved.key,
+            period_year=resolved.period_year,
+            period_month=resolved.period_month,
+            is_library=resolved.is_library,
         )
+        PeriodService().record_document(tenant=tenant, resolved=resolved, document_type=category)
         document = Document.objects.create(
             tenant=tenant,
             owner=owner,

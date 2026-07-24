@@ -27,6 +27,7 @@ class DocumentsConfig(AppConfig):
 
         # In-memory registrations (safe at import; no DB access).
         from documents.backend.collectible import register_collectible
+        from documents.backend.document_types import register_document_types
         from documents.backend.events.subscribers import register_subscribers
         from documents.backend.prompts import register_prompts
         from documents.backend.reports import register_reports
@@ -37,3 +38,4 @@ class DocumentsConfig(AppConfig):
         register_reports()
         register_collectible()
         register_subscribers()
+        register_document_types()

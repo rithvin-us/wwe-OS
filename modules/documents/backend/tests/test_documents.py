@@ -187,3 +187,35 @@ def test_update_metadata_replaces_tags(tenant, owner):
     DocumentService().update_metadata(document=document, actor=owner, tags=["Paid"])
     names = {t.name for t in DocumentService().tags_for(document)}
     assert names == {"Paid"}
+
+
+# --------------------------------------------------------------------------- #
+# Business periods (platform/periods integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_create_files_document_into_a_human_readable_period_path(tenant, owner):
+    from datetime import date
+
+    document = _create(tenant, owner, category="policy")
+
+    today = date.today()
+    month_name = today.strftime("%B")
+    expected_prefix = f"{tenant.slug}/{today.year}/{month_name}/Policies/"
+    assert document.file.key.startswith(expected_prefix)
+    assert document.file.period_year == today.year
+    assert document.file.period_month == today.month
+    assert document.file.category == "policy"
+
+
+def test_create_updates_the_periods_manifest(tenant, owner):
+    from datetime import date
+
+    from periods.models import BusinessPeriod
+
+    _create(tenant, owner, category="policy")
+
+    today = date.today()
+    period = BusinessPeriod.objects.get(tenant=tenant, year=today.year, month=today.month)
+    assert period.manifest.document_counts == {"policy": 1}
+    assert period.manifest.total_count == 1
