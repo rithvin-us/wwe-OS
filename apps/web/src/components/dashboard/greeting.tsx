@@ -48,7 +48,14 @@ export function Greeting({ dataAsOf }: { dataAsOf: string }) {
   const updatedLabel = now ? formatRelative(dataAsOf) : null;
 
   return (
-    <div className="space-y-1.5">
+    // Keyed on the loading -> resolved boundary so the swap from the
+    // server-rendered "Welcome back" placeholder to the real time-aware
+    // greeting is a confirmed crossfade, not a silent content jump —
+    // same keyed-remount + CSS approach as app-shell.tsx's route fade.
+    <div
+      key={now === null ? "loading" : "ready"}
+      className="animate-in fade-in space-y-1.5 duration-(--duration-base) ease-out-quart"
+    >
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{part}</h1>
       <p className="text-sm text-muted-foreground">
         Here&rsquo;s how {COMPANY.name} is doing today.{" "}
