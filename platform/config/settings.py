@@ -91,6 +91,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "search",
     "reporting",
     "tagging",
+    "workflow",
     "automation",
 ]
 PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
@@ -398,6 +399,13 @@ LOG_FORMAT = env_str("LOG_FORMAT", "text")
 SLOW_REQUEST_MS = env_int("SLOW_REQUEST_MS", 1000)
 # /metrics stays 404 until a scrape token is configured.
 METRICS_TOKEN = env_str("METRICS_TOKEN", "") or ""
+
+# --------------------------------------------------------------------------- #
+# Pipeline execution engine (platform/workflow)
+# --------------------------------------------------------------------------- #
+PIPELINE_STEP_STALE_TIMEOUT_SECONDS = env_int("PIPELINE_STEP_STALE_TIMEOUT_SECONDS", 600)
+PIPELINE_TICK_BATCH_SIZE = env_int("PIPELINE_TICK_BATCH_SIZE", 50)
+PIPELINE_TICK_INTERVAL_SECONDS = env_int("PIPELINE_TICK_INTERVAL_SECONDS", 3)
 
 LOGGING = {
     "version": 1,

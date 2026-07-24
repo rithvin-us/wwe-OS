@@ -56,6 +56,9 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("automation.view", "View automation rules and history", "Automation"),
     PermissionDef("automation.manage", "Create and edit automation rules", "Automation"),
     PermissionDef("automation.run", "Manually run an automation rule", "Automation"),
+    # Workflow (pipeline execution engine)
+    PermissionDef("workflow.view", "View pipeline runs", "Workflow"),
+    PermissionDef("workflow.control", "Pause, resume, cancel, or retry a pipeline run", "Workflow"),
 ]
 
 ALL_CODES = frozenset(p.code for p in PLATFORM_PERMISSIONS)
