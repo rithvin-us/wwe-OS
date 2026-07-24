@@ -122,6 +122,7 @@ export default async function DashboardPage() {
     getTodayActivity(8),
   ]);
 
+  const dataAsOf = new Date().toISOString();
   const kpis = buildKpis(purchaseStats);
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
   const hasUrgentAlert = alerts.some((item) => item.severity !== "info");
@@ -147,7 +148,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4 md:space-y-6 pb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <Greeting />
+        <Greeting dataAsOf={dataAsOf} />
         <QuickActions />
       </div>
 

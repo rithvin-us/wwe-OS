@@ -198,7 +198,7 @@ export interface ActivityItem {
 
 const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
-function formatRelative(iso: string): string {
+export function formatRelative(iso: string): string {
   if (!iso) return "recently";
   const diffMs = new Date(iso).getTime() - Date.now();
   const diffMinutes = Math.round(diffMs / 60_000);
