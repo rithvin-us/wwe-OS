@@ -7,6 +7,7 @@ docs/superpowers/specs/2026-07-24-pipeline-execution-engine-design.md
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 from enum import StrEnum
 
@@ -247,3 +248,33 @@ def reclaim_stale_steps() -> int:
             run.save(update_fields=["termination_reason", "status", "updated_at"])
         reclaimed += updated
     return reclaimed
+
+
+@dataclass
+class TickSummary:
+    advanced: int
+    reclaimed: int
+
+
+def tick_all(*, tenant=None, batch_size: int | None = None, actor=None) -> TickSummary:
+    """Advances every active run once. Called by pipeline_tick (Task 11).
+    Runs across ALL tenants implicitly when `tenant` is None — a bare
+    management-command process has no request-scoped thread-local tenant
+    context, so TenantOwnedModel's manager doesn't filter (see
+    shared/models.py's TenantManager); this is documented existing
+    behavior, not a bug (see test_tick_all_advances_every_active_run_across_tenants)."""
+    reclaimed = reclaim_stale_steps()
+    qs = PipelineRun.objects.filter(status__in=ACTIVE_STATUSES)
+    if tenant is not None:
+        qs = qs.filter(tenant=tenant)
+    advanced = 0
+    limit = batch_size or settings.PIPELINE_TICK_BATCH_SIZE
+    for run in qs.order_by("queued_at")[:limit]:
+        try:
+            advance_one(run, actor=actor)
+            advanced += 1
+        except Exception:  # noqa: BLE001 - an engine bug must not stop other runs from ticking
+            logger.exception(
+                "tick_all: error advancing run %s — left as-is for the next tick", run.id
+            )
+    return TickSummary(advanced=advanced, reclaimed=reclaimed)

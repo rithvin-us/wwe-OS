@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
-from workflow.engine import AdvanceOutcome, _claim_step, advance_one, reclaim_stale_steps
+from workflow.engine import AdvanceOutcome, _claim_step, advance_one, reclaim_stale_steps, tick_all
 from workflow.models import PipelineRun, PipelineRunStatus, PipelineStepRun, StepRunStatus
 from workflow.registry import (
     PipelineDefinition,
@@ -418,3 +418,82 @@ def test_reclaim_ignores_steps_within_the_timeout_window(tenant, settings):
     assert reclaimed == 0
     step.refresh_from_db()
     assert step.status == StepRunStatus.RUNNING
+
+
+# --------------------------------------------------------------------------- #
+# Batch ticking (tick_all)
+# --------------------------------------------------------------------------- #
+
+
+def test_tick_all_advances_every_active_run_across_tenants(tenant, other_tenant):
+    _register_single_step_pipeline("test.tick.multi", run=lambda ctx: StepResult())
+    run_a = _start_run(tenant, "test.tick.multi")
+    run_b = _start_run(other_tenant, "test.tick.multi")
+
+    summary = tick_all()
+
+    assert summary.advanced == 2
+    run_a.refresh_from_db()
+    run_b.refresh_from_db()
+    assert run_a.current_step_index == 1
+    assert run_b.current_step_index == 1
+
+
+def test_tick_all_can_be_scoped_to_one_tenant(tenant, other_tenant):
+    _register_single_step_pipeline("test.tick.scoped", run=lambda ctx: StepResult())
+    run_a = _start_run(tenant, "test.tick.scoped")
+    run_b = _start_run(other_tenant, "test.tick.scoped")
+
+    tick_all(tenant=tenant)
+
+    run_a.refresh_from_db()
+    run_b.refresh_from_db()
+    assert run_a.current_step_index == 1
+    assert run_b.current_step_index == 0  # untouched
+
+
+def test_tick_all_isolates_one_broken_run_from_the_rest(tenant, monkeypatch):
+    _register_single_step_pipeline("test.tick.isolate", run=lambda ctx: StepResult())
+    healthy = _start_run(tenant, "test.tick.isolate")
+    broken = _start_run(tenant, "test.tick.isolate")
+
+    from workflow import engine
+
+    real_advance_one = engine.advance_one
+
+    def flaky_advance_one(run, **kwargs):
+        if run.id == broken.id:
+            raise RuntimeError("engine bug, not a step failure")
+        return real_advance_one(run, **kwargs)
+
+    monkeypatch.setattr(engine, "advance_one", flaky_advance_one)
+
+    summary = engine.tick_all()
+
+    assert summary.advanced == 1  # only the healthy run
+    healthy.refresh_from_db()
+    broken.refresh_from_db()
+    assert healthy.current_step_index == 1
+    assert broken.current_step_index == 0
+    assert broken.status == PipelineRunStatus.QUEUED  # left untouched, not marked failed
+
+
+def test_tick_all_runs_reclaim_first(tenant, settings):
+    settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS = 60
+    _register_single_step_pipeline(
+        "test.tick.reclaim", run=lambda ctx: StepResult(), max_attempts=2
+    )
+    run = _start_run(tenant, "test.tick.reclaim")
+    step = run.steps.get(step_index=0)
+    step.status = StepRunStatus.RUNNING
+    step.attempt = 1
+    step.locked_at = timezone.now() - timedelta(seconds=120)
+    step.save()
+
+    summary = tick_all()
+
+    assert summary.reclaimed == 1
+    step.refresh_from_db()
+    assert (
+        step.status == StepRunStatus.SUCCESS
+    )  # reclaimed to PENDING, then advanced in the same tick
