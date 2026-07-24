@@ -150,3 +150,24 @@ def test_retry_rearms_failed_and_skipped_steps(tenant):
     step = retried.steps.get(step_index=0)
     assert step.status == StepRunStatus.PENDING
     assert step.error_message == ""
+
+
+def test_pipeline_tick_command_advances_due_runs(tenant):
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    _register("test.command.tick")
+    run, _ = PipelineService().start(pipeline_key="test.command.tick", tenant=tenant)
+
+    out = StringIO()
+    call_command("pipeline_tick", stdout=out)
+    assert "advanced" in out.getvalue().lower()
+
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.RUNNING  # one tick = one step advanced, not finished
+    assert run.current_step_index == 1
+
+    call_command("pipeline_tick", stdout=StringIO())  # second tick notices "no more steps"
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.SUCCESS
