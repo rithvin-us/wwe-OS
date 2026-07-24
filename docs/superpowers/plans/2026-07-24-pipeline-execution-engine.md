@@ -55,7 +55,7 @@
 
 - Produces: the `workflow` Django app label, importable from `PLATFORM_APPS_BEFORE_MODULES`.
 
-- [ ] **Step 1: Create the app package**
+- [x] **Step 1: Create the app package**
 
 `platform/workflow/__init__.py` — empty file.
 
@@ -73,7 +73,7 @@ class WorkflowConfig(AppConfig):
 
 `platform/workflow/migrations/__init__.py` — empty file.
 
-- [ ] **Step 2: Register the app in `INSTALLED_APPS`, immediately before `"automation"`**
+- [x] **Step 2: Register the app in `INSTALLED_APPS`, immediately before `"automation"`**
 
 In `platform/config/settings.py`, find:
 
@@ -125,7 +125,7 @@ PIPELINE_TICK_BATCH_SIZE = env_int("PIPELINE_TICK_BATCH_SIZE", 50)
 PIPELINE_TICK_INTERVAL_SECONDS = env_int("PIPELINE_TICK_INTERVAL_SECONDS", 3)
 ```
 
-- [ ] **Step 3: Add `workflow.view` / `workflow.control` permissions**
+- [x] **Step 3: Add `workflow.view` / `workflow.control` permissions**
 
 In `platform/permissions/registry.py`, add after the `# Automation` block:
 
@@ -135,7 +135,7 @@ In `platform/permissions/registry.py`, add after the `# Automation` block:
     PermissionDef("workflow.control", "Pause, resume, cancel, or retry a pipeline run", "Workflow"),
 ```
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe manage.py check`
 Expected: `System check identified no issues (0 silenced).`
@@ -143,7 +143,7 @@ Expected: `System check identified no issues (0 silenced).`
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Expected: all existing tests still pass (this step adds no new tests; it must not break any).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platform/workflow platform/config/settings.py platform/permissions/registry.py
@@ -163,7 +163,7 @@ git commit -m "feat(platform/workflow): scaffold the workflow app"
 
 - Produces: `PipelineRun`, `PipelineStepRun`, `PipelineRunStatus`, `StepRunStatus`, `TerminationReason`, `PipelineTriggerType`, `ACTIVE_STATUSES`, `TERMINAL_STATUSES` (all importable from `workflow.models`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_models.py`:
 
@@ -204,12 +204,12 @@ def test_default_status_is_queued(tenant):
     assert run.status == PipelineRunStatus.QUEUED
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_models.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'workflow.models'` (or similar import error).
 
-- [ ] **Step 3: Write the models**
+- [x] **Step 3: Write the models**
 
 `platform/workflow/models.py`:
 
@@ -352,23 +352,23 @@ class PipelineStepRun(TenantOwnedModel):
         return f"{self.run_id} · {self.step_key} · {self.status}"
 ```
 
-- [ ] **Step 4: Generate the migration**
+- [x] **Step 4: Generate the migration**
 
 Run: `cd platform && ./.venv/Scripts/python.exe manage.py makemigrations workflow`
 Expected: `Migrations for 'workflow': platform/workflow/migrations/0001_initial.py` listing the creation of `pipeline_run` and `pipeline_step_run`.
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_models.py -v`
 Expected: 4 passed.
 
-- [ ] **Step 6: Verify no regressions and lint**
+- [x] **Step 6: Verify no regressions and lint**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/python.exe manage.py check`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platform/workflow/models.py platform/workflow/migrations/0001_initial.py platform/tests/test_workflow_models.py
@@ -389,7 +389,7 @@ git commit -m "feat(platform/workflow): add PipelineRun/PipelineStepRun models"
 - Consumes: nothing from earlier tasks.
 - Produces: `StepContext(tenant, run_id, actor, data, attempt)`, `StepResult(output={})`, `StepDefinition(key, label, run, compensate=None, max_attempts=1, backoff=default_backoff, timeout_seconds=300)`, `PipelineDefinition(key, label, module, permission, version, steps)`, `register_pipeline(definition)`, `get_pipeline(key) -> PipelineDefinition` (raises `NotFoundError`), `all_pipelines() -> list[PipelineDefinition]`, `default_backoff(attempt) -> float`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_registry.py`:
 
@@ -458,12 +458,12 @@ def test_default_backoff_is_exponential_and_capped():
     assert default_backoff(20) == 300  # capped
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_registry.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.registry'`.
 
-- [ ] **Step 3: Write the registry**
+- [x] **Step 3: Write the registry**
 
 `platform/workflow/registry.py`:
 
@@ -540,18 +540,18 @@ def all_pipelines() -> list[PipelineDefinition]:
     return sorted(_REGISTRY.values(), key=lambda p: p.key)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_registry.py -v`
 Expected: 4 passed.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/registry.py platform/tests/test_workflow_registry.py
@@ -572,7 +572,7 @@ git commit -m "feat(platform/workflow): add pipeline/step registry"
 - Consumes: `workflow.models.{PipelineStepRun, StepRunStatus}` (Task 2).
 - Produces: `_claim_step(step_id, *, from_status, to_status=StepRunStatus.RUNNING) -> bool`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `platform/tests/test_workflow_engine.py` (this file grows across Tasks 4–8):
 
@@ -639,12 +639,12 @@ def test_claim_supports_a_different_target_status(tenant):
     assert step.status == StepRunStatus.COMPENSATING
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.engine'`.
 
-- [ ] **Step 3: Write the engine module (claim primitive only for now)**
+- [x] **Step 3: Write the engine module (claim primitive only for now)**
 
 `platform/workflow/engine.py`:
 
@@ -680,12 +680,12 @@ def _claim_step(step_id, *, from_status: str, to_status: str = StepRunStatus.RUN
     return updated == 1
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: 4 passed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platform/workflow/engine.py platform/tests/test_workflow_engine.py
@@ -706,7 +706,7 @@ git commit -m "feat(platform/workflow): add the atomic step-claim primitive"
 - Consumes: `_claim_step` (Task 4), `workflow.registry.{StepContext, get_pipeline}` (Task 3), `workflow.models.{PipelineRun, PipelineRunStatus, TerminationReason, ACTIVE_STATUSES}` (Task 2).
 - Produces: `AdvanceOutcome` enum, `advance_one(run, *, actor=None) -> AdvanceOutcome`, `_finish_run(run, status) -> AdvanceOutcome`, `_handle_step_failure(run, step_row, step_def, error, *, max_attempts=None) -> AdvanceOutcome`. Later tasks (6–8) call `advance_one` and `_finish_run`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
 
@@ -857,12 +857,12 @@ def test_concurrent_finish_only_publishes_once(tenant, monkeypatch):
     assert len(published) == 1
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: FAIL — `ImportError: cannot import name 'advance_one' from 'workflow.engine'`.
 
-- [ ] **Step 3: Extend the engine module**
+- [x] **Step 3: Extend the engine module**
 
 Replace `platform/workflow/engine.py` with:
 
@@ -1026,18 +1026,18 @@ def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
     raise NotImplementedError  # implemented in Task 6
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: all pass (the compensation-path test from Task 6 doesn't exist yet, so nothing here exercises `_advance_compensation`).
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/engine.py platform/tests/test_workflow_engine.py
@@ -1058,7 +1058,7 @@ git commit -m "feat(platform/workflow): forward execution with retry/backoff"
 - Consumes: `_claim_step`, `_finish_run`, `StepContext` (all from Task 5).
 - Produces: real `_advance_compensation(run, *, actor=None) -> AdvanceOutcome` (replaces the `NotImplementedError` stub).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
 
@@ -1147,12 +1147,12 @@ def test_cancelling_a_run_lands_on_cancelled_not_failed(tenant):
     assert run.status == PipelineRunStatus.CANCELLED
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v -k compensat`
 Expected: FAIL — `NotImplementedError`.
 
-- [ ] **Step 3: Implement `_advance_compensation`**
+- [x] **Step 3: Implement `_advance_compensation`**
 
 In `platform/workflow/engine.py`, replace:
 
@@ -1200,18 +1200,18 @@ def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
     return AdvanceOutcome.COMPENSATED
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: all pass.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/engine.py platform/tests/test_workflow_engine.py
@@ -1232,7 +1232,7 @@ git commit -m "feat(platform/workflow): compensation (rollback) unwind"
 - Consumes: `PipelineRun`, `PipelineStepRun`, `PipelineRunStatus`, `StepRunStatus`, `TerminationReason` (Task 2); `workflow.registry.get_pipeline` (Task 3).
 - Produces: `reclaim_stale_steps() -> int`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
 
@@ -1296,12 +1296,12 @@ def test_reclaim_ignores_steps_within_the_timeout_window(tenant, settings):
     assert step.status == StepRunStatus.RUNNING
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v -k reclaim`
 Expected: FAIL — `ImportError: cannot import name 'reclaim_stale_steps'`.
 
-- [ ] **Step 3: Implement `reclaim_stale_steps`**
+- [x] **Step 3: Implement `reclaim_stale_steps`**
 
 In `platform/workflow/engine.py`, add near the top of the imports:
 
@@ -1347,18 +1347,18 @@ def reclaim_stale_steps() -> int:
     return reclaimed
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: all pass.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/engine.py platform/tests/test_workflow_engine.py
@@ -1379,7 +1379,7 @@ git commit -m "feat(platform/workflow): crash recovery via stale-lock reclaim"
 - Consumes: `advance_one`, `reclaim_stale_steps` (Tasks 5, 7); `workflow.models.ACTIVE_STATUSES` (Task 2).
 - Produces: `TickSummary(advanced, reclaimed)`, `tick_all(*, tenant=None, batch_size=None, actor=None) -> TickSummary`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `platform/tests/test_workflow_engine.py`:
 
@@ -1457,12 +1457,12 @@ def test_tick_all_runs_reclaim_first(tenant, settings, monkeypatch):
     assert step.status == StepRunStatus.SUCCESS  # reclaimed to PENDING, then advanced in the same tick
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v -k tick_all`
 Expected: FAIL — `ImportError: cannot import name 'tick_all'`.
 
-- [ ] **Step 3: Implement `tick_all`**
+- [x] **Step 3: Implement `tick_all`**
 
 In `platform/workflow/engine.py`, add `from dataclasses import dataclass` to the imports (alongside `from enum import Enum`), then append at the end of the file:
 
@@ -1495,18 +1495,18 @@ def tick_all(*, tenant=None, batch_size: int | None = None, actor=None) -> TickS
     return TickSummary(advanced=advanced, reclaimed=reclaimed)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_engine.py -v`
 Expected: all pass (the full `test_workflow_engine.py` file, all tasks 4–8, should now be ~20 tests, all green).
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green. The engine is now feature-complete.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/engine.py platform/tests/test_workflow_engine.py
@@ -1527,7 +1527,7 @@ git commit -m "feat(platform/workflow): batch ticking across all active runs"
 - Consumes: `workflow.engine.advance_one` (Task 5), `workflow.registry.get_pipeline` (Task 3), `workflow.models.*` (Task 2).
 - Produces: `PipelineService.start(*, pipeline_key, tenant, actor=None, trigger_type="manual", idempotency_key="", source_module="", source_object_type="", source_object_id="", input_data=None) -> tuple[PipelineRun, bool]`, `.run_to_completion(run, *, actor=None, max_wall_seconds=30.0) -> PipelineRun`, `.get_run(run_id) -> PipelineRun`, `.request_pause(run) -> PipelineRun`, `.request_resume(run) -> PipelineRun`, `.request_cancel(run) -> PipelineRun`, `.request_retry(run) -> PipelineRun`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `platform/tests/test_workflow_service.py`:
 
@@ -1663,12 +1663,12 @@ def test_retry_rearms_failed_and_skipped_steps(tenant):
     assert step.error_message == ""
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_service.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'workflow.services'`.
 
-- [ ] **Step 3: Write the service**
+- [x] **Step 3: Write the service**
 
 `platform/workflow/services.py`:
 
@@ -1807,18 +1807,18 @@ class PipelineService(BaseService):
         return run
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_service.py -v`
 Expected: 10 passed.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/services.py platform/tests/test_workflow_service.py
@@ -1840,7 +1840,7 @@ git commit -m "feat(platform/workflow): PipelineService control plane"
 - Consumes: `PipelineService` (Task 9), `workflow.models.*` (Task 2), `shared.views.ReadOnlyModelViewSet`, `shared.serializers.BaseModelSerializer` (existing platform conventions).
 - Produces: `GET/POST /api/v1/workflow/runs/`, `.../{id}/`, `.../{id}/pause/`, `.../{id}/resume/`, `.../{id}/cancel/`, `.../{id}/retry/`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `platform/tests/test_workflow_api.py`:
 
@@ -1933,12 +1933,12 @@ def test_control_actions_require_workflow_control_permission(
     assert response.status_code == 403
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_api.py -v`
 Expected: FAIL — 404s (no `/workflow/` URL mounted yet).
 
-- [ ] **Step 3: Write serializers, views, urls**
+- [x] **Step 3: Write serializers, views, urls**
 
 `platform/workflow/serializers.py`:
 
@@ -2077,18 +2077,18 @@ In `platform/config/urls.py`, add `path("workflow/", include("workflow.urls")),`
     path("automation/", include("automation.urls")),
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_api.py -v`
 Expected: 6 passed.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/python.exe manage.py check`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/serializers.py platform/workflow/views.py platform/workflow/urls.py platform/config/urls.py platform/tests/test_workflow_api.py
@@ -2109,7 +2109,7 @@ git commit -m "feat(platform/workflow): pipeline run API with pause/resume/cance
 - Consumes: `workflow.engine.tick_all` (Task 8).
 - Produces: `python manage.py pipeline_tick` (one-shot) and `python manage.py pipeline_tick --loop --interval N`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_workflow_service.py`:
 
@@ -2131,12 +2131,12 @@ def test_pipeline_tick_command_advances_due_runs(tenant):
     assert "advanced" in out.getvalue().lower()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_service.py -v -k tick_command`
 Expected: FAIL — `CommandError: Unknown command: 'pipeline_tick'`.
 
-- [ ] **Step 3: Write the command**
+- [x] **Step 3: Write the command**
 
 `platform/workflow/management/__init__.py` — empty file.
 `platform/workflow/management/commands/__init__.py` — empty file.
@@ -2187,18 +2187,18 @@ class Command(BaseCommand):
             time.sleep(interval)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_workflow_service.py -v -k tick_command`
 Expected: 1 passed.
 
-- [ ] **Step 5: Full verify**
+- [x] **Step 5: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/python.exe manage.py check`
 Run: `cd .. && python -m ruff check platform/workflow`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platform/workflow/management platform/tests/test_workflow_service.py
@@ -2222,7 +2222,7 @@ git commit -m "feat(platform/workflow): pipeline_tick management command"
 
 Note on scope vs. the design spec: the spec sketched `collect_files`/`store_package` as two steps. In practice, `PipelineRun.context` is a `JSONField` — it can't carry the raw zip bytes between two steps without an ugly base64 side-channel. Since collecting, zipping, and storing today is one atomic operation with no natural JSON-safe boundary, this plan keeps it as **one** step (`collect_and_package`), still gaining retry/crash-recovery/pause/cancel for free from the engine. A future pipeline with genuinely JSON-safe intermediate outputs (e.g. invoice generation: reserve number → render → store → index) won't hit this constraint.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_automation.py` (new section at the end of the file, nothing above it changes):
 
@@ -2240,12 +2240,12 @@ def test_automation_pipelines_are_registered():
     assert "automation.rule_execution.report" in keys
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k pipelines_are_registered`
 Expected: FAIL — the keys aren't in `all_pipelines()` yet.
 
-- [ ] **Step 3: Write `automation/pipelines.py`**
+- [x] **Step 3: Write `automation/pipelines.py`**
 
 ```python
 """Registers automation's rule-execution behavior as pipelines on the
@@ -2330,7 +2330,7 @@ def register_pipelines() -> None:
     ))
 ```
 
-- [ ] **Step 4: Wire it into `AutomationConfig.ready()`**
+- [x] **Step 4: Wire it into `AutomationConfig.ready()`**
 
 Replace `platform/automation/apps.py`:
 
@@ -2349,12 +2349,12 @@ class AutomationConfig(AppConfig):
         register_pipelines()
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k pipelines_are_registered`
 Expected: 1 passed.
 
-- [ ] **Step 6: Full verify — confirm nothing else in `test_automation.py` broke**
+- [x] **Step 6: Full verify — confirm nothing else in `test_automation.py` broke**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v`
 Expected: every existing test still passes (they don't touch the new pipelines yet — `run_rule()` isn't switched over until Task 14) plus the 1 new test.
@@ -2363,7 +2363,7 @@ Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/
 Run: `cd .. && python -m ruff check platform/automation`
 Expected: all green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platform/automation/pipelines.py platform/automation/apps.py platform/tests/test_automation.py
@@ -2385,7 +2385,7 @@ git commit -m "feat(automation): register rule-execution pipelines on the workfl
 - Consumes: `shared.events.{Events, subscribe}` (existing); `automation.pipelines.{PACKAGE_PIPELINE_KEY, REPORT_PIPELINE_KEY}` (Task 12); `automation.services.AutomationService._record_run` / `._advance_schedule` (existing — `_record_run`'s signature grows one optional parameter).
 - Produces: `AutomationRun.pipeline_run` FK; a working `_on_pipeline_finished` subscriber. **This task does not yet change `run_rule()`** — that's Task 14. This task is testable on its own by publishing the event directly.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `platform/tests/test_automation.py`:
 
@@ -2416,12 +2416,12 @@ def test_subscriber_builds_automation_run_from_a_finished_pipeline(tenant, tag, 
     assert automation_run.rule == rule
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k subscriber_builds`
 Expected: FAIL — `AutomationRun` has no `pipeline_run` field yet, and no subscriber exists.
 
-- [ ] **Step 3: Add the additive `pipeline_run` FK**
+- [x] **Step 3: Add the additive `pipeline_run` FK**
 
 In `platform/automation/models.py`, add to `AutomationRun` (after the `actor` field):
 
@@ -2438,7 +2438,7 @@ Generate the migration:
 Run: `cd platform && ./.venv/Scripts/python.exe manage.py makemigrations automation`
 Expected: a new migration adding `pipeline_run` to `AutomationRun`.
 
-- [ ] **Step 4: Extend `_record_run` to accept the new FK**
+- [x] **Step 4: Extend `_record_run` to accept the new FK**
 
 In `platform/automation/services.py`, find `_record_run`'s signature and body:
 
@@ -2514,7 +2514,7 @@ Replace with:
 
 (The rest of `_record_run` — the `AuditService().record(...)` call and `publish("automation.rule_executed", ...)` — is unchanged.)
 
-- [ ] **Step 5: Write the subscriber**
+- [x] **Step 5: Write the subscriber**
 
 `platform/automation/events/__init__.py` — empty file.
 
@@ -2584,7 +2584,7 @@ subscribe(Events.WORKFLOW_COMPLETED, _on_pipeline_finished)
 subscribe(Events.WORKFLOW_CANCELLED, _on_pipeline_finished)
 ```
 
-- [ ] **Step 6: Import the subscriber from `ready()`**
+- [x] **Step 6: Import the subscriber from `ready()`**
 
 In `platform/automation/apps.py`, add the import at the end of `ready()`:
 
@@ -2597,12 +2597,12 @@ In `platform/automation/apps.py`, add the import at the end of `ready()`:
         from automation.events import subscribers  # noqa: F401
 ```
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k subscriber_builds`
 Expected: 1 passed.
 
-- [ ] **Step 8: Full verify — the whole file, still untouched-above**
+- [x] **Step 8: Full verify — the whole file, still untouched-above**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v`
 Expected: every original test still passes unmodified, plus the 2 new tests from Tasks 12–13.
@@ -2611,7 +2611,7 @@ Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/
 Run: `cd .. && python -m ruff check platform/automation`
 Expected: all green.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add platform/automation/models.py platform/automation/migrations platform/automation/services.py platform/automation/events platform/automation/apps.py platform/tests/test_automation.py
@@ -2634,7 +2634,7 @@ git commit -m "feat(automation): build the legacy AutomationRun from a finished 
 
 **This is the task where `test_automation.py`'s original, unmodified tests become the acceptance gate.** If any of them need a code change here, something in this migration is wrong.
 
-- [ ] **Step 1: Write the failing test (the double-run race fix)**
+- [x] **Step 1: Write the failing test (the double-run race fix)**
 
 Append to `platform/tests/test_automation.py`:
 
@@ -2679,12 +2679,12 @@ def test_run_now_manual_trigger_has_no_idempotency_dedup(tenant, tag, tagged_ass
 
 Note: the test above verifies the idempotency-key _mechanism_ directly (since two truly concurrent OS-level processes aren't reproducible in a single-process pytest run) — the underlying guarantee (`PipelineRun`'s partial unique constraint from Task 2, exercised via `PipelineService.start` in Task 9) is what makes real concurrent cron invocations safe; this test proves `run_rule()` wires that key through correctly for the scheduled-trigger case, and proves manual triggers deliberately opt out of it.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k "double_run or no_idempotency"`
 Expected: FAIL — `run_rule()` doesn't use the pipeline engine yet, so no matching `PipelineRun` exists for the idempotency key.
 
-- [ ] **Step 3: Rewrite `run_rule()`**
+- [x] **Step 3: Rewrite `run_rule()`**
 
 In `platform/automation/services.py`, replace:
 
@@ -2789,23 +2789,23 @@ with:
 
 Note: `_advance_schedule` is no longer called from `run_rule()` directly — it now runs inside the Task 13 subscriber, once, exactly when the pipeline actually finishes (success, failure, or cancellation), which is the same timing the old code had (`_advance_schedule` was always called right after `_record_run`).
 
-- [ ] **Step 4: Run the new tests to verify they pass**
+- [x] **Step 4: Run the new tests to verify they pass**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v -k "double_run or no_idempotency"`
 Expected: 2 passed.
 
-- [ ] **Step 5: Run the ENTIRE `test_automation.py` file — this is the acceptance gate**
+- [x] **Step 5: Run the ENTIRE `test_automation.py` file — this is the acceptance gate**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest tests/test_automation.py -v`
 Expected: **every single test in the file passes**, including all the original ones (`test_run_rule_packages_tagged_files`, `test_run_rule_with_no_matches_fails_cleanly`, `test_run_rule_advances_once_cadence_to_inactive`, `test_run_rule_rejects_stub_destination`, `test_run_rule_generate_report_destination`, `test_run_rule_writes_audit_entry`, `test_api_create_rule_rejects_empty_tags`, `test_api_create_and_run_now`, `test_api_run_now_requires_automation_run_permission`, plus everything added in Tasks 12–14). If any original test fails, stop and fix `run_rule()` or the subscriber — do not modify the original test to make it pass.
 
-- [ ] **Step 6: Full verify**
+- [x] **Step 6: Full verify**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q && ./.venv/Scripts/python.exe manage.py check`
 Run: `cd .. && python -m ruff check platform`
 Expected: all green — the entire backend test suite (not just automation) passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platform/automation/services.py platform/tests/test_automation.py
@@ -2818,7 +2818,7 @@ git commit -m "feat(automation): run rules on the workflow engine, fix the autom
 
 **Files:** none — verification only.
 
-- [ ] **Step 1: Full backend gate**
+- [x] **Step 1: Full backend gate**
 
 Run: `cd platform && ./.venv/Scripts/python.exe -m pytest -q`
 Expected: all tests pass (original suite + every new `test_workflow_*.py` file + the additive `test_automation.py` tests).
@@ -2832,12 +2832,12 @@ Expected: `All checks passed!`
 Run: `cd .. && python -m ruff format --check platform`
 Expected: no files need reformatting (run `python -m ruff format platform` first if anything is flagged, then re-check).
 
-- [ ] **Step 2: Confirm the frontend contract is untouched**
+- [x] **Step 2: Confirm the frontend contract is untouched**
 
 Run: `cd .. && pnpm --filter web build`
 Expected: succeeds unchanged — this plan touched no files under `apps/web/`, so this is a regression check, not expected to reveal anything new.
 
-- [ ] **Step 3: Manual smoke test of the new API surface**
+- [x] **Step 3: Manual smoke test of the new API surface**
 
 With the dev server running (`cd platform && python manage.py runserver`) and a valid JWT for an Owner user:
 
@@ -2847,12 +2847,12 @@ curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/workflow/ru
 
 Expected: `200` with a JSON envelope containing (at minimum) any `PipelineRun`s created by the automation tests run against a real dev database, each with a nested `steps` array.
 
-- [ ] **Step 4: Confirm `pre-commit` passes**
+- [x] **Step 4: Confirm `pre-commit` passes**
 
 Run: `cd .. && python -m pre_commit run --all-files`
 Expected: `ruff check`, `ruff format`, `prettier check`, `eslint` all pass.
 
-- [ ] **Step 5: Final commit (if step 1's `ruff format` needed fixes)**
+- [x] **Step 5: Final commit (if step 1's `ruff format` needed fixes)**
 
 ```bash
 git add -A
