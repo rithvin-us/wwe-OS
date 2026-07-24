@@ -45,3 +45,10 @@ def get_metadata_provider(module: str) -> MetadataProviderDef:
 
 def all_metadata_providers() -> list[MetadataProviderDef]:
     return sorted(_REGISTRY.values(), key=lambda d: d.module)
+
+
+def try_get_metadata_provider(module: str) -> MetadataProviderDef | None:
+    """Like get_metadata_provider, but returns None instead of raising —
+    for callers (MetadataService) that degrade gracefully on an
+    unregistered module rather than treating it as an error."""
+    return _REGISTRY.get(module)
