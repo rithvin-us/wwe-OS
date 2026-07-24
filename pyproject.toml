@@ -1,4 +1,4 @@
-it [project]
+[project]
 name = "business-operations-platform"
 version = "0.0.0"
 description = "Enterprise Business Operations Platform — Python backend workspace"

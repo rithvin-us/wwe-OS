@@ -102,7 +102,6 @@ class Migration(migrations.Migration):
             options={
                 "db_table": "pipeline_run",
                 "ordering": ("-created_at",),
-                "abstract": False,
             },
         ),
         migrations.CreateModel(
@@ -164,7 +163,6 @@ class Migration(migrations.Migration):
             options={
                 "db_table": "pipeline_step_run",
                 "ordering": ["step_index"],
-                "abstract": False,
             },
         ),
         migrations.AddIndex(

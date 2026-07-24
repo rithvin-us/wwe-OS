@@ -58,7 +58,12 @@ class DocumentViewSet(BaseModelViewSet):
         return qs
 
     def create(self, request: Request, *args, **kwargs) -> Response:
-        data = UploadDocumentSerializer(data=request.data)
+        req_data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if hasattr(request.data, "getlist"):
+            tags_list = request.data.getlist("tags")
+            if tags_list:
+                req_data.setlist("tags", tags_list)
+        data = UploadDocumentSerializer(data=req_data)
         data.is_valid(raise_exception=True)
         upload = data.validated_data["file"]
         user = request.user if request.user and request.user.is_authenticated else None
@@ -88,7 +93,12 @@ class DocumentViewSet(BaseModelViewSet):
 
     def partial_update(self, request: Request, *args, **kwargs) -> Response:
         document = self.get_object()
-        data = UpdateDocumentSerializer(data=request.data, partial=True)
+        req_data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if hasattr(request.data, "getlist"):
+            tags_list = request.data.getlist("tags")
+            if tags_list:
+                req_data.setlist("tags", tags_list)
+        data = UpdateDocumentSerializer(data=req_data, partial=True)
         data.is_valid(raise_exception=True)
         tags = data.validated_data.get("tags")
         document = DocumentService().update_metadata(

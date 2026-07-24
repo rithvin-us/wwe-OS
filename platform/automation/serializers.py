@@ -56,6 +56,7 @@ class AutomationRuleWriteSerializer(serializers.Serializer):
 class AutomationRunSerializer(BaseModelSerializer):
     filename = serializers.SerializerMethodField()
     report_export_id = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
 
     class Meta:
         model = AutomationRun
@@ -72,6 +73,7 @@ class AutomationRunSerializer(BaseModelSerializer):
             "items",
             "filename",
             "report_export_id",
+            "download_url",
             "error_message",
             "created_at",
         )
@@ -82,3 +84,10 @@ class AutomationRunSerializer(BaseModelSerializer):
 
     def get_report_export_id(self, obj: AutomationRun) -> str | None:
         return str(obj.report_export_id) if obj.report_export_id else None
+
+    def get_download_url(self, obj: AutomationRun) -> str | None:
+        if obj.output_file:
+            from storage.services import StorageService
+
+            return StorageService().signed_url(obj.output_file)
+        return None

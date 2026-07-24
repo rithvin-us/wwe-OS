@@ -242,8 +242,16 @@ class AutomationService(BaseService):
         rule.save(update_fields=["last_run_at", "next_run_at", "is_active", "updated_at"])
 
     # ------------------------------------------------------------------ #
-    # Scheduling
+    # Scheduling & Artifact Access
     # ------------------------------------------------------------------ #
+    def get_run_download_url(self, *, run: AutomationRun) -> str:
+        """Returns a signed download URL for a completed run's output file or report artifact."""
+        if run.output_file:
+            from storage.services import StorageService
+
+            return StorageService().url(file=run.output_file, disposition="attachment")
+        return ""
+
     def run_due(self, *, tenant=None) -> list[AutomationRun]:
         """Runs every active, due rule (used by the `automation_run_due`
         management command). A rule scoped to a stub destination is skipped,
