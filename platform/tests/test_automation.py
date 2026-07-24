@@ -310,3 +310,36 @@ def test_subscriber_builds_automation_run_from_a_finished_pipeline(tenant, tag, 
     assert automation_run.status == RunStatus.SUCCESS
     assert automation_run.item_count == 1
     assert automation_run.rule == rule
+
+
+def test_automation_run_due_concurrent_invocations_do_not_double_run_same_rule(
+    tenant, tag, tagged_asset
+):
+    rule = _make_rule(tenant, required_tags=[str(tag.id)], cadence=Cadence.DAILY)
+    original_next_run_at = rule.next_run_at  # captured before run_rule advances it
+
+    AutomationService().run_rule(rule=rule, triggered_by=TriggerType.SCHEDULE)
+
+    # A second "concurrent" cron invocation for the SAME scheduled tick
+    # (same next_run_at the first call saw) must resolve to the same
+    # underlying pipeline run, not create a new AutomationRun.
+    from automation.pipelines import PACKAGE_PIPELINE_KEY
+    from workflow.services import PipelineService
+
+    replay_run, created = PipelineService().start(
+        pipeline_key=PACKAGE_PIPELINE_KEY,
+        tenant=tenant,
+        idempotency_key=f"rule:{rule.id}:{original_next_run_at.isoformat()}",
+    )
+    assert created is False  # same key => same row, whatever run_rule already created
+    assert AutomationRun.objects.filter(rule=rule).count() == 1
+
+
+def test_run_now_manual_trigger_has_no_idempotency_dedup(tenant, tag, tagged_asset):
+    rule = _make_rule(tenant, required_tags=[str(tag.id)])
+
+    run1 = AutomationService().run_rule(rule=rule, triggered_by=TriggerType.MANUAL)
+    run2 = AutomationService().run_rule(rule=rule, triggered_by=TriggerType.MANUAL)
+
+    assert run1.id != run2.id
+    assert AutomationRun.objects.filter(rule=rule).count() == 2

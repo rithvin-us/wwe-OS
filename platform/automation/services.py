@@ -30,7 +30,6 @@ from automation.models import (
     AutomationRun,
     Cadence,
     Destination,
-    RunStatus,
     TriggerType,
 )
 from automation.registry import CollectedFile, get_source
@@ -104,56 +103,36 @@ class AutomationService(BaseService):
                 "saved, but not run."
             )
 
-        started = timezone.now()
-        items: list[dict[str, Any]] = []
-        output_file = None
-        report_export = None
-        error = ""
-        status = RunStatus.SUCCESS
+        from workflow.services import PipelineService
 
-        try:
-            if rule.destination == Destination.GENERATE_REPORT:
-                from reporting.services import ReportService
+        from automation.pipelines import PACKAGE_PIPELINE_KEY, REPORT_PIPELINE_KEY
 
-                report_export = ReportService().run(
-                    key=rule.report_key,
-                    format=rule.export_format or "csv",
-                    filters={"tag_ids": rule.required_tags},
-                    tenant=rule.tenant,
-                    actor=actor,
-                )
-                items = [
-                    {
-                        "module": "reporting",
-                        "object_type": "ReportExport",
-                        "object_id": str(report_export.id),
-                        "title": report_export.title,
-                        "included": True,
-                    }
-                ]
-            else:
-                items, output_file = self._collect_and_package(
-                    rule=rule, started=started, actor=actor
-                )
-        except Exception as exc:  # recorded on the run below, never re-raised — one bad rule
-            status = RunStatus.FAILED  # must not stop the rest of a scheduled sweep.
-            error = str(exc)
-
-        finished = timezone.now()
-        run = self._record_run(
-            rule=rule,
-            status=status,
-            triggered_by=triggered_by,
-            started=started,
-            finished=finished,
-            items=items,
-            output_file=output_file,
-            report_export=report_export,
-            error=error,
-            actor=actor,
+        pipeline_key = (
+            REPORT_PIPELINE_KEY
+            if rule.destination == Destination.GENERATE_REPORT
+            else PACKAGE_PIPELINE_KEY
         )
-        self._advance_schedule(rule=rule, finished=finished)
-        return run
+        # Only a scheduled trigger gets a dedup key — two overlapping cron
+        # invocations for the SAME due tick must collapse to one run; two
+        # manual "Run now" clicks are legitimately two separate runs.
+        idem_key = (
+            f"rule:{rule.id}:{rule.next_run_at.isoformat()}"
+            if triggered_by == TriggerType.SCHEDULE and rule.next_run_at
+            else ""
+        )
+        run, _created = PipelineService().start(
+            pipeline_key=pipeline_key,
+            tenant=rule.tenant,
+            actor=actor,
+            trigger_type=triggered_by,
+            idempotency_key=idem_key,
+            source_module="automation",
+            source_object_type="AutomationRule",
+            source_object_id=str(rule.id),
+            input_data={"rule_id": str(rule.id)},
+        )
+        PipelineService().run_to_completion(run, actor=actor)
+        return AutomationRun.objects.get(pipeline_run=run)
 
     def _collect_and_package(
         self, *, rule: AutomationRule, started, actor
