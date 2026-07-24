@@ -12,6 +12,13 @@ import type { AuditLogEntry } from "@/lib/audit";
 
 export type KpiFormat = "currency" | "count";
 
+/** "live" has a real number. "error" means a wired source's fetch failed
+ * just now (worth flagging, unlike calm emptiness). "unwired" means no
+ * backend exists for this metric yet — expected, not an error. All three
+ * render as "—" without this distinction, which is exactly what hid a real
+ * fetch failure behind the same calm copy as "not built yet." */
+export type KpiStatus = "live" | "error" | "unwired";
+
 export interface Kpi {
   key: string;
   label: string;
@@ -20,6 +27,7 @@ export interface Kpi {
   value: number | null;
   deltaPct: number | null;
   source: string;
+  status: KpiStatus;
   /** Only set once a KPI is genuinely wired to a live area — an unwired
    * metric has nowhere honest to send the operator, so it stays a plain
    * tile rather than a dead link. */
@@ -34,6 +42,11 @@ export interface LivePurchaseStats {
 }
 
 export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
+  // getPurchaseBillStats() always returns counts (0s included) when the
+  // request succeeds — a null purchase here unambiguously means the fetch
+  // itself failed (loadPurchaseStats's catch), never "no data yet".
+  const purchaseFetchFailed = purchase === null;
+
   const kpis: Kpi[] = [
     {
       key: "revenue",
@@ -43,6 +56,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       value: null,
       deltaPct: null,
       source: "Sales & finance",
+      status: "unwired",
     },
     {
       key: "expenses",
@@ -52,6 +66,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       value: null,
       deltaPct: null,
       source: "Purchases & finance",
+      status: "unwired",
     },
     {
       key: "digitized-purchases",
@@ -61,6 +76,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       value: purchase?.processed ?? null,
       deltaPct: null,
       source: "Purchases",
+      status: purchaseFetchFailed ? "error" : "live",
       href: "/purchase",
     },
     {
@@ -71,20 +87,19 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       value: null,
       deltaPct: null,
       source: "Inventory & Assets",
+      status: "unwired",
     },
   ];
-  // Wired metrics lead; unwired ones (permanently "—" until a finance/
-  // inventory module exists) settle to the end instead of occupying the
-  // first, most-scanned slots on every visit. Stable sort — order within
-  // each group is otherwise unchanged, so this self-corrects as more KPIs
-  // get wired over time instead of needing a hand-maintained order.
+  // Live metrics lead, then errors (worth noticing), then unwired ones
+  // (permanently "—" until a finance/inventory module exists) settle to the
+  // end instead of occupying the first, most-scanned slots on every visit.
+  // Stable sort — order within each group is otherwise unchanged, so this
+  // self-corrects as more KPIs get wired over time instead of needing a
+  // hand-maintained order.
+  const rank: Record<KpiStatus, number> = { live: 0, error: 1, unwired: 2 };
   return kpis
     .map((kpi, index) => ({ kpi, index }))
-    .sort((a, b) => {
-      const aWired = a.kpi.value !== null ? 0 : 1;
-      const bWired = b.kpi.value !== null ? 0 : 1;
-      return aWired - bWired || a.index - b.index;
-    })
+    .sort((a, b) => rank[a.kpi.status] - rank[b.kpi.status] || a.index - b.index)
     .map(({ kpi }) => kpi);
 }
 

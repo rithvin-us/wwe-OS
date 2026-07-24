@@ -22,6 +22,7 @@ import { formatValue, type Kpi } from "@/config/dashboard";
 export function KpiTile({ kpi }: { kpi: Kpi }) {
   const display = formatValue(kpi.value, kpi.format);
   const hasValue = kpi.value !== null;
+  const isError = kpi.status === "error";
   const up = (kpi.deltaPct ?? 0) >= 0;
 
   const content = (
@@ -30,14 +31,21 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
         <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
           {kpi.label}
         </span>
-        <kpi.icon aria-hidden className="size-4 text-muted-foreground-subtle" />
+        <kpi.icon
+          aria-hidden
+          className={cn("size-4", isError ? "text-warning" : "text-muted-foreground-subtle")}
+        />
       </div>
 
       <div className="flex items-end justify-between gap-2">
         <span
           className={cn(
             "font-display text-2xl font-semibold tracking-tight tabular-nums",
-            hasValue ? "text-foreground" : "text-muted-foreground-subtle",
+            hasValue
+              ? "text-foreground"
+              : isError
+                ? "text-warning"
+                : "text-muted-foreground-subtle",
           )}
         >
           {display}
@@ -62,8 +70,14 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
         ) : null}
       </div>
 
-      <span className="text-[11px] text-muted-foreground-subtle">
-        {hasValue ? kpi.source : `Awaiting first data · ${kpi.source}`}
+      <span
+        className={cn("text-[11px]", isError ? "text-warning" : "text-muted-foreground-subtle")}
+      >
+        {hasValue
+          ? kpi.source
+          : isError
+            ? `Couldn't load just now · ${kpi.source}`
+            : `Awaiting first data · ${kpi.source}`}
       </span>
     </>
   );
