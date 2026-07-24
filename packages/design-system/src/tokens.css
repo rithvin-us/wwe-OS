@@ -23,6 +23,12 @@
   --secondary-foreground: oklch(0.2 0.02 160);
   --muted: oklch(0.96 0.01 160);
   --muted-foreground: oklch(0.45 0.02 160);
+  /* A genuinely quieter third text tier (icons, unavailable placeholders,
+     tertiary captions) — its own computed value, not muted-foreground
+     faded with opacity. Opacity math on top of an already-muted color
+     silently drops contrast below AA; this is verified >= 4.5:1 against
+     both --card and --background on its own. */
+  --muted-foreground-subtle: oklch(0.54 0.02 160);
   --accent: oklch(0.95 0.02 160);
   --accent-foreground: oklch(0.2 0.02 160);
   --destructive: oklch(0.55 0.2 25);
@@ -103,6 +109,7 @@
   --secondary-foreground: oklch(0.9 0.008 240);
   --muted: oklch(0.235 0.012 250);
   --muted-foreground: oklch(0.63 0.01 250);
+  --muted-foreground-subtle: oklch(0.605 0.01 250);
   --accent: oklch(0.26 0.02 220);
   --accent-foreground: oklch(0.9 0.01 220);
   --destructive: oklch(0.65 0.18 25);
@@ -151,6 +158,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-subtle: var(--muted-foreground-subtle);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);

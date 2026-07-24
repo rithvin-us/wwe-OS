@@ -10,6 +10,7 @@ colors:
   secondary: "oklch(0.95 0.02 160)"
   muted: "oklch(0.96 0.01 160)"
   muted-foreground: "oklch(0.45 0.02 160)"
+  muted-foreground-subtle: "oklch(0.54 0.02 160)"
   border: "oklch(0.92 0.01 160)"
   destructive: "oklch(0.55 0.2 25)"
   success: "oklch(0.545 0.13 160)"
@@ -88,6 +89,7 @@ A cool, near-neutral canvas with one restrained brand accent; status and semanti
 - **Surface** (`oklch(1 0 0)`): card and popover background, one step up from canvas.
 - **Ink** (`oklch(0.18 0.02 160)`): primary text.
 - **Muted ink** (`oklch(0.45 0.02 160)`): secondary text, timestamps, helper copy.
+- **Subtle ink** (`oklch(0.54 0.02 160)`): a third, quieter text tier — icons, unavailable-value placeholders, tertiary captions. Its own token, verified ≥4.5:1 against both canvas and surface on its own — never approximate this tier with `text-muted-foreground` at reduced opacity; opacity blends toward the background and silently drops below AA.
 - **Line** (`oklch(0.92 0.01 160)`): borders, dividers, input strokes.
 
 ### Reserved vocabularies (never repurpose)

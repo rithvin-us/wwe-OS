@@ -45,7 +45,7 @@ export function Greeting() {
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{part}</h1>
       <p className="text-sm text-muted-foreground">
         Here&rsquo;s how {COMPANY.name} is doing today.{" "}
-        <span className="text-muted-foreground/70 tabular-nums">{dateLabel}</span>
+        <span className="text-muted-foreground-subtle tabular-nums">{dateLabel}</span>
       </p>
     </div>
   );

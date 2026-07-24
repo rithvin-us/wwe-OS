@@ -63,7 +63,7 @@ export function SummaryRows({ rows }: { rows: SummaryRow[] }) {
             <dd
               className={cn(
                 "text-sm font-medium tabular-nums",
-                known ? "text-foreground" : "text-muted-foreground/50",
+                known ? "text-foreground" : "text-muted-foreground-subtle",
               )}
             >
               {formatValue(row.value, row.format)}
