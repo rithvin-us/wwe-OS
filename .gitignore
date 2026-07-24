@@ -22,6 +22,9 @@ venv/
 .mypy_cache/
 *.egg-info/
 
+# Local file storage backend (platform/storage's STORAGE_LOCAL_PATH)
+.storage/
+
 # Database
 database/backups/*
 !database/backups/.gitkeep
