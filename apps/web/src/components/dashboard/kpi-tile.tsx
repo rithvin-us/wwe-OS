@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight } from "@bop/icons";
 import { cn } from "@bop/ui/lib/utils";
+import Link from "next/link";
 
 import { formatValue, type Kpi } from "@/config/dashboard";
 
@@ -7,6 +8,10 @@ import { formatValue, type Kpi } from "@/config/dashboard";
  * A single company KPI. Shows the live figure, its period change, and where
  * it comes from. When a figure isn't available yet it reads "—" with a quiet
  * note — never a placeholder number.
+ *
+ * Only wired KPIs (kpi.href set) are real links — an unwired metric has
+ * nowhere honest to send the operator, so it stays a plain, non-interactive
+ * tile rather than a dead click target.
  *
  * No mount animation of its own: the KPI grid resolves in lockstep with the
  * rest of the dashboard, and the route-level crossfade in app-shell.tsx
@@ -19,8 +24,8 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
   const hasValue = kpi.value !== null;
   const up = (kpi.deltaPct ?? 0) >= 0;
 
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
           {kpi.label}
@@ -60,6 +65,21 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
       <span className="text-[11px] text-muted-foreground-subtle">
         {hasValue ? kpi.source : `Awaiting first data · ${kpi.source}`}
       </span>
-    </div>
+    </>
+  );
+
+  if (kpi.href) {
+    return (
+      <Link
+        href={kpi.href}
+        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-shadow duration-(--duration-base) hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">{content}</div>
   );
 }

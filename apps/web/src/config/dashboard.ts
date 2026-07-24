@@ -20,6 +20,10 @@ export interface Kpi {
   value: number | null;
   deltaPct: number | null;
   source: string;
+  /** Only set once a KPI is genuinely wired to a live area — an unwired
+   * metric has nowhere honest to send the operator, so it stays a plain
+   * tile rather than a dead link. */
+  href?: string;
 }
 
 export interface LivePurchaseStats {
@@ -57,6 +61,7 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       value: purchase?.processed ?? null,
       deltaPct: null,
       source: "Purchases",
+      href: "/purchase",
     },
     {
       key: "service-equipment",
