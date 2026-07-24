@@ -27,6 +27,14 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# The test suite must never call a real AI provider — deterministic, no
+# external services, no quota burn — regardless of what a developer's local
+# .env has configured for real usage.
+AI_DEFAULT_MODEL = "mock"
+AI_FALLBACK_MODEL = ""
+GEMINI_API_KEY = ""
+ANTHROPIC_API_KEY = ""
+
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 REST_FRAMEWORK = {

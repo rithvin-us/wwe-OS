@@ -1,1 +1,28 @@
-repos: []
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: python -m ruff check --force-exclude
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format
+        entry: python -m ruff format --check --force-exclude
+        language: system
+        types: [python]
+
+      - id: prettier-check
+        name: prettier check
+        entry: pnpm exec prettier --check
+        language: system
+        types_or: [ts, tsx, javascript, jsx, json, css, markdown]
+        exclude: ^pnpm-lock\.yaml$
+
+      - id: eslint
+        name: eslint
+        entry: pnpm exec eslint
+        language: system
+        types_or: [ts, tsx, javascript, jsx]
+        pass_filenames: true

@@ -18,6 +18,18 @@ from config.env import env_bool, env_int, env_list, env_str
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = BASE_DIR.parent
 
+# Local (non-Docker) runs read config from the repo-root .env; Docker and
+# production set real environment variables directly, which always win
+# (load_dotenv never overrides an already-set variable). This runs for every
+# entrypoint (manage.py, wsgi, asgi, pytest-django) since they all import
+# this module first.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(REPO_ROOT / ".env")
+except ImportError:
+    pass
+
 # Business modules live in the repo-root `modules/` directory (their own
 # top-level package space, one Django app per module at `<slug>/backend`) —
 # never inside `platform/`. Adding this to sys.path is wiring, not a business
@@ -29,7 +41,7 @@ if str(REPO_ROOT / "modules") not in sys.path:
 # --------------------------------------------------------------------------- #
 # Core
 # --------------------------------------------------------------------------- #
-SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY") or "insecure-dev-key-change-me"
+SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", required=True)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")

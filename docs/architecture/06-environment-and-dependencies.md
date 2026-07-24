@@ -45,7 +45,7 @@ All runtime parameters are configured through environment variables (defined in 
 ### Telegram Bot & Service Auth
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `TELEGRAM_BOT_TOKEN` | API token issued by Telegram BotFather. | `8811942921:AAEZex...` |
+| `TELEGRAM_BOT_TOKEN` | API token issued by Telegram BotFather. | `123456789:AAExampleTokenPlaceholder` |
 | `PLATFORM_API_URL` | Backend URL accessible by the Telegram bot container. | `http://backend:8000` |
 | `PLATFORM_SERVICE_TOKEN` | Shared secret token for Telegram bot API authentication. | `dev-only-change-me` |
 | `INGESTION_SERVICE_TOKENS` | CSV list of `service:token` pairs configured on backend. | `telegram-bot:dev-only-change-me` |
