@@ -15,6 +15,7 @@ import {
 } from "@bop/ui/components/dialog";
 import { Input } from "@bop/ui/components/input";
 import { Label } from "@bop/ui/components/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@bop/ui/components/popover";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -114,13 +115,18 @@ function VendorFormDialog({
 
 function VendorActions({ vendor }: { vendor: Vendor }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function toggleActive() {
     startTransition(async () => {
       const result = await updateVendorAction(vendor.id, { is_active: !vendor.is_active });
-      if (result.ok) toast.success(result.message);
-      else toast.error(result.message);
+      if (result.ok) {
+        toast.success(result.message);
+        setConfirmOpen(false);
+      } else {
+        toast.error(result.message);
+      }
     });
   }
 
@@ -130,9 +136,37 @@ function VendorActions({ vendor }: { vendor: Vendor }) {
         <Pencil aria-hidden />
         Edit
       </Button>
-      <Button size="sm" variant="ghost" onClick={toggleActive} disabled={pending}>
-        {vendor.is_active ? "Deactivate" : "Activate"}
-      </Button>
+
+      {vendor.is_active ? (
+        // Deactivating removes a vendor from active use, unlike
+        // reactivating (safe, easily reversed) — worth a quick confirm.
+        <Popover open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <PopoverTrigger asChild>
+            <Button size="sm" variant="ghost">
+              Deactivate
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Deactivate <strong className="text-foreground">{vendor.name}</strong>? Existing
+              purchase records are unaffected.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={toggleActive} disabled={pending}>
+                Deactivate
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <Button size="sm" variant="ghost" onClick={toggleActive} disabled={pending}>
+          Activate
+        </Button>
+      )}
+
       <VendorFormDialog vendor={vendor} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );

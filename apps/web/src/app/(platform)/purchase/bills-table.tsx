@@ -11,14 +11,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import {
-  deleteBillAction,
-  markBillPaidAction,
-  updateBillAction,
-} from "@/app/(platform)/purchase/actions";
+import { deleteBillAction, updateBillAction } from "@/app/(platform)/purchase/actions";
 import { BillDetailsDialog } from "@/app/(platform)/purchase/bill-details-dialog";
 import { DeleteBillWarning } from "@/app/(platform)/purchase/delete-bill-warning";
 import { formatDate, formatMoney } from "@/app/(platform)/purchase/format";
+import { PaymentAction } from "@/app/(platform)/purchase/payment-action";
 import type { PurchaseBill } from "@/lib/purchase";
 import type { Tag } from "@/lib/tags";
 
@@ -46,25 +43,12 @@ function StatusBadge({ bill }: { bill: PurchaseBill }) {
 }
 
 function PaymentCell({ bill }: { bill: PurchaseBill }) {
-  const [pending, startTransition] = useTransition();
-
-  if (bill.payment_status === "paid") {
-    return <Badge variant="success">Paid</Badge>;
-  }
-
-  function markPaid(e: React.MouseEvent) {
-    e.stopPropagation();
-    startTransition(async () => {
-      const result = await markBillPaidAction(bill.id);
-      if (result.ok) toast.success(result.message);
-      else toast.error(result.message);
-    });
-  }
-
+  const isPaid = bill.payment_status === "paid";
   return (
-    <Button size="sm" variant="ghost" onClick={markPaid} disabled={pending}>
-      Mark paid
-    </Button>
+    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      {isPaid && <Badge variant="success">Paid</Badge>}
+      <PaymentAction billId={bill.id} isPaid={isPaid} triggerSize={isPaid ? "xs" : "sm"} />
+    </div>
   );
 }
 

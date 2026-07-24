@@ -41,6 +41,16 @@ export async function markBillPaidAction(billId: string): Promise<ActionResult> 
   }
 }
 
+export async function unmarkBillPaidAction(billId: string): Promise<ActionResult> {
+  try {
+    await djangoFetch(`/api/v1/purchase/bills/${billId}/unmark-paid/`, { method: "POST" });
+    revalidatePath("/purchase");
+    return { ok: true, message: "Purchase marked as unpaid." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
 export async function deleteBillAction(billId: string): Promise<ActionResult> {
   try {
     await djangoFetch(`/api/v1/purchase/bills/${billId}/`, { method: "DELETE" });

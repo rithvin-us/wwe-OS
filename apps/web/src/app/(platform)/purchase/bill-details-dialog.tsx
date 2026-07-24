@@ -17,13 +17,10 @@ import type { TagLike } from "@bop/ui/components/tag-pill";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import {
-  deleteBillAction,
-  markBillPaidAction,
-  updateBillAction,
-} from "@/app/(platform)/purchase/actions";
+import { deleteBillAction, updateBillAction } from "@/app/(platform)/purchase/actions";
 import { DeleteBillWarning } from "@/app/(platform)/purchase/delete-bill-warning";
 import { formatDate, formatMoney } from "@/app/(platform)/purchase/format";
+import { PaymentAction } from "@/app/(platform)/purchase/payment-action";
 import type { PurchaseBill } from "@/lib/purchase";
 import { getObjectTagsAction, setObjectTagsAction } from "@/lib/tags-actions";
 import type { Tag } from "@/lib/tags";
@@ -114,14 +111,6 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
       } else {
         toast.error(result.message);
       }
-    });
-  }
-
-  function handleMarkPaid() {
-    startTransition(async () => {
-      const result = await markBillPaidAction(bill!.id);
-      if (result.ok) toast.success(result.message);
-      else toast.error(result.message);
     });
   }
 
@@ -312,11 +301,11 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               </div>
             </div>
 
-            {bill.payment_status !== "paid" && (
-              <Button size="sm" variant="outline" onClick={handleMarkPaid} disabled={pending}>
-                Mark Paid
-              </Button>
-            )}
+            <PaymentAction
+              billId={bill.id}
+              isPaid={bill.payment_status === "paid"}
+              triggerVariant="outline"
+            />
           </div>
         </div>
 
