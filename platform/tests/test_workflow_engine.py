@@ -3,9 +3,11 @@ retries, compensation, crash recovery, and batch ticking."""
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 from django.utils import timezone
-from workflow.engine import AdvanceOutcome, _claim_step, advance_one
+from workflow.engine import AdvanceOutcome, _claim_step, advance_one, reclaim_stale_steps
 from workflow.models import PipelineRun, PipelineRunStatus, PipelineStepRun, StepRunStatus
 from workflow.registry import (
     PipelineDefinition,
@@ -353,3 +355,66 @@ def test_cancelling_a_run_lands_on_cancelled_not_failed(tenant):
     run.refresh_from_db()  # finish
 
     assert run.status == PipelineRunStatus.CANCELLED
+
+
+# --------------------------------------------------------------------------- #
+# Crash recovery (reclaim_stale_steps)
+# --------------------------------------------------------------------------- #
+
+
+def test_reclaim_resets_stale_running_step_to_pending_when_attempts_remain(tenant, settings):
+    settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS = 60
+    _register_single_step_pipeline(
+        "test.reclaim.retry", run=lambda ctx: StepResult(), max_attempts=3
+    )
+    run = _start_run(tenant, "test.reclaim.retry")
+    step = run.steps.get(step_index=0)
+    step.status = StepRunStatus.RUNNING
+    step.attempt = 1
+    step.locked_at = timezone.now() - timedelta(seconds=120)
+    step.save()
+
+    reclaimed = reclaim_stale_steps()
+
+    assert reclaimed == 1
+    step.refresh_from_db()
+    assert step.status == StepRunStatus.PENDING
+    assert step.locked_at is None
+    assert "stale lock" in step.error_message
+
+
+def test_reclaim_fails_run_when_attempts_exhausted(tenant, settings):
+    settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS = 60
+    _register_single_step_pipeline(
+        "test.reclaim.exhausted", run=lambda ctx: StepResult(), max_attempts=1
+    )
+    run = _start_run(tenant, "test.reclaim.exhausted")
+    step = run.steps.get(step_index=0)
+    step.status = StepRunStatus.RUNNING
+    step.attempt = 1  # == max_attempts, no retries left
+    step.locked_at = timezone.now() - timedelta(seconds=120)
+    step.save()
+
+    reclaim_stale_steps()
+
+    step.refresh_from_db()
+    assert step.status == StepRunStatus.FAILED
+    run.refresh_from_db()
+    assert run.status == PipelineRunStatus.COMPENSATING
+    assert run.termination_reason == "failed"
+
+
+def test_reclaim_ignores_steps_within_the_timeout_window(tenant, settings):
+    settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS = 3600
+    _register_single_step_pipeline("test.reclaim.fresh", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.reclaim.fresh")
+    step = run.steps.get(step_index=0)
+    step.status = StepRunStatus.RUNNING
+    step.locked_at = timezone.now()  # just claimed, well within the timeout
+    step.save()
+
+    reclaimed = reclaim_stale_steps()
+
+    assert reclaimed == 0
+    step.refresh_from_db()
+    assert step.status == StepRunStatus.RUNNING

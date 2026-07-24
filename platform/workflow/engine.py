@@ -10,6 +10,7 @@ import logging
 from datetime import timedelta
 from enum import StrEnum
 
+from django.conf import settings
 from django.db.models import F
 from django.utils import timezone
 from shared.events import Events, publish
@@ -205,3 +206,44 @@ def _advance_compensation(run: PipelineRun, *, actor=None) -> AdvanceOutcome:
         update_fields=["status", "error_message", "finished_at", "locked_at", "updated_at"]
     )
     return AdvanceOutcome.COMPENSATED
+
+
+def reclaim_stale_steps() -> int:
+    """Crash recovery: any step still RUNNING past its own timeout almost
+    certainly means the process executing it crashed or was killed. Reset
+    it to PENDING (if retries remain) or drive its run into COMPENSATING
+    (if exhausted) — no special recovery process, just a check run at the
+    top of every tick (see tick_all, Task 8)."""
+    stale = PipelineStepRun.objects.filter(status=StepRunStatus.RUNNING, locked_at__isnull=False)
+    reclaimed = 0
+    for step_row in stale.iterator():
+        try:
+            definition = get_pipeline(step_row.run.pipeline_key)
+            step_def = next((s for s in definition.steps if s.key == step_row.step_key), None)
+        except Exception:  # noqa: BLE001 - unknown pipeline key; fall back to the default timeout
+            step_def = None
+        timeout = (
+            step_def.timeout_seconds
+            if step_def and step_def.timeout_seconds is not None
+            else settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS
+        )
+        if step_row.locked_at > timezone.now() - timedelta(seconds=timeout):
+            continue
+
+        can_retry = step_def is not None and step_row.attempt < step_def.max_attempts
+        updated = PipelineStepRun.objects.filter(
+            id=step_row.id, status=StepRunStatus.RUNNING, locked_at=step_row.locked_at
+        ).update(
+            status=StepRunStatus.PENDING if can_retry else StepRunStatus.FAILED,
+            locked_at=None,
+            error_message=(
+                "Reclaimed after a stale lock (the process running this step likely crashed)."
+            ),
+        )
+        if updated and not can_retry:
+            run = PipelineRun.objects.get(id=step_row.run_id)
+            run.termination_reason = TerminationReason.FAILED
+            run.status = PipelineRunStatus.COMPENSATING
+            run.save(update_fields=["termination_reason", "status", "updated_at"])
+        reclaimed += updated
+    return reclaimed

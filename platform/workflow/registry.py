@@ -39,7 +39,10 @@ class StepDefinition:
     compensate: Callable[[StepContext], None] | None = None
     max_attempts: int = 1
     backoff: Callable[[int], float] = default_backoff
-    timeout_seconds: int = 300
+    # None defers to settings.PIPELINE_STEP_STALE_TIMEOUT_SECONDS (the
+    # configurable default) — only set this to override that default for
+    # one specific step.
+    timeout_seconds: int | None = None
 
 
 @dataclass(frozen=True)
