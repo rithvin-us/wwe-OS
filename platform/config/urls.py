@@ -20,6 +20,7 @@ api_v1 = [
     path("storage/", include("storage.urls")),
     path("periods/", include("periods.urls")),
     path("identity/", include("identity.urls")),
+    path("metadata/", include("metadata.urls")),
     path("ai/", include("ai.urls")),
     path("search/", include("search.urls")),
     path("reporting/", include("reporting.urls")),
