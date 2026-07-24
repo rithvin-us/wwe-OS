@@ -24,6 +24,8 @@ import httpx
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
+from identity.models import IdentityChannel
+from identity.services import IdentityService
 from periods.resolution import DocumentContext, resolve_location
 from periods.services import PeriodService
 from shared.events import publish
@@ -54,6 +56,11 @@ _EXT_BY_CONTENT_TYPE = {
     "image/png": "png",
     "image/jpeg": "jpg",
     "image/webp": "webp",
+}
+_IDENTITY_CHANNEL_MAP = {
+    "telegram": IdentityChannel.TELEGRAM,
+    "email": IdentityChannel.EMAIL,
+    "upload": IdentityChannel.MANUAL,
 }
 
 
@@ -195,6 +202,21 @@ class PurchaseBillService(BaseService):
         document_url = data.get("document_url") or ""
         external_ref = (data.get("external_ref") or "").strip()
 
+        # Every incoming bill gets a trusted Source Identity before OCR runs
+        # (identity.services.IdentityService) — never skipped, even if
+        # storage or OCR later fails, since "who sent this" is independent
+        # of whether the document itself was fetched successfully.
+        telegram_user_id = data.get("telegram_user_id")
+        identity_external_id = (
+            str(telegram_user_id) if telegram_user_id else external_ref or "unknown"
+        )
+        identity = IdentityService().resolve_identity(
+            tenant=tenant,
+            channel=_IDENTITY_CHANNEL_MAP.get(source_channel, IdentityChannel.WEBHOOK),
+            external_id=identity_external_id,
+            display_name=data.get("telegram_username", ""),
+        )
+
         # Check for existing record by external_ref
         existing = None
         if external_ref:
@@ -279,6 +301,15 @@ class PurchaseBillService(BaseService):
                         tenant=tenant, name=extracted["vendor"].strip()
                     )
                     bill.vendor = vendor
+                    # The sending account "learns" its vendor over repeat
+                    # ingests — Rules Engine (later) can read this mapping
+                    # to skip re-asking. No inference logic lives here.
+                    IdentityService().map_to(
+                        identity=identity,
+                        module="purchase",
+                        object_type="Vendor",
+                        object_id=str(vendor.id),
+                    )
 
                 if extracted.get("invoice_number"):
                     bill.invoice_number = extracted["invoice_number"]

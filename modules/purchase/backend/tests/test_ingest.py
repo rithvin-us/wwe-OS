@@ -188,3 +188,49 @@ def test_ingest_reuses_existing_storage_key_without_re_resolving(
     second = service_client.post(INGEST_URL, second_payload, format="json")
     assert second.status_code == 201
     assert PurchaseBill.objects.get().storage_key == first_key
+
+
+# --------------------------------------------------------------------------- #
+# Source identity (platform/identity integration)
+# --------------------------------------------------------------------------- #
+
+
+def test_ingest_resolves_source_identity_before_ocr(service_client, tenant):
+    from identity.models import IdentityChannel, SourceIdentity
+
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-identity-1"}
+    resp = service_client.post(INGEST_URL, payload, format="json")
+    assert resp.status_code == 201
+
+    identity = SourceIdentity.objects.get(
+        tenant=tenant, channel=IdentityChannel.TELEGRAM, external_id="123456789"
+    )
+    assert identity.mapped_object_type == "Vendor"
+
+
+def test_ingest_reuses_the_same_identity_across_bills_from_one_account(service_client, tenant):
+    from identity.models import SourceIdentity
+
+    service_client.post(
+        INGEST_URL, {**VALID_PAYLOAD, "external_ref": "tg-identity-2a"}, format="json"
+    )
+    service_client.post(
+        INGEST_URL, {**VALID_PAYLOAD, "external_ref": "tg-identity-2b"}, format="json"
+    )
+
+    assert SourceIdentity.objects.filter(tenant=tenant, external_id="123456789").count() == 1
+
+
+def test_ingest_maps_identity_to_the_resolved_vendor(service_client, tenant):
+    from identity.models import SourceIdentity
+
+    from purchase.backend.models import PurchaseBill
+
+    payload = {**VALID_PAYLOAD, "external_ref": "tg-identity-3"}
+    service_client.post(INGEST_URL, payload, format="json")
+
+    bill = PurchaseBill.objects.get()
+    identity = SourceIdentity.objects.get(tenant=tenant, external_id="123456789")
+    assert identity.mapped_module == "purchase"
+    assert identity.mapped_object_type == "Vendor"
+    assert identity.mapped_object_id == str(bill.vendor_id)
