@@ -216,6 +216,7 @@ class AutomationService(BaseService):
         report_export,
         error: str,
         actor,
+        pipeline_run=None,
     ) -> AutomationRun:
         run = AutomationRun.objects.create(
             tenant=rule.tenant,
@@ -232,6 +233,7 @@ class AutomationService(BaseService):
             report_export=report_export,
             error_message=error,
             actor=actor,
+            pipeline_run=pipeline_run,
         )
         from audit.services import AuditService
 

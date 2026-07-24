@@ -113,6 +113,12 @@ class AutomationRun(TenantOwnedModel):
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    # Links to the workflow.PipelineRun that produced this row. Nullable and
+    # not exposed in AutomationRunSerializer — purely internal, keeps the
+    # existing frontend contract unchanged.
+    pipeline_run = models.ForeignKey(
+        "workflow.PipelineRun", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
 
     class Meta(TenantOwnedModel.Meta):
         db_table = "automation_run"

@@ -286,3 +286,27 @@ def test_automation_pipelines_are_registered():
     keys = {p.key for p in all_pipelines()}
     assert "automation.rule_execution.package" in keys
     assert "automation.rule_execution.report" in keys
+
+
+def test_subscriber_builds_automation_run_from_a_finished_pipeline(tenant, tag, tagged_asset):
+    from automation.pipelines import PACKAGE_PIPELINE_KEY
+    from workflow.services import PipelineService
+
+    rule = _make_rule(tenant, required_tags=[str(tag.id)])
+
+    run, _ = PipelineService().start(
+        pipeline_key=PACKAGE_PIPELINE_KEY,
+        tenant=tenant,
+        trigger_type=TriggerType.MANUAL,
+        source_module="automation",
+        source_object_type="AutomationRule",
+        source_object_id=str(rule.id),
+        input_data={"rule_id": str(rule.id)},
+    )
+    finished = PipelineService().run_to_completion(run)
+    assert finished.status == "success"
+
+    automation_run = AutomationRun.objects.get(pipeline_run=finished)
+    assert automation_run.status == RunStatus.SUCCESS
+    assert automation_run.item_count == 1
+    assert automation_run.rule == rule

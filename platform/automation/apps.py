@@ -10,3 +10,5 @@ class AutomationConfig(AppConfig):
         from automation.pipelines import register_pipelines
 
         register_pipelines()
+
+        from automation.events import subscribers  # noqa: F401
