@@ -92,6 +92,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "periods",
     "identity",
     "metadata",
+    "rules",
     "ai",
     "search",
     "reporting",
