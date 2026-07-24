@@ -124,6 +124,7 @@ export default async function DashboardPage() {
 
   const kpis = buildKpis(purchaseStats);
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
+  const hasUrgentAlert = alerts.some((item) => item.severity !== "info");
   const activity = recentActivity(activityEntries, activityLabel);
 
   // Skip the AI call entirely on a quiet/fresh install — nothing real to
@@ -192,7 +193,11 @@ export default async function DashboardPage() {
 
         {/* Attention column */}
         <div className="space-y-4 lg:col-span-4">
-          <SectionCard title="Operational alerts" icon={TriangleAlert}>
+          <SectionCard
+            title="Operational alerts"
+            icon={TriangleAlert}
+            tone={hasUrgentAlert ? "warning" : "default"}
+          >
             {alerts.length === 0 ? (
               <PanelEmpty>
                 All clear. Overdue bills and pending reviews are flagged here.

@@ -9,7 +9,9 @@ import { formatValue, type SummaryRow } from "@/config/dashboard";
 /**
  * One card shape for every panel on the command center: titled, optional
  * "open" link to the full area, and a body that is either content or a quiet
- * empty state. Keeps every dashboard section visually identical.
+ * empty state. Same shape everywhere — `tone="warning"` is the one deliberate
+ * exception, reserved for a section whose real content genuinely needs
+ * elevated attention (never applied for decoration).
  */
 export function SectionCard({
   title,
@@ -17,24 +19,33 @@ export function SectionCard({
   href,
   children,
   className,
+  tone = "default",
 }: {
   title: string;
   icon: LucideIcon;
   href?: string;
   children: ReactNode;
   className?: string;
+  tone?: "default" | "warning";
 }) {
   return (
     <section
       className={cn(
-        "flex flex-col rounded-lg border border-border bg-card transition-shadow duration-(--duration-base)",
+        "flex flex-col rounded-lg border bg-card transition-shadow duration-(--duration-base)",
+        tone === "warning" ? "border-warning/40 bg-warning/5" : "border-border",
         href && "hover:shadow-sm",
         className,
       )}
     >
       <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
-          <Icon aria-hidden className="size-4 text-muted-foreground/80" />
+          <Icon
+            aria-hidden
+            className={cn(
+              "size-4",
+              tone === "warning" ? "text-warning" : "text-muted-foreground/80",
+            )}
+          />
           {title}
         </h2>
         {href ? (

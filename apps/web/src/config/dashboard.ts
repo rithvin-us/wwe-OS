@@ -30,7 +30,7 @@ export interface LivePurchaseStats {
 }
 
 export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
-  return [
+  const kpis: Kpi[] = [
     {
       key: "revenue",
       label: "Revenue",
@@ -68,6 +68,19 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       source: "Inventory & Assets",
     },
   ];
+  // Wired metrics lead; unwired ones (permanently "—" until a finance/
+  // inventory module exists) settle to the end instead of occupying the
+  // first, most-scanned slots on every visit. Stable sort — order within
+  // each group is otherwise unchanged, so this self-corrects as more KPIs
+  // get wired over time instead of needing a hand-maintained order.
+  return kpis
+    .map((kpi, index) => ({ kpi, index }))
+    .sort((a, b) => {
+      const aWired = a.kpi.value !== null ? 0 : 1;
+      const bWired = b.kpi.value !== null ? 0 : 1;
+      return aWired - bWired || a.index - b.index;
+    })
+    .map(({ kpi }) => kpi);
 }
 
 export interface SummaryRow {
