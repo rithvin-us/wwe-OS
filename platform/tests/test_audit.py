@@ -62,13 +62,25 @@ def test_api_filters_by_object_cross_reference(tenant, make_user, owner_role, gr
     user = make_user(email="owner2@acme.test", username="owner2", tenant=tenant)
     grant(user, owner_role)
     matching_a = AuditLog.objects.create(
-        tenant=tenant, action="bill.created", module="purchase", object_type="PurchaseBill", object_id="1"
+        tenant=tenant,
+        action="bill.created",
+        module="purchase",
+        object_type="PurchaseBill",
+        object_id="1",
     )
     matching_b = AuditLog.objects.create(
-        tenant=tenant, action="bill.paid", module="purchase", object_type="PurchaseBill", object_id="1"
+        tenant=tenant,
+        action="bill.paid",
+        module="purchase",
+        object_type="PurchaseBill",
+        object_id="1",
     )
     AuditLog.objects.create(
-        tenant=tenant, action="bill.created", module="purchase", object_type="PurchaseBill", object_id="2"
+        tenant=tenant,
+        action="bill.created",
+        module="purchase",
+        object_type="PurchaseBill",
+        object_id="2",
     )
 
     response = auth_client(user).get("/api/v1/audit/?object_type=PurchaseBill&object_id=1")
@@ -79,7 +91,9 @@ def test_api_filters_by_object_cross_reference(tenant, make_user, owner_role, gr
 def test_api_filters_by_module_in(tenant, make_user, owner_role, grant, auth_client):
     user = make_user(email="owner3@acme.test", username="owner3", tenant=tenant)
     grant(user, owner_role)
-    purchase_entry = AuditLog.objects.create(tenant=tenant, action="bill.created", module="purchase")
+    purchase_entry = AuditLog.objects.create(
+        tenant=tenant, action="bill.created", module="purchase"
+    )
     AuditLog.objects.create(tenant=tenant, action="user.logged_in", module="users")
 
     response = auth_client(user).get("/api/v1/audit/?module__in=purchase,assets")

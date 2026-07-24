@@ -56,9 +56,7 @@ class RunReportSerializer(serializers.Serializer):
     date_from = serializers.DateField(required=False, allow_null=True, default=None)
     date_to = serializers.DateField(required=False, allow_null=True, default=None)
     vendor = serializers.CharField(required=False, allow_blank=True, default="")
-    tag_ids = serializers.ListField(
-        child=serializers.UUIDField(), required=False, default=list
-    )
+    tag_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
 
 
 class RunReportView(APIView):

@@ -49,9 +49,7 @@ def tagged_asset(tenant, tag):
         category="asset-file",
         tenant=tenant,
     )
-    asset = Asset.objects.create(
-        tenant=tenant, name="Laptop", asset_tag="AST-1", file=stored
-    )
+    asset = Asset.objects.create(tenant=tenant, name="Laptop", asset_tag="AST-1", file=stored)
     TagService().set_tags_for_object(
         tenant=tenant,
         module="assets",

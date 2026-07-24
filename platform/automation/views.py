@@ -83,9 +83,7 @@ class AutomationRuleViewSet(BaseModelViewSet):
     )
     @action(detail=False, methods=["get"])
     def sources(self, request: Request) -> Response:
-        return Response(
-            [{"module": a.module, "label": a.label} for a in all_sources()]
-        )
+        return Response([{"module": a.module, "label": a.label} for a in all_sources()])
 
     @extend_schema(
         tags=["automation"],

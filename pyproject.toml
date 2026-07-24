@@ -33,9 +33,9 @@ select = [
 quote-style = "double"
 
 [tool.pytest.ini_options]
+# platform + modules need the Django env in platform/.venv, not this root
+# tooling env — run those via `cd platform && pytest` (see platform/pytest.ini).
 testpaths = [
-    "platform",
-    "modules",
     "services",
     "tests",
 ]

@@ -30,9 +30,7 @@ class Command(BaseCommand):
             runs = service.run_due(tenant=tenant) if tenant else []
         else:
             runs = [
-                run
-                for tenant in Tenant.objects.all()
-                for run in service.run_due(tenant=tenant)
+                run for tenant in Tenant.objects.all() for run in service.run_due(tenant=tenant)
             ]
 
         succeeded = sum(1 for run in runs if run.status == "success")
