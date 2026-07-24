@@ -97,3 +97,34 @@ def test_marking_paid_is_audited(auth_client, owner, processed_bill):
     from audit.models import AuditLog
 
     assert AuditLog.objects.filter(action="purchase.bill.paid", module="purchase").exists()
+
+
+def test_unmark_paid_reverses_payment_status(auth_client, owner, processed_bill):
+    client = auth_client(owner)
+    client.post(f"/api/v1/purchase/bills/{processed_bill.id}/mark-paid/", {}, format="json")
+
+    resp = client.post(
+        f"/api/v1/purchase/bills/{processed_bill.id}/unmark-paid/", {}, format="json"
+    )
+
+    assert resp.status_code == 200
+    processed_bill.refresh_from_db()
+    assert processed_bill.payment_status == "unpaid"
+    assert processed_bill.paid_at is None
+
+
+def test_unmark_paid_on_already_unpaid_bill_conflicts(auth_client, owner, processed_bill):
+    resp = auth_client(owner).post(
+        f"/api/v1/purchase/bills/{processed_bill.id}/unmark-paid/", {}, format="json"
+    )
+    assert resp.status_code == 409
+
+
+def test_unmarking_paid_is_audited(auth_client, owner, processed_bill):
+    client = auth_client(owner)
+    client.post(f"/api/v1/purchase/bills/{processed_bill.id}/mark-paid/", {}, format="json")
+    client.post(f"/api/v1/purchase/bills/{processed_bill.id}/unmark-paid/", {}, format="json")
+
+    from audit.models import AuditLog
+
+    assert AuditLog.objects.filter(action="purchase.bill.unpaid", module="purchase").exists()

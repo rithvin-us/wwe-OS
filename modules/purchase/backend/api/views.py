@@ -83,6 +83,7 @@ class PurchaseBillViewSet(BaseModelViewSet):
         "recent": "purchase.bill.read",
         "update_bill": "purchase.bill.review",
         "mark_paid": "purchase.bill.review",
+        "unmark_paid": "purchase.bill.review",
         "destroy": "purchase.bill.review",
     }
 
@@ -145,6 +146,12 @@ class PurchaseBillViewSet(BaseModelViewSet):
     def mark_paid(self, request: Request, pk=None) -> Response:
         bill = self.get_object()
         bill = PurchaseBillService().mark_paid(bill=bill, actor=request.user)
+        return Response(PurchaseBillSerializer(bill).data)
+
+    @action(detail=True, methods=["post"], url_path="unmark-paid")
+    def unmark_paid(self, request: Request, pk=None) -> Response:
+        bill = self.get_object()
+        bill = PurchaseBillService().unmark_paid(bill=bill, actor=request.user)
         return Response(PurchaseBillSerializer(bill).data)
 
 

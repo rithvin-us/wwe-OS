@@ -17,6 +17,7 @@ from purchase.backend.events.registry import (
     PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
     PURCHASE_BILL_PROCESSED,
+    PURCHASE_BILL_UNPAID,
 )
 
 
@@ -37,6 +38,7 @@ for _event in (
     PURCHASE_BILL_PROCESSED,
     PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
+    PURCHASE_BILL_UNPAID,
     PURCHASE_BILL_DELETED,
 ):
     subscribe(_event, _record_audit)

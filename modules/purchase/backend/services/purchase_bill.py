@@ -35,6 +35,7 @@ from purchase.backend.events.registry import (
     PURCHASE_BILL_NEEDS_ATTENTION,
     PURCHASE_BILL_PAID,
     PURCHASE_BILL_PROCESSED,
+    PURCHASE_BILL_UNPAID,
 )
 from purchase.backend.models import BillStatus, PaymentStatus, PurchaseBill, Vendor
 from purchase.backend.services.purchase_ocr import PurchaseOCRService
@@ -351,6 +352,19 @@ class PurchaseBillService(BaseService):
         bill.paid_at = timezone.now()
         bill.save(update_fields=["payment_status", "paid_at", "updated_at"])
         publish(PURCHASE_BILL_PAID, instance=bill, actor=actor)
+        return bill
+
+    def unmark_paid(self, *, bill: PurchaseBill, actor) -> PurchaseBill:
+        """Reverses mark_paid — corrects a mistaken payment confirmation.
+        The bill goes back to the unpaid worklist same as it would have if
+        it had never been marked paid."""
+        if bill.payment_status == PaymentStatus.UNPAID:
+            raise ConflictError("Bill is already unpaid.")
+
+        bill.payment_status = PaymentStatus.UNPAID
+        bill.paid_at = None
+        bill.save(update_fields=["payment_status", "paid_at", "updated_at"])
+        publish(PURCHASE_BILL_UNPAID, instance=bill, actor=actor)
         return bill
 
     def delete_bill(self, *, bill: PurchaseBill, actor) -> None:
