@@ -33,6 +33,26 @@ def safe_filename(filename: str) -> str:
     return cleaned[:120]
 
 
+_MAX_DEDUPE_ATTEMPTS = 100
+
+
+def _dedupe_key(key: str) -> str:
+    """A human-readable key (from platform/periods) must stay unique
+    against StoredFile.key's DB constraint. Append a numeric suffix before
+    the extension on collision — "-2", "-3", ... — rather than the opaque
+    UUID prefix the auto-generated key path uses, so the tree stays
+    readable. Bounded to avoid looping forever on a pathological input."""
+    if not StoredFile.objects.filter(key=key).exists():
+        return key
+    path = PurePosixPath(key)
+    stem, suffix = path.stem, path.suffix
+    for attempt in range(2, _MAX_DEDUPE_ATTEMPTS + 2):
+        candidate = str(path.with_name(f"{stem}-{attempt}{suffix}"))
+        if not StoredFile.objects.filter(key=candidate).exists():
+            return candidate
+    raise ConflictError(f"Could not find a unique storage key for '{key}'.")
+
+
 class StorageService(BaseService):
     def store(
         self,
@@ -47,6 +67,10 @@ class StorageService(BaseService):
         metadata: dict[str, Any] | None = None,
         max_size_bytes: int | None = None,
         allowed_types: set[str] | None = None,
+        key: str | None = None,
+        period_year: int | None = None,
+        period_month: int | None = None,
+        is_library: bool = False,
     ) -> StoredFile:
         tenant = tenant or context.current_tenant()
         if tenant is None:
@@ -67,12 +91,16 @@ class StorageService(BaseService):
 
         name = safe_filename(filename)
         digest = hashlib.sha256(data).hexdigest()
-        key = f"t/{tenant.id}/{module}/{timezone.now():%Y/%m}/{uuid.uuid4().hex[:12]}-{name}"
+        if key is None:
+            stamp = timezone.now().strftime("%Y/%m")
+            final_key = f"t/{tenant.id}/{module}/{stamp}/{uuid.uuid4().hex[:12]}-{name}"
+        else:
+            final_key = _dedupe_key(key)
 
-        get_provider().put(key, data, content_type)
+        get_provider().put(final_key, data, content_type)
         stored = StoredFile.objects.create(
             tenant=tenant,
-            key=key,
+            key=final_key,
             filename=name,
             content_type=content_type,
             size_bytes=len(data),
@@ -82,6 +110,9 @@ class StorageService(BaseService):
             metadata=metadata or {},
             uploaded_by=uploaded_by,
             scan_status=ScanStatus.SKIPPED,
+            period_year=period_year,
+            period_month=period_month,
+            is_library=is_library,
         )
         publish(Events.FILE_STORED, instance=stored, actor=uploaded_by)
         return stored

@@ -29,6 +29,13 @@ class StoredFile(TenantOwnedModel):
     module = models.CharField(max_length=50)
     category = models.CharField(max_length=50, blank=True, default="")
     metadata = models.JSONField(default=dict, blank=True)
+    # Set only by callers that opt into a human-readable key via
+    # platform/periods (see StorageService.store's key= kwarg) — every
+    # other caller leaves these at their defaults, unchanged from before
+    # platform/periods existed.
+    period_year = models.PositiveIntegerField(null=True, blank=True)
+    period_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_library = models.BooleanField(default=False)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

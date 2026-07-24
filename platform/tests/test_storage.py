@@ -231,3 +231,52 @@ def test_api_tenant_isolation(
     outsider = make_user(email="owner@globex.test", username="globex", tenant=other_tenant)
     grant(outsider, owner_role)
     assert auth_client(outsider).get("/api/v1/storage/files/").data["data"] == []
+
+
+# --------------------------------------------------------------------------- #
+# Human-readable keys (platform/periods integration, additive-only)
+# --------------------------------------------------------------------------- #
+
+
+def test_store_without_key_is_unchanged_from_today(tenant):
+    """Pin the exact opaque-key shape — the regression gate for every
+    existing caller (automation, reporting, ai) that never passes key=."""
+    stored = _store(tenant)
+    assert stored.key.startswith(f"t/{tenant.id}/purchase/")
+    assert stored.period_year is None
+    assert stored.period_month is None
+    assert stored.is_library is False
+
+
+def test_store_uses_given_key_verbatim(tenant):
+    stored = _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+    assert stored.key == "acme/2026/July/Invoices/invoice.pdf"
+
+
+def test_store_appends_numeric_suffix_on_key_collision(tenant):
+    first = _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+    second = _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+
+    assert first.key == "acme/2026/July/Invoices/invoice.pdf"
+    assert second.key == "acme/2026/July/Invoices/invoice-2.pdf"
+
+
+def test_store_appends_incrementing_suffix_past_two(tenant):
+    _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+    _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+    third = _store(tenant, key="acme/2026/July/Invoices/invoice.pdf")
+
+    assert third.key == "acme/2026/July/Invoices/invoice-3.pdf"
+
+
+def test_store_persists_period_and_library_fields(tenant):
+    rotating = _store(
+        tenant, key="acme/2026/July/Invoices/invoice.pdf", period_year=2026, period_month=7
+    )
+    library = _store(tenant, key="acme/Library/Insurance/policy.pdf", is_library=True)
+
+    assert rotating.period_year == 2026
+    assert rotating.period_month == 7
+    assert rotating.is_library is False
+    assert library.period_year is None
+    assert library.is_library is True
