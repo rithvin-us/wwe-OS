@@ -166,14 +166,9 @@ export default async function DashboardPage() {
             <SummaryRows rows={FINANCIAL_SUMMARY} />
           </SectionCard>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SectionCard title="Procurement & Bills" icon={ShoppingCart} href="/purchase">
-              <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
-            </SectionCard>
-            {/* <SectionCard title="Service Equipment & Tools" icon={Boxes} href="/inventory">
-              <SummaryRows rows={INVENTORY_SUMMARY} />
-            </SectionCard> */}
-          </div>
+          <SectionCard title="Procurement & Bills" icon={ShoppingCart} href="/purchase">
+            <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
+          </SectionCard>
 
           <SectionCard title="Recent activity" icon={Activity} href="/timeline">
             {activity.length === 0 ? (
