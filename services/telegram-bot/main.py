@@ -196,11 +196,20 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             logger.warning("pypdf text extraction failed, falling back to vision: %s", err)
 
     if not parts:
+        mime_type = "image/jpeg"
+        if file_bytes:
+            if file_bytes.startswith(b"%PDF"):
+                mime_type = "application/pdf"
+            elif file_bytes.startswith(b"\x89PNG"):
+                mime_type = "image/png"
+            elif file_bytes.startswith(b"RIFF") and b"WEBP" in file_bytes[:16]:
+                mime_type = "image/webp"
+
         parts = [
             {"text": f"{system_prompt}\n\nExtract data from this receipt/invoice."},
             {
                 "inline_data": {
-                    "mime_type": "image/jpeg",
+                    "mime_type": mime_type,
                     "data": base64_image,
                 }
             },

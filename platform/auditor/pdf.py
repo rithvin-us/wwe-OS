@@ -7,12 +7,18 @@ from __future__ import annotations
 
 import io
 
-from pypdf import PdfReader, PdfWriter
-
 
 def merge_pdfs(streams: list[bytes]) -> bytes:
     if not streams:
         raise ValueError("merge_pdfs requires at least one PDF.")
+
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader, PdfWriter
+        except ImportError as err:
+            raise RuntimeError("Neither pypdf nor PyPDF2 is installed for PDF merging.") from err
 
     writer = PdfWriter()
     for data in streams:
