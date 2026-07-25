@@ -368,7 +368,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         extracted = await _extract_bill_fields(base64_image, bytes(file_bytes))
         vendor_name = extracted.get("vendor") or extracted.get("seller_name") or "Unknown Vendor"
-        invoice_num = extracted.get("invoice_number") or "N/A"
         total_amt = str(extracted.get("grand_total") or extracted.get("total_rate") or "0.00")
         curr = (extracted.get("currency") or "INR").upper()
         confidence = float(extracted.get("confidence_score") or 0.85)
@@ -395,12 +394,20 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         res = await _post_to_platform(update_payload)
         bill_status = res.get("status", "processed")
 
+        p_date = (
+            extracted.get("invoice_date")
+            or extracted.get("purchase_date")
+            or str(datetime.date.today())
+        )
+        current_time = datetime.datetime.now().strftime("%I:%M %p")
+
         if bill_status == "processed" and conf_percent >= 80:
             await message.edit_text(
                 f"🎉 <b>Purchase successfully processed.</b>\n\n"
                 f"<b>Vendor:</b> {vendor_name}\n"
-                f"<b>Invoice #:</b> {invoice_num}\n"
                 f"<b>Amount:</b> {curr} {total_amt}\n"
+                f"<b>Date:</b> {p_date}\n"
+                f"<b>Time:</b> {current_time}\n"
                 f"<b>Confidence:</b> {conf_percent}%",
                 parse_mode=ParseMode.HTML,
             )
