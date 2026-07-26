@@ -77,6 +77,9 @@ export function InvoiceRowActions({
       {issued ? (
         <>
           <GenerateInvoiceDialog
+            // Remount when the invoice changes so the form always prefills
+            // from the current revision rather than the one it mounted with.
+            key={`${invoice.id}-${invoice.revision}`}
             customers={customers}
             invoice={invoice}
             trigger={

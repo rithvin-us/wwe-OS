@@ -388,20 +388,30 @@ class InvoiceService(BaseService):
         customer_slug = slugify(invoice.consignee_name)[:40]
         suffix = f"_{customer_slug}" if customer_slug else ""
 
-        invoice.file, invoice.local_path = self._file(
+        stored_workbook, workbook_path = self._file(
             invoice=invoice,
             actor=actor,
             data=workbook,
             filename=f"{stem}{suffix}.xlsx",
             content_type=renderer.CONTENT_TYPE,
         )
-        invoice.pdf_file, invoice.pdf_local_path = self._file(
-            invoice=invoice,
-            actor=actor,
-            data=document,
-            filename=f"{stem}{suffix}.pdf",
-            content_type=pdf.CONTENT_TYPE,
-        )
+        try:
+            stored_pdf, pdf_path = self._file(
+                invoice=invoice,
+                actor=actor,
+                data=document,
+                filename=f"{stem}{suffix}.pdf",
+                content_type=pdf.CONTENT_TYPE,
+            )
+        except Exception:
+            # The workbook is already on the provider but the transaction is
+            # about to roll back, which would leave its bytes behind with no
+            # register row pointing at them. Take them with us.
+            StorageService().delete(stored_workbook, actor=actor)
+            raise
+
+        invoice.file, invoice.local_path = stored_workbook, workbook_path
+        invoice.pdf_file, invoice.pdf_local_path = stored_pdf, pdf_path
         invoice.save(
             update_fields=["file", "local_path", "pdf_file", "pdf_local_path", "updated_at"]
         )

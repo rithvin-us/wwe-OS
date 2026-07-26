@@ -14,6 +14,7 @@ import openpyxl
 import pytest
 from finance.backend.models.invoice import TaxMode
 from finance.backend.services import computation, renderer
+from openpyxl.utils import get_column_letter
 
 
 def _render(*, lines, tax_mode=TaxMode.CGST_SGST, period_text="", gst_rate=Decimal("18")):
@@ -127,6 +128,29 @@ def test_growing_the_item_block_pushes_the_totals_block_down_intact():
     assert sheet.cell(row=renderer.ROW_ROUND_OFF + extra, column=8).value == "R/OFF"
     net_total = sheet.cell(row=renderer.ROW_NET_TOTAL + extra, column=renderer.COL_VALUE).value
     assert net_total == f"=SUM(K{renderer.ROW_GROSS + extra}:K{renderer.ROW_ROUND_OFF + extra})"
+
+
+def test_growing_the_item_block_keeps_every_merge_below_it():
+    """The merges under the item block are taken apart before the insert and
+    re-laid at their new rows. If one were dropped, the totals and footer
+    blocks would come apart."""
+    extra = 5
+    pristine = openpyxl.load_workbook(renderer.template_path()).active
+    below = {
+        area.bounds
+        for area in pristine.merged_cells.ranges
+        if area.bounds[1] > renderer.ROW_LAST_ITEM
+    }
+    assert below, "template should have merges under the item block"
+
+    sheet = _render(lines=_items(renderer.ITEM_CAPACITY + extra))
+    grown = {str(area) for area in sheet.merged_cells.ranges}
+    for min_col, min_row, max_col, max_row in below:
+        shifted = (
+            f"{get_column_letter(min_col)}{min_row + extra}:"
+            f"{get_column_letter(max_col)}{max_row + extra}"
+        )
+        assert shifted in grown, f"merge {shifted} was lost when the item block grew"
 
 
 def test_every_description_cell_is_merged_across_the_description_columns():

@@ -82,6 +82,124 @@ export default function InvoicesPage() {
     toast.success(`Invoice ${number} deleted successfully`);
   }
 
+  function generateInvoiceHtml(inv: InvoiceItem): string {
+    const subtotal = inv.amount / 1.18;
+    const gstAmount = inv.amount - subtotal;
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice ${inv.number} - Waterworks Engineering</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1f2937; max-width: 800px; margin: 0 auto; line-height: 1.5; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 20px; }
+    .company { font-size: 24px; font-weight: bold; color: #059669; }
+    .company-sub { font-size: 12px; color: #4b5563; margin-top: 4px; }
+    .inv-title { text-align: right; }
+    .inv-no { font-size: 22px; font-weight: bold; color: #111827; font-family: monospace; }
+    .details { display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 13px; background: #f9fafb; padding: 16px; rounded-lg: 8px; border: 1px solid #e5e7eb; }
+    .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    .table th { background: #f3f4f6; text-align: left; padding: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #d1d5db; color: #374151; }
+    .table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+    .totals { text-align: right; font-size: 14px; margin-top: 20px; }
+    .total-row { font-size: 20px; font-weight: bold; color: #059669; margin-top: 8px; font-family: monospace; }
+    .footer { margin-top: 60px; font-size: 11px; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+    .status-badge { display: inline-block; padding: 4px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; text-transform: uppercase; font-family: monospace; }
+    .paid { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="company">Waterworks Engineering Pvt Ltd</div>
+      <div class="company-sub">Industrial Water Treatment & Pumping Solutions<br>GSTIN: 33AAACW1234F1Z9</div>
+    </div>
+    <div class="inv-title">
+      <div class="inv-no">${inv.number}</div>
+      <div class="company-sub">Date: ${inv.date}</div>
+    </div>
+  </div>
+
+  <div class="details">
+    <div>
+      <strong>Billed To Customer:</strong><br>
+      <span style="font-size: 15px; font-weight: 600; color: #111827;">${inv.customer}</span><br>
+      GSTIN / PAN: 33AAAAA0000A1Z5
+    </div>
+    <div style="text-align: right;">
+      <strong>Payment Status:</strong><br>
+      <span class="status-badge ${inv.status}">${inv.status.toUpperCase()}</span>
+      ${inv.receivedDate ? `<br><small style="color: #4b5563;">Recd: ${inv.receivedDate} (${formatINR(inv.receivedAmount || inv.amount)})</small>` : ""}
+    </div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Description / Service</th>
+        <th style="text-align: center;">Qty</th>
+        <th style="text-align: right;">Rate (INR)</th>
+        <th style="text-align: right;">Amount (INR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Supply & Installation of High-Pressure Industrial Pumping Equipment</td>
+        <td style="text-align: center;">1</td>
+        <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+        <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+      </tr>
+      <tr>
+        <td>GST @ 18% (CGST 9% + SGST 9%)</td>
+        <td style="text-align: center;">-</td>
+        <td style="text-align: right;">18%</td>
+        <td style="text-align: right;">₹${gstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div>Subtotal: ₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
+    <div>GST (18%): ₹${gstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
+    <div class="total-row">Total Payable: ₹${inv.amount.toLocaleString("en-IN")}</div>
+  </div>
+
+  <div class="footer">
+    This is a computer-generated GST sales invoice issued by Waterworks Engineering Pvt Ltd.
+  </div>
+</body>
+</html>`;
+  }
+
+  function handleDownloadInvoice(inv: InvoiceItem) {
+    const htmlContent = generateInvoiceHtml(inv);
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${inv.number}_Invoice.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${inv.number} invoice file!`);
+  }
+
+  function handlePrintInvoice(inv: InvoiceItem) {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups in your browser to print invoices.");
+      return;
+    }
+    printWindow.document.write(generateInvoiceHtml(inv));
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  }
+
   function handleCreateInvoice(e: React.FormEvent) {
     e.preventDefault();
     if (!customer.trim() || !amount) {
@@ -412,11 +530,21 @@ export default function InvoicesPage() {
                           Mark Paid
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon-sm" title="Print Invoice">
-                        <Printer className="size-3.5 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Print Invoice"
+                        onClick={() => handlePrintInvoice(inv)}
+                      >
+                        <Printer className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" title="Download PDF">
-                        <Download className="size-3.5 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Download Invoice File"
+                        onClick={() => handleDownloadInvoice(inv)}
+                      >
+                        <Download className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </Button>
                       <Button
                         variant="ghost"
