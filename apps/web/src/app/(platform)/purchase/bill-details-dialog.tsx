@@ -378,7 +378,7 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card/40 p-4 overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+          <div className="rounded-xl border border-border bg-card/40 p-2 overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
             {bill.document_url ? (
               isImage ? (
                 <img
@@ -387,32 +387,11 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
                   className="max-h-96 w-auto object-contain rounded-lg border border-border shadow-sm"
                 />
               ) : (
-                <div className="text-center py-6 space-y-3">
-                  <div className="size-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
-                    <FileText className="size-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Document File Ready</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-                      Click below to view the document copy safely without automatic background
-                      downloading.
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-3 pt-1">
-                    <Button asChild>
-                      <a href={bill.document_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="size-4" />
-                        View / preview document
-                      </a>
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <a href={bill.document_url} download>
-                        <Download className="size-4" />
-                        Download copy
-                      </a>
-                    </Button>
-                  </div>
-                </div>
+                <iframe
+                  src={bill.document_url}
+                  title="Document Preview"
+                  className="w-full h-[400px] rounded-lg border border-border bg-background"
+                />
               )
             ) : (
               <div className="text-center py-8 text-xs text-muted-foreground">
