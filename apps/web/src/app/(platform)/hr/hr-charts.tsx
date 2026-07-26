@@ -23,7 +23,7 @@ export function HrCharts() {
           data={deptHeadcount}
           xAxisKey="department"
           height={180}
-          valueFormatter={(v) => `${v}%`}
+          valueSuffix="%"
           series={[{ key: "attendanceRate", name: "Attendance %", color: "var(--module-hr)" }]}
         />
       </ChartCard>
@@ -39,7 +39,7 @@ export function HrCharts() {
           data={overtimeByDept}
           xAxisKey="department"
           height={180}
-          valueFormatter={(v) => `${v} hrs`}
+          valueSuffix="hrs"
           series={[{ key: "hours", name: "OT Hours", color: "var(--chart-3)" }]}
         />
       </ChartCard>
@@ -60,7 +60,7 @@ export function HrCharts() {
           height={180}
           centerTitle="Total Gross"
           centerValue="₹7.07L"
-          valueFormatter={(v) => `₹${Number(v).toLocaleString("en-IN")}`}
+          valueFormat="currency"
         />
       </ChartCard>
     </div>

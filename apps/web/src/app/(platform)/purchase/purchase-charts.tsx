@@ -27,7 +27,7 @@ export function PurchaseCharts() {
           data={trend}
           xAxisKey="month"
           height={180}
-          valueFormatter={(v) => `₹${Number(v).toLocaleString("en-IN")}`}
+          valueFormat="currency"
           series={[{ key: "spend", name: "Spend", color: "var(--module-purchases)" }]}
         />
       </ChartCard>
@@ -44,7 +44,7 @@ export function PurchaseCharts() {
           height={180}
           centerTitle="Top Vendor"
           centerValue="₹8.2L"
-          valueFormatter={(v) => `₹${Number(v).toLocaleString("en-IN")}`}
+          valueFormat="currency"
         />
       </ChartCard>
     </div>

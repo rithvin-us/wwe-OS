@@ -40,7 +40,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
           data={financialTrend}
           xAxisKey="month"
           height={190}
-          valueFormatter={(v) => `₹${Number(v || 0).toLocaleString("en-IN")}`}
+          valueFormat="currency"
           series={[
             { key: "revenue", name: "Revenue", color: "var(--chart-2)" },
             { key: "expenses", name: "Expenses", color: "var(--chart-5)" },
@@ -62,7 +62,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
           data={spendTrend}
           xAxisKey="month"
           height={190}
-          valueFormatter={(v) => `₹${Number(v || 0).toLocaleString("en-IN")}`}
+          valueFormat="currency"
           series={[{ key: "spend", name: "Spend Amount", color: "var(--module-dashboard)" }]}
         />
       </ChartCard>
@@ -81,7 +81,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
           data={attendanceTrend}
           xAxisKey="month"
           height={190}
-          valueFormatter={(v) => `${v}%`}
+          valueSuffix="%"
           series={[{ key: "attendanceRate", name: "Attendance %", color: "var(--module-hr)" }]}
         />
       </ChartCard>
@@ -101,7 +101,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
           height={190}
           centerTitle="Total Categories"
           centerValue={`${categoryBreakdown.length}`}
-          valueFormatter={(v) => `${v}%`}
+          valueSuffix="%"
         />
       </ChartCard>
 

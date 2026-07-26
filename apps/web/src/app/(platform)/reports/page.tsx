@@ -85,7 +85,7 @@ export default async function ReportsPage() {
           data={usageData}
           xAxisKey="name"
           height={180}
-          valueFormatter={(v) => `${v} runs`}
+          valueSuffix="runs"
           series={[{ key: "runsCount", name: "Run Count", color: "var(--module-reports)" }]}
         />
       </ChartCard>

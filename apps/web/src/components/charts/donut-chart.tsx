@@ -22,6 +22,9 @@ export interface DonutChartProps {
   centerValue?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   valueFormatter?: (val: any) => string;
+  valuePrefix?: string;
+  valueSuffix?: string;
+  valueFormat?: "number" | "currency" | "percent";
 }
 
 export function DonutChartComponent({
@@ -29,8 +32,21 @@ export function DonutChartComponent({
   height = 200,
   centerTitle,
   centerValue,
-  valueFormatter = (v) => `${v}%`,
+  valueFormatter,
+  valuePrefix,
+  valueSuffix,
+  valueFormat,
 }: DonutChartProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formatVal = (val: any) => {
+    if (valueFormatter) return valueFormatter(val);
+    const num = Number(val || 0);
+    if (valueFormat === "currency") return `₹${num.toLocaleString("en-IN")}`;
+    if (valueFormat === "percent") return `${num}%`;
+    const str = isNaN(num) ? String(val ?? "") : num.toLocaleString("en-IN");
+    return `${valuePrefix || ""}${str}${valueSuffix ? ` ${valueSuffix}` : ""}`;
+  };
+
   return (
     <div style={{ height }} className="relative flex items-center justify-center w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -60,7 +76,7 @@ export function DonutChartComponent({
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any, name: any) => [valueFormatter(value), String(name)]}
+            formatter={(value: any, name: any) => [formatVal(value), String(name)]}
           />
         </RechartsPieChart>
       </ResponsiveContainer>

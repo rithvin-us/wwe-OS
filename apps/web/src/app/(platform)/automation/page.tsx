@@ -54,7 +54,7 @@ export default async function AutomationPage() {
           data={automationRuns}
           xAxisKey="day"
           height={170}
-          valueFormatter={(v) => `${v} runs`}
+          valueSuffix="runs"
           series={[
             { key: "successful", name: "Successful Runs", color: "var(--module-automation)" },
           ]}

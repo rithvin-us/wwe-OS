@@ -94,7 +94,7 @@ export default async function TimelinePage({
           data={mockData.other.MOCK_TIMELINE_ACTIVITY}
           xAxisKey="module"
           height={160}
-          valueFormatter={(v) => `${v} events`}
+          valueSuffix="events"
           series={[{ key: "events", name: "Event Count", color: "var(--module-dashboard)" }]}
         />
       </ChartCard>
