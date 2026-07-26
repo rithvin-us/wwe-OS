@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LayoutTemplate } from "@bop/icons";
+import { LayoutTemplate, Zap } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
+import { BarChartComponent, ChartCard } from "@/components/charts";
+import { mockData } from "@/lib/mock-data";
 import { getRules, getRuleSources, getRunHistory } from "@/lib/automation";
 import { getReportCatalog } from "@/lib/reports";
 import { listTags } from "@/lib/tags";
@@ -25,12 +27,14 @@ function formatDateTime(iso: string): string {
 
 export default async function AutomationPage() {
   const [rules, sources, history, reports, allTags] = await Promise.all([
-    getRules(),
-    getRuleSources(),
-    getRunHistory(),
-    getReportCatalog(),
-    listTags(),
+    getRules().catch(() => []),
+    getRuleSources().catch(() => []),
+    getRunHistory().catch(() => []),
+    getReportCatalog().catch(() => []),
+    listTags().catch(() => []),
   ]);
+
+  const automationRuns = mockData.other.MOCK_AUTOMATION_RUNS;
 
   return (
     <div className="space-y-8">
@@ -38,6 +42,24 @@ export default async function AutomationPage() {
         title="Automation"
         description="Collect tagged records on a schedule — a downloaded package, a generated report, or an auditor folder. Nothing is ever collected untagged, and nothing is ever emailed or uploaded automatically yet."
       />
+
+      {/* Rule Execution Health Chart */}
+      <ChartCard
+        title="Automation Execution Health"
+        description="Scheduled rule triggers and collection runs"
+        badge="Weekly Execution"
+        icon={Zap}
+      >
+        <BarChartComponent
+          data={automationRuns}
+          xAxisKey="day"
+          height={170}
+          valueFormatter={(v) => `${v} runs`}
+          series={[
+            { key: "successful", name: "Successful Runs", color: "var(--module-automation)" },
+          ]}
+        />
+      </ChartCard>
 
       <section className="space-y-3">
         <h2 className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">

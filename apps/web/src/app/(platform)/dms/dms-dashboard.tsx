@@ -1,4 +1,6 @@
-import { FileText, Sparkles, HardDrive, CheckCircle2, Archive } from "@bop/icons";
+import { Archive, CheckCircle2, FileText, HardDrive, PieChart, Sparkles } from "@bop/icons";
+
+import { ChartCard, DonutChartComponent } from "@/components/charts";
 import { formatFileSize, type DocumentRecord } from "@/lib/dms-constants";
 
 export function DMSDashboard({ documents }: { documents: DocumentRecord[] }) {
@@ -101,41 +103,25 @@ export function DMSDashboard({ documents }: { documents: DocumentRecord[] }) {
         </div>
       </div>
 
-      {/* Category Proportional Distribution Bar */}
-      {total > 0 && Object.keys(categoriesCount).length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-3 space-y-1.5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className="text-muted-foreground">Category Distribution</span>
-            <div className="flex flex-wrap items-center gap-3 text-[11px]">
-              {Object.entries(categoriesCount).map(([cat, count]) => {
-                const colorClass = categoryColors[cat] || "bg-slate-500 text-slate-600";
-                const dotColor = colorClass.split(" ")[0];
-                const textColor = colorClass.split(" ").slice(1).join(" ");
-                return (
-                  <span key={cat} className={`flex items-center gap-1.5 ${textColor}`}>
-                    <span className={`h-2 w-2 rounded-full ${dotColor}`} />
-                    {cat} ({count})
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary">
-            {Object.entries(categoriesCount).map(([cat, count]) => {
-              const pct = (count / total) * 100;
-              const colorClass = categoryColors[cat] || "bg-slate-500";
-              const bgColor = colorClass.split(" ")[0];
-              return (
-                <div
-                  key={cat}
-                  className={`${bgColor} transition-all duration-500`}
-                  style={{ width: `${pct}%` }}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Category Document Type Donut Chart */}
+      <ChartCard
+        title="Document Distribution by Category"
+        description="Share of stored documents across business modules"
+        badge="DMS Storage"
+        icon={PieChart}
+      >
+        <DonutChartComponent
+          data={Object.entries(categoriesCount).map(([name, value], idx) => ({
+            name,
+            value,
+            color: `var(--chart-${(idx % 5) + 1})`,
+          }))}
+          height={170}
+          centerTitle="Files Stored"
+          centerValue={`${total}`}
+          valueFormatter={(v) => `${v} files`}
+        />
+      </ChartCard>
     </div>
   );
 }

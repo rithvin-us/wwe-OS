@@ -23,6 +23,7 @@ import {
 } from "@/lib/hr";
 
 import { HrCharts } from "./hr-charts";
+import { HrComplianceGauges } from "./hr-compliance-gauges";
 import { HrNav } from "./hr-nav";
 import { PeriodSelector } from "./period-selector";
 import { StatTile } from "./stat-tile";
@@ -199,6 +200,9 @@ export default async function HrPage({
           />
         </ol>
       </section>
+
+      {/* Statutory Circular Progress Gauges */}
+      <HrComplianceGauges />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Statutory compliance — the thing an inspector asks about. */}

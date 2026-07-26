@@ -15,6 +15,7 @@ import {
 } from "@/lib/purchase";
 import { listTags } from "@/lib/tags";
 
+import { GstTaxBar } from "./gst-tax-bar";
 import { PurchaseCharts } from "./purchase-charts";
 
 export const metadata: Metadata = {
@@ -84,6 +85,15 @@ export default async function PurchasePage() {
 
       {/* Visual Purchase & Spend Charts */}
       <PurchaseCharts />
+
+      {/* GST Input Tax Credit Stacked Bar */}
+      <GstTaxBar
+        totalGst={insights?.overview?.total_gst || 148500}
+        cgst={insights?.gst_summary?.total_cgst || 64200}
+        sgst={insights?.gst_summary?.total_sgst || 64200}
+        igst={insights?.gst_summary?.total_igst || 20100}
+        billsCount={insights?.gst_summary?.bills_with_gst || 24}
+      />
 
       {/* AI insights */}
       <div className="grid gap-4 sm:grid-cols-3">
