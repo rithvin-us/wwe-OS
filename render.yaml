@@ -1,0 +1,50 @@
+# Render Infrastructure Blueprint for WWE OS
+# Documentation: https://render.com/docs/yaml
+
+services:
+  # 1. Platform Kernel API (Django Backend)
+  - type: web
+    name: wwe-os-backend
+    env: python
+    region: singapore
+    plan: free
+    rootDir: platform
+    buildCommand: pip install -r requirements.txt && python manage.py migrate --noinput
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*"
+      - key: DATABASE_URL
+        sync: false # Set to your Neon PostgreSQL connection string
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false # Set to your Vercel URL e.g. https://wwe-os.vercel.app
+      - key: INGESTION_SERVICE_TOKENS
+        generateValue: true
+
+  # 2. Telegram Ingestion Bot (Worker Service)
+  - type: worker
+    name: wwe-os-telegram-bot
+    env: python
+    region: singapore
+    plan: free
+    rootDir: services/telegram-bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PLATFORM_API_URL
+        fromService:
+          type: web
+          name: wwe-os-backend
+          property: host
