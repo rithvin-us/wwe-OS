@@ -20,6 +20,20 @@ export function GstTaxBar({ totalGst, cgst, sgst, igst, billsCount }: GstTaxBarP
     return `₹${val.toLocaleString("en-IN")}`;
   }
 
+  if (billsCount === 0 && totalGst === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-card p-6 flex flex-col items-center justify-center text-center space-y-1.5 shadow-xs">
+        <TrendingUp className="size-5 text-muted-foreground/60" />
+        <h4 className="text-sm font-semibold tracking-tight text-foreground">
+          GST Input Tax Credit (ITC) Breakdown
+        </h4>
+        <p className="text-xs text-muted-foreground">
+          No digitized bills or GST claims recorded yet.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-xs">
       <div className="flex items-center justify-between">

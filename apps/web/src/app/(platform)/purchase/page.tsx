@@ -81,15 +81,18 @@ export default async function PurchasePage() {
       </div>
 
       {/* Visual Purchase & Spend Charts */}
-      <PurchaseCharts />
+      <PurchaseCharts
+        vendorAnalysis={insights?.vendor_analysis || []}
+        trend={insights?.monthly_spend?.map((m) => ({ month: m.period, spend: m.amount })) || []}
+      />
 
       {/* GST Input Tax Credit Stacked Bar */}
       <GstTaxBar
-        totalGst={insights?.overview?.total_gst || 148500}
-        cgst={insights?.gst_summary?.total_cgst || 64200}
-        sgst={insights?.gst_summary?.total_sgst || 64200}
-        igst={insights?.gst_summary?.total_igst || 20100}
-        billsCount={insights?.gst_summary?.bills_with_gst || 24}
+        totalGst={insights?.overview?.total_gst || 0}
+        cgst={insights?.gst_summary?.total_cgst || 0}
+        sgst={insights?.gst_summary?.total_sgst || 0}
+        igst={insights?.gst_summary?.total_igst || 0}
+        billsCount={insights?.gst_summary?.bills_with_gst || 0}
       />
 
       {/* AI insights */}
