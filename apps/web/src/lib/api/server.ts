@@ -15,7 +15,12 @@ export const ACCESS_COOKIE = "access_token";
 export const REFRESH_COOKIE = "refresh_token";
 
 export function internalApiUrl(): string {
-  return process.env.INTERNAL_API_URL ?? "http://localhost:8000";
+  const url =
+    process.env.INTERNAL_API_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.API_URL ??
+    "http://localhost:8000";
+  return url.replace(/\/+$/, "");
 }
 
 export async function getAccessToken(): Promise<string | null> {
