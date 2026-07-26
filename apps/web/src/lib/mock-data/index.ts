@@ -7,10 +7,12 @@
  */
 
 import * as dashboardMock from "./dashboard-data";
+import * as hrMock from "./hr-data";
 
 export const USE_MOCK_DATA =
   process.env.NEXT_PUBLIC_USE_MOCK === "true" || process.env.NODE_ENV === "development";
 
 export const mockData = {
   dashboard: dashboardMock,
+  hr: hrMock,
 };

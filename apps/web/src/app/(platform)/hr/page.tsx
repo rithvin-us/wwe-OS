@@ -22,6 +22,7 @@ import {
   type WorkforceSummary,
 } from "@/lib/hr";
 
+import { HrCharts } from "./hr-charts";
 import { HrNav } from "./hr-nav";
 import { PeriodSelector } from "./period-selector";
 import { StatTile } from "./stat-tile";
@@ -139,6 +140,9 @@ export default async function HrPage({
           icon={AlertTriangle}
         />
       </section>
+
+      {/* HR Analytics & Workforce Charts */}
+      <HrCharts />
 
       {/* The monthly cycle, in the order it must be done. */}
       <section className="rounded-lg border border-border bg-card p-4 shadow-xs">
