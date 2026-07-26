@@ -88,7 +88,7 @@ export default async function TimelinePage({
         title="Activity Volume by Module"
         description="Recorded platform events across operations"
         badge="Platform Events"
-        icon={<History className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+        iconName="history"
       >
         <BarChartComponent
           data={mockData.other.MOCK_TIMELINE_ACTIVITY}

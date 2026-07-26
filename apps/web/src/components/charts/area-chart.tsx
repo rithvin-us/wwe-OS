@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "@bop/charts";
 
-export type ChartDataRecord = Record<string, string | number | boolean | null | undefined>;
+import { type ChartDataRecord } from "./types";
 
 export interface AreaChartSeries {
   key: string;
@@ -23,7 +23,8 @@ export interface AreaChartProps {
   xAxisKey: string;
   series: AreaChartSeries[];
   height?: number;
-  valueFormatter?: (val: string | number | boolean | null | undefined) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  valueFormatter?: (val: any) => string;
 }
 
 export function AreaChartComponent({
@@ -73,7 +74,8 @@ export function AreaChartComponent({
               fontSize: "12px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
-            formatter={(value: unknown, name: unknown) => [valueFormatter(value), String(name)]}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => [valueFormatter(value), String(name)]}
           />
           {series.map((s, idx) => {
             const color = s.color || `var(--chart-${(idx % 5) + 1})`;

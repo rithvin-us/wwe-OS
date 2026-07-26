@@ -20,7 +20,8 @@ export interface DonutChartProps {
   height?: number;
   centerTitle?: string;
   centerValue?: string;
-  valueFormatter?: (val: string | number | boolean | null | undefined) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  valueFormatter?: (val: any) => string;
 }
 
 export function DonutChartComponent({
@@ -58,7 +59,8 @@ export function DonutChartComponent({
               fontSize: "12px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
-            formatter={(value: unknown, name: unknown) => [valueFormatter(value), String(name)]}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => [valueFormatter(value), String(name)]}
           />
         </RechartsPieChart>
       </ResponsiveContainer>

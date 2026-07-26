@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LayoutTemplate, Zap } from "@bop/icons";
+import { LayoutTemplate } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
@@ -48,7 +48,7 @@ export default async function AutomationPage() {
         title="Automation Execution Health"
         description="Scheduled rule triggers and collection runs"
         badge="Weekly Execution"
-        icon={<Zap className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+        iconName="zap"
       >
         <BarChartComponent
           data={automationRuns}

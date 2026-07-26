@@ -1,14 +1,45 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, FileBarChart2 } from "@bop/icons";
+import {
+  AlertCircle,
+  BarChart3,
+  Clock,
+  FileBarChart2,
+  FileText,
+  History,
+  IndianRupee,
+  LineChart,
+  PieChart,
+  TrendingUp,
+  Users,
+  Wallet,
+  Workflow,
+  Zap,
+} from "@bop/icons";
 import { cn } from "@bop/ui/lib/utils";
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  "trending-up": TrendingUp,
+  "bar-chart": BarChart3,
+  "line-chart": LineChart,
+  "pie-chart": PieChart,
+  workflow: Workflow,
+  users: Users,
+  clock: Clock,
+  rupee: IndianRupee,
+  wallet: Wallet,
+  history: History,
+  zap: Zap,
+  "file-text": FileText,
+};
 
 export interface ChartCardProps {
   title: string;
   description?: string;
   badge?: string;
   icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
+  iconName?: keyof typeof ICON_MAP | string;
   loading?: boolean;
   error?: string | null;
   empty?: boolean;
@@ -24,6 +55,7 @@ export function ChartCard({
   description,
   badge,
   icon: Icon,
+  iconName,
   loading = false,
   error = null,
   empty = false,
@@ -33,6 +65,7 @@ export function ChartCard({
   className,
   headerClassName,
 }: ChartCardProps) {
+  const MappedIcon = iconName ? ICON_MAP[iconName] : null;
   const IconComp = typeof Icon === "function" ? Icon : null;
 
   return (
@@ -46,7 +79,9 @@ export function ChartCard({
       <div className={cn("flex items-start justify-between gap-3 pb-3", headerClassName)}>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            {React.isValidElement(Icon) ? (
+            {MappedIcon ? (
+              <MappedIcon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : React.isValidElement(Icon) ? (
               Icon
             ) : IconComp ? (
               <IconComp className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />

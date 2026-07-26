@@ -79,7 +79,7 @@ export default async function ReportsPage() {
         title="Report Generation Frequency"
         description="Most requested company workbooks"
         badge="Usage Analytics"
-        icon={<TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+        iconName="trending-up"
       >
         <BarChartComponent
           data={usageData}
