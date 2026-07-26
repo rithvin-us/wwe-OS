@@ -15,6 +15,8 @@ import {
 } from "@/lib/purchase";
 import { listTags } from "@/lib/tags";
 
+import { PurchaseCharts } from "./purchase-charts";
+
 export const metadata: Metadata = {
   title: "Purchases & AI Insights",
 };
@@ -79,6 +81,9 @@ export default async function PurchasePage() {
         <StatTile label="Unpaid Purchases" value={stats.unpaid} icon={Send} />
         <StatTile label="Total Digitized Spend" value={totalSpendFormatted} icon={TrendingUp} />
       </div>
+
+      {/* Visual Purchase & Spend Charts */}
+      <PurchaseCharts />
 
       {/* AI insights */}
       <div className="grid gap-4 sm:grid-cols-3">
