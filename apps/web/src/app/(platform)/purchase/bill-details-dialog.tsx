@@ -363,13 +363,17 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
             {bill.document_url && (
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" asChild>
-                  <a href={bill.document_url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={`/api/purchase/bills/${bill.id}/file`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <ExternalLink className="size-3.5" />
                     Open preview in new tab
                   </a>
                 </Button>
                 <Button size="sm" asChild>
-                  <a href={bill.document_url} download>
+                  <a href={`/api/purchase/bills/${bill.id}/file`} download>
                     <Download className="size-3.5" />
                     Download file
                   </a>
@@ -382,15 +386,15 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
             {bill.document_url ? (
               isImage ? (
                 <img
-                  src={bill.document_url}
+                  src={`/api/purchase/bills/${bill.id}/file`}
                   alt="Receipt Copy"
                   className="max-h-96 w-auto object-contain rounded-lg border border-border shadow-sm"
                 />
               ) : (
                 <iframe
-                  src={bill.document_url}
+                  src={`/api/purchase/bills/${bill.id}/file`}
                   title="Document Preview"
-                  className="w-full h-[400px] rounded-lg border border-border bg-background"
+                  className="w-full h-[450px] rounded-lg border border-border bg-background"
                 />
               )
             ) : (

@@ -8,8 +8,11 @@ Two distinct audiences, two distinct authentication schemes:
 
 from __future__ import annotations
 
+import mimetypes
+
 from django.db import IntegrityError
 from django.db.models import Count
+from django.http import Http404, HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
@@ -78,6 +81,7 @@ class PurchaseBillViewSet(BaseModelViewSet):
     required_permissions = {
         "list": "purchase.bill.read",
         "retrieve": "purchase.bill.read",
+        "file": "purchase.bill.read",
         "stats": "purchase.bill.read",
         "insights": "purchase.bill.read",
         "recent": "purchase.bill.read",
@@ -153,6 +157,45 @@ class PurchaseBillViewSet(BaseModelViewSet):
         bill = self.get_object()
         bill = PurchaseBillService().unmark_paid(bill=bill, actor=request.user)
         return Response(PurchaseBillSerializer(bill).data)
+
+    @action(detail=True, methods=["get"], url_path="file")
+    def file(self, request: Request, pk=None):
+        bill = self.get_object()
+
+        if bill.storage_key:
+            from storage.models import StoredFile
+            from storage.services import StorageService
+
+            stored = StoredFile.objects.filter(key=bill.storage_key).first()
+            if stored:
+                data = StorageService().open(stored)
+                content_type = stored.content_type
+                filename = stored.filename
+            else:
+                from storage.providers import get_provider
+
+                data = get_provider().get(bill.storage_key)
+                filename = bill.storage_key.rsplit("/", 1)[-1]
+                content_type = mimetypes.guess_type(filename)[0] or "application/pdf"
+
+            response = HttpResponse(data, content_type=content_type)
+            response["Content-Disposition"] = f'inline; filename="{filename}"'
+            return response
+
+        if bill.document_url and bill.document_url.startswith("http"):
+            import httpx
+
+            try:
+                res = httpx.get(bill.document_url, timeout=10.0)
+                if res.status_code == 200:
+                    ct = res.headers.get("content-type", "application/pdf").split(";")[0]
+                    response = HttpResponse(res.content, content_type=ct)
+                    response["Content-Disposition"] = 'inline; filename="purchase_document.pdf"'
+                    return response
+            except Exception:
+                pass
+
+        raise Http404("Document file not found.")
 
 
 class VendorViewSet(BaseModelViewSet):
