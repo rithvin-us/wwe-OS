@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, ExternalLink, FileSpreadsheet, FileText, Plus, Trash2 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
@@ -85,8 +85,15 @@ export function GenerateInvoiceDialog({
 }) {
   const editing = invoice != null;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get("action") === "new" || searchParams?.get("action") === "generate") {
+      setOpen(true);
+    }
+  }, [searchParams]);
 
   const initial = useMemo(
     () => ({

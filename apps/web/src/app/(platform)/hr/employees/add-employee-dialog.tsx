@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { UserPlus } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
@@ -18,7 +19,14 @@ import { Label } from "@bop/ui/components/label";
 import { createEmployee } from "../actions";
 
 export function AddEmployeeDialog() {
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get("action") === "new" || searchParams?.get("action") === "add") {
+      setOpen(true);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

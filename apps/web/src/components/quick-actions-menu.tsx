@@ -13,12 +13,17 @@ import {
 } from "@bop/ui/components/dropdown-menu";
 
 const QUICK_ACTIONS = [
-  { name: "Upload Bill", href: "/purchase", icon: Receipt, module: "Purchases" },
-  { name: "Generate Invoice", href: "/invoices", icon: FileText, module: "Invoices" },
-  { name: "Add Employee", href: "/hr/employees", icon: UserPlus, module: "HR" },
-  { name: "Generate Report", href: "/reports", icon: FileSpreadsheet, module: "Reports" },
-  { name: "Create Delivery Challan", href: "/timeline", icon: Truck, module: "Logistics" },
-  { name: "Run Automation", href: "/automation", icon: Zap, module: "Automation" },
+  { name: "Upload Bill", href: "/purchase?action=upload", icon: Receipt, module: "Purchases" },
+  { name: "Generate Invoice", href: "/invoices?action=new", icon: FileText, module: "Invoices" },
+  { name: "Add Employee", href: "/hr/employees?action=new", icon: UserPlus, module: "HR" },
+  {
+    name: "Generate Report",
+    href: "/reports?action=new",
+    icon: FileSpreadsheet,
+    module: "Reports",
+  },
+  { name: "Create Delivery Challan", href: "/assets?action=new", icon: Truck, module: "Logistics" },
+  { name: "Run Automation", href: "/automation?action=new", icon: Zap, module: "Automation" },
 ];
 
 export function QuickActionsMenu() {
