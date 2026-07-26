@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@bop/ui/components/page-header";
 import { FileText, Plus, Download, Printer, Trash2, FileBarChart2, CheckCircle2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
@@ -169,57 +170,65 @@ export default function InvoicesPage() {
         title="Invoices"
         description="In-house invoice generation, customer billing, and sales records."
         actions={
-          <Dialog open={openNewDialog} onOpenChange={setOpenNewDialog}>
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs"
-              >
-                <Plus className="size-4" /> Generate New Invoice
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleCreateInvoice}>
-                <DialogHeader>
-                  <DialogTitle>Generate New Invoice</DialogTitle>
-                  <DialogDescription>
-                    Create an in-house sales invoice for customer billing.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4 text-xs">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="customer">Customer / Client Name</Label>
-                    <Input
-                      id="customer"
-                      placeholder="e.g. Acme Corporation"
-                      value={customer}
-                      onChange={(e) => setCustomer(e.target.value)}
-                      required
-                    />
+          <div className="flex items-center gap-2">
+            <Button asChild size="sm" variant="outline" className="text-xs">
+              <Link href="/invoices/register">Bill register</Link>
+            </Button>
+            <Dialog open={openNewDialog} onOpenChange={setOpenNewDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs"
+                >
+                  <Plus className="size-4" /> Generate New Invoice
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleCreateInvoice}>
+                  <DialogHeader>
+                    <DialogTitle>Generate New Invoice</DialogTitle>
+                    <DialogDescription>
+                      Create an in-house sales invoice for customer billing.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4 text-xs">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="customer">Customer / Client Name</Label>
+                      <Input
+                        id="customer"
+                        placeholder="e.g. Acme Corporation"
+                        value={customer}
+                        onChange={(e) => setCustomer(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="amount">Invoice Amount (INR)</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        placeholder="e.g. 150000"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="amount">Invoice Amount (INR)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      placeholder="e.g. 150000"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpenNewDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                    Create Invoice
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setOpenNewDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Create Invoice
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
 

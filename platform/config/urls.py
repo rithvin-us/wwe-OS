@@ -35,6 +35,7 @@ api_v1 = [
     path("contracts/", include("contracts.backend.api.urls")),
     path("inventory/", include("inventory.backend.api.urls")),
     path("assets/", include("assets.backend.api.urls")),
+    path("finance/", include("finance.backend.api.urls")),
 ]
 
 urlpatterns = [

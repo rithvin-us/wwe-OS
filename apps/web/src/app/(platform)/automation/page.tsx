@@ -7,9 +7,11 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { BarChartComponent, ChartCard } from "@/components/charts";
 import { mockData } from "@/lib/mock-data";
 import { getRules, getRuleSources, getRunHistory } from "@/lib/automation";
+import { getBillingCustomers, getInvoices, getNextInvoiceNumber } from "@/lib/invoices";
 import { getReportCatalog } from "@/lib/reports";
 import { listTags } from "@/lib/tags";
 
+import { InvoiceGeneration } from "@/app/(platform)/automation/invoice-generation";
 import { RulesTable } from "@/app/(platform)/automation/rules-table";
 
 export const metadata: Metadata = {
@@ -26,13 +28,17 @@ function formatDateTime(iso: string): string {
 }
 
 export default async function AutomationPage() {
-  const [rules, sources, history, reports, allTags] = await Promise.all([
-    getRules().catch(() => []),
-    getRuleSources().catch(() => []),
-    getRunHistory().catch(() => []),
-    getReportCatalog().catch(() => []),
-    listTags().catch(() => []),
-  ]);
+  const [rules, sources, history, reports, allTags, customers, invoices, nextNumber] =
+    await Promise.all([
+      getRules().catch(() => []),
+      getRuleSources().catch(() => []),
+      getRunHistory().catch(() => []),
+      getReportCatalog().catch(() => []),
+      listTags().catch(() => []),
+      getBillingCustomers(),
+      getInvoices(),
+      getNextInvoiceNumber(),
+    ]);
 
   const automationRuns = mockData.other.MOCK_AUTOMATION_RUNS;
 
@@ -60,6 +66,17 @@ export default async function AutomationPage() {
           ]}
         />
       </ChartCard>
+
+      <section className="space-y-3">
+        <h2 className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+          Documents
+        </h2>
+        <InvoiceGeneration
+          customers={customers}
+          nextNumber={nextNumber}
+          recent={invoices.slice(0, 3)}
+        />
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">

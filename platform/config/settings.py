@@ -114,6 +114,7 @@ MODULE_APPS = [
     "contracts.backend",
     "inventory.backend",
     "assets.backend",
+    "finance.backend",
 ]
 
 INSTALLED_APPS = (
@@ -386,6 +387,30 @@ STORAGE_S3_ENDPOINT_URL = env_str("STORAGE_S3_ENDPOINT_URL", "") or ""
 STORAGE_S3_REGION = env_str("STORAGE_S3_REGION", "auto")
 STORAGE_S3_ACCESS_KEY_ID = env_str("STORAGE_S3_ACCESS_KEY_ID", "") or ""
 STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "") or ""
+
+# --------------------------------------------------------------------------- #
+# Invoicing (modules/finance)
+# --------------------------------------------------------------------------- #
+# The master invoice workbook. Everything generated is a fill of this file —
+# it is never edited in place. Overridable so the company can point at their
+# own copy without a code change.
+INVOICE_TEMPLATE_PATH = env_str(
+    "INVOICE_TEMPLATE_PATH",
+    str(REPO_ROOT / "modules" / "finance" / "backend" / "templates" / "invoice_template.xlsx"),
+)
+# Printed bill numbers are "<prefix>/<number>/<financial year>".
+INVOICE_NUMBER_PREFIX = env_str("INVOICE_NUMBER_PREFIX", "G/M")
+# How the sendable PDF is produced. "reportlab" draws it in pure Python and
+# works on every host; "libreoffice" converts the generated workbook itself
+# (exact, but needs the binary — see modules/finance/backend/services/pdf.py).
+INVOICE_PDF_ENGINE = env_str("INVOICE_PDF_ENGINE", "reportlab")
+INVOICE_LIBREOFFICE_BIN = env_str("INVOICE_LIBREOFFICE_BIN", "libreoffice")
+INVOICE_LIBREOFFICE_TIMEOUT = env_int("INVOICE_LIBREOFFICE_TIMEOUT", 120)
+# Generated invoices always land on local disk as well as in whatever backend
+# STORAGE_BACKEND names — the operator keeps their own books. Defaults to the
+# same root the local storage provider uses, so in local mode the platform
+# writes once and this is a no-op.
+INVOICE_LOCAL_ARCHIVE_PATH = env_str("INVOICE_LOCAL_ARCHIVE_PATH", "") or STORAGE_LOCAL_PATH
 
 # --------------------------------------------------------------------------- #
 # AI gateway (platform/ai)
