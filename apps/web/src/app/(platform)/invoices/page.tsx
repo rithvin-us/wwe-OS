@@ -82,92 +82,299 @@ export default function InvoicesPage() {
     toast.success(`Invoice ${number} deleted successfully`);
   }
 
+  /**
+   * Indian-style number formatting: 1,15,542.00 (lakhs grouping).
+   * Matches the company's legal format — do NOT change.
+   */
+  function formatIndian(val: number, decimals = 2): string {
+    const sign = val < 0 ? "-" : "";
+    const abs = Math.abs(val);
+    const [whole, frac] = abs.toFixed(decimals).split(".");
+    if (whole.length > 3) {
+      const tail = whole.slice(-3);
+      let head = whole.slice(0, -3);
+      const groups: string[] = [];
+      while (head.length > 2) {
+        groups.unshift(head.slice(-2));
+        head = head.slice(0, -2);
+      }
+      if (head) groups.unshift(head);
+      return `${sign}${groups.join(",")},${tail}.${frac}`;
+    }
+    return `${sign}${whole}.${frac}`;
+  }
+
+  /**
+   * Convert a number to Indian words for the invoice's "In Words" line.
+   * Example: 136340 → "Rupees One Lakh Thirty Six Thousand Three Hundred Forty Only"
+   */
+  function numberToWords(n: number): string {
+    if (n === 0) return "Rupees Zero Only";
+    const ones = [
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ];
+    const tens = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
+
+    function twoDigits(x: number): string {
+      if (x < 20) return ones[x] || "";
+      return (tens[Math.floor(x / 10)] + (x % 10 ? " " + ones[x % 10] : "")).trim();
+    }
+    function threeDigits(x: number): string {
+      if (x >= 100)
+        return ones[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " + twoDigits(x % 100) : "");
+      return twoDigits(x);
+    }
+
+    const rounded = Math.round(n);
+    const crore = Math.floor(rounded / 10000000);
+    const lakh = Math.floor((rounded % 10000000) / 100000);
+    const thousand = Math.floor((rounded % 100000) / 1000);
+    const remainder = rounded % 1000;
+    const parts: string[] = [];
+    if (crore) parts.push(threeDigits(crore) + " Crore");
+    if (lakh) parts.push(twoDigits(lakh) + " Lakh");
+    if (thousand) parts.push(twoDigits(thousand) + " Thousand");
+    if (remainder) parts.push(threeDigits(remainder));
+    return "Rupees " + parts.join(" ") + " Only";
+  }
+
+  /**
+   * Generates the official WATER WORKS ENGINEERING invoice HTML.
+   *
+   * ⚠️  RIGID LEGAL FORMAT — this layout matches the company's registered
+   *     invoice template (invoice_template.xlsx) and the reportlab PDF
+   *     renderer in finance/backend/services/pdf.py. Do NOT alter the
+   *     structure, field order, company details, bank details, terms of
+   *     sales, or declaration without legal review.
+   */
   function generateInvoiceHtml(inv: InvoiceItem): string {
     const subtotal = inv.amount / 1.18;
-    const gstAmount = inv.amount - subtotal;
+    const igst = inv.amount - subtotal;
+    const gross = subtotal + igst;
+    const roundOff = Math.round(inv.amount) - inv.amount;
+    const netTotal = Math.round(inv.amount);
+    const invoiceDate = inv.date;
+
     return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Invoice ${inv.number} - Waterworks Engineering</title>
+  <title>Invoice ${inv.number} - Water Works Engineering</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1f2937; max-width: 800px; margin: 0 auto; line-height: 1.5; }
-    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 20px; }
-    .company { font-size: 24px; font-weight: bold; color: #059669; }
-    .company-sub { font-size: 12px; color: #4b5563; margin-top: 4px; }
-    .inv-title { text-align: right; }
-    .inv-no { font-size: 22px; font-weight: bold; color: #111827; font-family: monospace; }
-    .details { display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 13px; background: #f9fafb; padding: 16px; rounded-lg: 8px; border: 1px solid #e5e7eb; }
-    .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-    .table th { background: #f3f4f6; text-align: left; padding: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #d1d5db; color: #374151; }
-    .table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
-    .totals { text-align: right; font-size: 14px; margin-top: 20px; }
-    .total-row { font-size: 20px; font-weight: bold; color: #059669; margin-top: 8px; font-family: monospace; }
-    .footer { margin-top: 60px; font-size: 11px; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 15px; }
-    .status-badge { display: inline-block; padding: 4px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; text-transform: uppercase; font-family: monospace; }
-    .paid { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
-    .pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    @media print { @page { size: A4; margin: 10mm; } body { margin: 0; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 11px; color: #000; padding: 20px; max-width: 210mm; margin: 0 auto; line-height: 1.35; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { padding: 3px 5px; vertical-align: top; }
+
+    /* --- Master wrapper: thick outer frame --- */
+    .invoice-frame { border: 1.5px solid #000; }
+    .invoice-frame > tbody > tr > td,
+    .invoice-frame > tbody > tr > th { border: 0.5px solid #000; }
+
+    /* Nested tables inside header/consignee/footer: no borders at all */
+    .invoice-frame table { border: none; }
+    .invoice-frame table td,
+    .invoice-frame table th { border: none; }
+
+    /* Header: seller + invoice meta */
+    .hdr-left { width: 55%; font-size: 10.5px; }
+    .hdr-right { width: 45%; font-size: 10.5px; }
+    .company-name { font-size: 13px; font-weight: bold; }
+    .hdr-right td { padding: 2px 5px; }
+    .hdr-left td { padding: 1px 5px; }
+
+    /* Consignee */
+    .consignee td { padding: 1px 5px; font-size: 10.5px; }
+
+    /* Items table */
+    .items th { text-align: center; font-weight: bold; font-size: 10px; padding: 4px 3px; background: transparent; }
+    .items td { font-size: 10.5px; padding: 3px 4px; }
+    .items .num { text-align: right; font-family: 'Courier New', monospace; }
+    .items .ctr { text-align: center; }
+
+    /* Totals */
+    .totals-label { text-align: right; font-weight: normal; }
+    .totals-value { text-align: right; font-family: 'Courier New', monospace; }
+    .net-total .totals-label, .net-total .totals-value { font-weight: bold; }
+
+    /* Words */
+    .words td { font-size: 10.5px; padding: 3px 5px; }
+    .words-heading { font-weight: bold; font-size: 10px; }
+
+    /* Footer: bank + terms + declaration + signatory */
+    .footer-block td { font-size: 9.5px; padding: 2px 5px; vertical-align: top; }
+    .footer-heading { font-weight: bold; font-size: 10px; }
+    .declaration { font-style: italic; font-size: 9px; }
+    .signatory { text-align: right; padding-top: 25px !important; font-size: 10px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <div class="company">Waterworks Engineering Pvt Ltd</div>
-      <div class="company-sub">Industrial Water Treatment & Pumping Solutions<br>GSTIN: 33AAACW1234F1Z9</div>
-    </div>
-    <div class="inv-title">
-      <div class="inv-no">${inv.number}</div>
-      <div class="company-sub">Date: ${inv.date}</div>
-    </div>
-  </div>
+  <table class="invoice-frame">
+    <!-- ============ HEADER ROW ============ -->
+    <tr>
+      <td class="hdr-left" colspan="6">
+        <table style="width:100%; border:none;">
+          <tr><td colspan="2" style="padding-bottom:2px;">
+            <span class="company-name">WATER WORKS ENGINEERING</span><br>
+            65 - B, Gurusamy Nagar,<br>
+            Thanneerpandal,<br>
+            Peelamedu, Coimbatore -641 004.<br>
+            Tamil Nadu, +91 98650 13678, 99427 44822 E Mail :<br>
+            waterworksengineeringcbe@gmail.com<br>
+            <b>GST : 33AABFW6153H1Z8</b>
+          </td></tr>
+        </table>
+      </td>
+      <td class="hdr-right" colspan="5">
+        <table style="width:100%; border:none;">
+          <tr><td><b>Invoice No.:</b> ${inv.number}</td></tr>
+          <tr><td><b>Date :</b> ${invoiceDate}</td></tr>
+          <tr><td>&nbsp;</td></tr>
+          <tr><td><b>Buyer Order No. &amp; Date :</b></td></tr>
+          <tr><td><b>Facility:</b> ${inv.customer}</td></tr>
+          <tr><td><b>Mode of Transport:</b></td></tr>
+        </table>
+      </td>
+    </tr>
 
-  <div class="details">
-    <div>
-      <strong>Billed To Customer:</strong><br>
-      <span style="font-size: 15px; font-weight: 600; color: #111827;">${inv.customer}</span><br>
-      GSTIN / PAN: 33AAAAA0000A1Z5
-    </div>
-    <div style="text-align: right;">
-      <strong>Payment Status:</strong><br>
-      <span class="status-badge ${inv.status}">${inv.status.toUpperCase()}</span>
-      ${inv.receivedDate ? `<br><small style="color: #4b5563;">Recd: ${inv.receivedDate} (${formatINR(inv.receivedAmount || inv.amount)})</small>` : ""}
-    </div>
-  </div>
+    <!-- ============ CONSIGNEE ============ -->
+    <tr>
+      <td colspan="11" style="padding: 3px 5px;">
+        <table class="consignee" style="width:100%; border:none;">
+          <tr><td><b>Consignee :</b></td></tr>
+          <tr><td>${inv.customer}</td></tr>
+          <tr><td>CBE</td></tr>
+          <tr><td><b>GSTIN :</b></td></tr>
+        </table>
+      </td>
+    </tr>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Description / Service</th>
-        <th style="text-align: center;">Qty</th>
-        <th style="text-align: right;">Rate (INR)</th>
-        <th style="text-align: right;">Amount (INR)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Supply & Installation of High-Pressure Industrial Pumping Equipment</td>
-        <td style="text-align: center;">1</td>
-        <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-        <td style="text-align: right;">₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-      </tr>
-      <tr>
-        <td>GST @ 18% (CGST 9% + SGST 9%)</td>
-        <td style="text-align: center;">-</td>
-        <td style="text-align: right;">18%</td>
-        <td style="text-align: right;">₹${gstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-      </tr>
-    </tbody>
+    <!-- ============ ITEMS HEADER ============ -->
+    <tr class="items">
+      <th style="width:6%;">S.No.</th>
+      <th style="width:32%;" colspan="2">Description</th>
+      <th style="width:10%;">HSN</th>
+      <th style="width:10%;">Quantity</th>
+      <th style="width:8%;">UOM</th>
+      <th style="width:14%;">Rate</th>
+      <th style="width:14%;" colspan="4">Value</th>
+    </tr>
+
+    <!-- Period line (month) -->
+    <tr class="items">
+      <td></td>
+      <td colspan="2"><b>For the month of ${inv.date}</b></td>
+      <td></td><td></td><td></td><td></td><td colspan="4"></td>
+    </tr>
+
+    <!-- Line item row -->
+    <tr class="items">
+      <td class="ctr">1</td>
+      <td colspan="2">AMC CHARGES</td>
+      <td></td>
+      <td class="num">1</td>
+      <td class="ctr">Nos</td>
+      <td class="num">${formatIndian(subtotal)}</td>
+      <td class="num" colspan="4">${formatIndian(subtotal)}</td>
+    </tr>
+
+    <!-- Blank spacer rows to match form height -->
+    <tr class="items"><td>&nbsp;</td><td colspan="2"></td><td></td><td></td><td></td><td></td><td colspan="4"></td></tr>
+    <tr class="items"><td></td><td colspan="2"></td><td></td><td></td><td></td><td></td><td colspan="4"></td></tr>
+    <tr class="items"><td></td><td colspan="2"></td><td></td><td></td><td></td><td></td><td colspan="4"></td></tr>
+
+    <!-- IGST -->
+    <tr class="items">
+      <td></td><td colspan="2"></td><td></td><td></td><td></td>
+      <td class="totals-label">IGST 18%</td>
+      <td class="totals-value" colspan="4">${formatIndian(igst)}</td>
+    </tr>
+
+    <!-- Total -->
+    <tr class="items">
+      <td></td><td colspan="2"></td><td></td><td></td><td></td>
+      <td class="totals-label">Total</td>
+      <td class="totals-value" colspan="4">${formatIndian(gross)}</td>
+    </tr>
+
+    <!-- R/OFF -->
+    <tr class="items">
+      <td></td><td colspan="2"></td><td></td><td></td><td></td>
+      <td class="totals-label">R/OFF</td>
+      <td class="totals-value" colspan="4">${formatIndian(roundOff)}</td>
+    </tr>
+
+    <!-- NET TOTAL -->
+    <tr class="items net-total">
+      <td></td><td colspan="2"></td><td></td><td></td><td></td>
+      <td class="totals-label"><b>NET TOTAL :</b></td>
+      <td class="totals-value" colspan="4"><b>${formatIndian(netTotal)}</b></td>
+    </tr>
+
+    <!-- ============ AMOUNT IN WORDS ============ -->
+    <tr class="words">
+      <td colspan="11"><span class="words-heading">( In Words )</span></td>
+    </tr>
+    <tr class="words">
+      <td colspan="11">${numberToWords(netTotal)}</td>
+    </tr>
+
+    <!-- ============ BANK + TERMS ============ -->
+    <tr>
+      <td colspan="6" class="footer-block" rowspan="2">
+        <span class="footer-heading">Bank Details for RTGS / NEFT :</span><br>
+        Bank Name HDFC<br>
+        Branch Kalapatti Main Road<br>
+        A/C No. 50200001403722<br>
+        IFSC Code HDFC0001068<br><br>
+        <span class="footer-heading">Declaration:</span><br>
+        <span class="declaration">We declare that this invoice shows the actual price of the goods described and<br>
+        that all particulars are true and correct.</span>
+      </td>
+      <td colspan="5" class="footer-block">
+        <span class="footer-heading">Terms of Sales:</span><br>
+        1. Seller is not responsible for any loss or damage of goods in transit<br>
+        2. Dispute if any, will be subject to sellers Court Jurisdiction at Coimbatore
+      </td>
+    </tr>
+    <tr>
+      <td colspan="5" class="footer-block signatory">
+        <b>For WATER WORKS ENGINEERING</b><br><br><br><br>
+        Authorized Signatory
+      </td>
+    </tr>
   </table>
-
-  <div class="totals">
-    <div>Subtotal: ₹${subtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
-    <div>GST (18%): ₹${gstAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
-    <div class="total-row">Total Payable: ₹${inv.amount.toLocaleString("en-IN")}</div>
-  </div>
-
-  <div class="footer">
-    This is a computer-generated GST sales invoice issued by Waterworks Engineering Pvt Ltd.
-  </div>
 </body>
 </html>`;
   }
