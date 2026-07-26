@@ -97,6 +97,7 @@ export function GenerateInvoiceDialog({
         invoice?.period_year && invoice?.period_month
           ? monthValue(invoice.period_year, invoice.period_month)
           : previousMonth(invoice?.invoice_date ?? today()),
+      gstRate: invoice?.gst_rate ?? "18",
       lines: invoice ? linesOf(invoice) : [emptyLine()],
     }),
     [invoice],
@@ -106,6 +107,7 @@ export function GenerateInvoiceDialog({
   const [customerId, setCustomerId] = useState(initial.customerId);
   const [invoiceDate, setInvoiceDate] = useState(initial.invoiceDate);
   const [billedMonth, setBilledMonth] = useState(initial.billedMonth);
+  const [gstRate, setGstRate] = useState<string>(initial.gstRate);
   const [lines, setLines] = useState<InvoiceLineDraft[]>(initial.lines);
 
   const [preview, setPreview] = useState<InvoicePreview | null>(null);
@@ -118,12 +120,6 @@ export function GenerateInvoiceDialog({
       if (documentUrl) URL.revokeObjectURL(documentUrl);
     };
   }, [documentUrl]);
-
-  const customer = useMemo(
-    () => customers.find((entry) => entry.id === customerId) ?? null,
-    [customers, customerId],
-  );
-  const taxMode = customer?.is_sez ? "igst" : "cgst_sgst";
 
   function clearDerived() {
     setPreview(null);
@@ -138,6 +134,7 @@ export function GenerateInvoiceDialog({
     setCustomerId(initial.customerId);
     setInvoiceDate(initial.invoiceDate);
     setBilledMonth(initial.billedMonth);
+    setGstRate(initial.gstRate);
     setLines(initial.lines);
     setGenerated(null);
     clearDerived();
@@ -161,6 +158,7 @@ export function GenerateInvoiceDialog({
       invoice_type: invoiceType,
       invoice_date: invoiceDate,
       customer_id: customerId,
+      gst_rate: gstRate,
       period_year: invoiceType === "amc" ? Number(year) : null,
       period_month: invoiceType === "amc" ? Number(month) : null,
       lines: lines
@@ -332,19 +330,22 @@ export function GenerateInvoiceDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label>Tax</Label>
-                <div className="flex h-9 items-center gap-2">
-                  <Badge variant={customer?.is_sez ? "warning" : "secondary"}>
-                    {TAX_MODE_LABELS[taxMode]}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {customer
-                      ? customer.is_sez
-                        ? "SEZ site — IGST applies."
-                        : "Not an SEZ site."
-                      : "Set on the customer record."}
-                  </span>
-                </div>
+                <Label htmlFor="gst-rate">GST rate</Label>
+                <select
+                  id="gst-rate"
+                  className={SELECT_CLASS}
+                  value={gstRate}
+                  onChange={(event) => {
+                    setGstRate(event.target.value);
+                    clearDerived();
+                  }}
+                >
+                  <option value="18">18% (9% CGST + 9% SGST)</option>
+                  <option value="16">16% (8% CGST + 8% SGST)</option>
+                  <option value="12">12% (6% CGST + 6% SGST)</option>
+                  <option value="5">5% (2.5% CGST + 2.5% SGST)</option>
+                  <option value="0">0% (Exempt / Nil Rated)</option>
+                </select>
               </div>
             </div>
 
@@ -528,8 +529,14 @@ function PreviewPanel({ preview }: { preview: InvoicePreview }) {
           <Figure label={`IGST ${preview.gst_rate}%`} value={preview.igst_amount} />
         ) : (
           <>
-            <Figure label="CGST" value={preview.cgst_amount} />
-            <Figure label="SGST" value={preview.sgst_amount} />
+            <Figure
+              label={`CGST ${(Number.parseFloat(preview.gst_rate || "18") / 2).toString()}%`}
+              value={preview.cgst_amount}
+            />
+            <Figure
+              label={`SGST ${(Number.parseFloat(preview.gst_rate || "18") / 2).toString()}%`}
+              value={preview.sgst_amount}
+            />
           </>
         )}
         <Figure label="Round off" value={preview.round_off} />
