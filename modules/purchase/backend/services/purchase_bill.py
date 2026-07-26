@@ -75,44 +75,47 @@ def _resolve_ingest_tenant() -> Tenant:
 
 def _fetch_and_store_document(
     document_url: str,
-    *,
     tenant: Tenant,
-    external_ref: str,
     business_date: datetime.date,
-    source_channel: str = "telegram",
+    source_channel: str,
+    external_ref: str,
+    document_base64: str = "",
 ) -> str:
-    """Downloads the source document's real bytes and stores them via the
-    platform Storage service. Returns the storage key, or "" if the document
-    couldn't be fetched or stored — a storage hiccup must not block
-    ingestion, since `document_url` is retained on the bill either way.
-
-    business_date decides which business period the bill files under — the
-    caller's purchase_date (already defaulted to today() if the ingest
-    channel didn't supply one), never upload time. If OCR later finds a
-    different invoice date, this file is not retroactively re-filed —
-    that's Rules Engine scope, not this one."""
-    if not document_url:
-        return ""
-
+    """Fetch source document (or decode document_base64) and store under STORAGE_LOCAL_PATH."""
     data: bytes | None = None
     content_type = "application/octet-stream"
-    for attempt in range(1, DOCUMENT_FETCH_RETRIES + 1):
+
+    if document_base64:
         try:
-            response = httpx.get(document_url, timeout=DOCUMENT_FETCH_TIMEOUT)
-            response.raise_for_status()
-            data = response.content
-            content_type = response.headers.get("content-type", content_type).split(";")[0].strip()
-            break
-        except httpx.HTTPError as exc:
-            logger.warning(
-                "Attempt %s/%s to fetch purchase document (%s) failed: %s",
-                attempt,
-                DOCUMENT_FETCH_RETRIES,
-                external_ref or "no ref",
-                exc,
-            )
-            if attempt < DOCUMENT_FETCH_RETRIES:
-                time.sleep(0.5 * attempt)
+            import base64
+
+            data = base64.b64decode(document_base64)
+            if data.startswith(b"%PDF"):
+                content_type = "application/pdf"
+            elif data.startswith(b"\x89PNG"):
+                content_type = "image/png"
+            elif data.startswith(b"\xff\xd8"):
+                content_type = "image/jpeg"
+        except Exception as exc:
+            logger.warning("Failed to decode base64 document bytes: %s", exc)
+
+    if not data and document_url:
+        for attempt in range(1, DOCUMENT_FETCH_RETRIES + 1):
+            try:
+                response = httpx.get(document_url, timeout=DOCUMENT_FETCH_TIMEOUT)
+                raw_ct = response.headers.get("content-type", content_type)
+                content_type = raw_ct.split(";")[0].strip()
+                break
+            except httpx.HTTPError as exc:
+                logger.warning(
+                    "Attempt %s/%s to fetch purchase document (%s) failed: %s",
+                    attempt,
+                    DOCUMENT_FETCH_RETRIES,
+                    external_ref or "no ref",
+                    exc,
+                )
+                if attempt < DOCUMENT_FETCH_RETRIES:
+                    time.sleep(0.5 * attempt)
 
     if not data:
         logger.warning(
@@ -232,6 +235,7 @@ class PurchaseBillService(BaseService):
                 external_ref=external_ref,
                 business_date=purchase_date,
                 source_channel=source_channel,
+                document_base64=data.get("document_base64", ""),
             )
 
         try:

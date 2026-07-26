@@ -345,6 +345,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "telegram_user_id": update.effective_user.id,
         "telegram_username": user_handle,
         "document_url": document_url,
+        "document_base64": base64_image,
         "external_ref": file_unique_id,
         "source_channel": "telegram",
         "caption": caption,

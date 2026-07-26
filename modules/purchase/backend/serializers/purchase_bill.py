@@ -32,6 +32,7 @@ class IngestBillSerializer(serializers.Serializer):
     )
     source_channel = serializers.CharField(max_length=50, required=False, default="telegram")
     caption = serializers.CharField(required=False, allow_blank=True, default="")
+    document_base64 = serializers.CharField(required=False, allow_blank=True, default="")
     tags = serializers.ListField(
         child=serializers.CharField(max_length=50), required=False, default=list
     )
