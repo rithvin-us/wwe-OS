@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PageHeader } from "@bop/ui/components/page-header";
-import { FileText, Plus, Download, Printer, Trash2, FileBarChart2 } from "@bop/icons";
+import { FileText, Plus, Download, Printer, Trash2, FileBarChart2, CheckCircle2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,
@@ -24,6 +24,9 @@ export interface InvoiceItem {
   date: string;
   amount: number;
   status: "paid" | "pending";
+  receivedDate?: string;
+  receivedAmount?: number;
+  paymentRef?: string;
 }
 
 const INITIAL_INVOICES: InvoiceItem[] = [
@@ -34,6 +37,9 @@ const INITIAL_INVOICES: InvoiceItem[] = [
     date: "Jul 24, 2026",
     amount: 245000,
     status: "paid",
+    receivedDate: "Jul 25, 2026",
+    receivedAmount: 245000,
+    paymentRef: "UTR-8912049",
   },
   {
     id: "inv-2",
@@ -58,12 +64,17 @@ function formatLakhs(val: number): string {
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceItem[]>(INITIAL_INVOICES);
-  const [open, setOpen] = useState(false);
+  const [openNewDialog, setOpenNewDialog] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
 
   // New Invoice Form state
   const [customer, setCustomer] = useState("");
   const [amount, setAmount] = useState("");
-  const [invoiceStatus, setInvoiceStatus] = useState<"paid" | "pending">("pending");
+
+  // Mark as Paid Dialog state
+  const [recvDate, setRecvDate] = useState("");
+  const [recvAmount, setRecvAmount] = useState("");
+  const [payRef, setPayRef] = useState("");
 
   function handleDelete(id: string, number: string) {
     setInvoices((prev) => prev.filter((inv) => inv.id !== id));
@@ -89,15 +100,56 @@ export default function InvoicesPage() {
         year: "numeric",
       }),
       amount: numAmount,
-      status: invoiceStatus,
+      status: "pending",
     };
 
     setInvoices((prev) => [newDoc, ...prev]);
     setCustomer("");
     setAmount("");
-    setInvoiceStatus("pending");
-    setOpen(false);
-    toast.success(`Invoice ${newNumber} created!`);
+    setOpenNewDialog(false);
+    toast.success(`Invoice ${newNumber} generated (Pending payment).`);
+  }
+
+  function openMarkPaid(inv: InvoiceItem) {
+    setSelectedInvoice(inv);
+    setRecvDate(new Date().toISOString().split("T")[0]);
+    setRecvAmount(inv.amount.toString());
+    setPayRef("");
+  }
+
+  function handleConfirmMarkPaid(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+    if (!recvDate || !recvAmount) {
+      toast.error("Please enter the receiving date and received amount.");
+      return;
+    }
+
+    const numRecv = parseFloat(recvAmount) || 0;
+    const formattedDate = new Date(recvDate).toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
+
+    setInvoices((prev) =>
+      prev.map((inv) =>
+        inv.id === selectedInvoice.id
+          ? {
+              ...inv,
+              status: "paid",
+              receivedDate: formattedDate,
+              receivedAmount: numRecv,
+              paymentRef: payRef.trim(),
+            }
+          : inv,
+      ),
+    );
+
+    toast.success(
+      `Invoice ${selectedInvoice.number} converted to PAID! Received ${formatINR(numRecv)} on ${formattedDate}.`,
+    );
+    setSelectedInvoice(null);
   }
 
   // Calculate totals
@@ -108,7 +160,7 @@ export default function InvoicesPage() {
   const pendingCount = invoices.filter((inv) => inv.status === "pending").length;
   const paidAmount = invoices
     .filter((inv) => inv.status === "paid")
-    .reduce((acc, inv) => acc + inv.amount, 0);
+    .reduce((acc, inv) => acc + (inv.receivedAmount || inv.amount), 0);
   const paidCount = invoices.filter((inv) => inv.status === "paid").length;
 
   return (
@@ -117,7 +169,7 @@ export default function InvoicesPage() {
         title="Invoices"
         description="In-house invoice generation, customer billing, and sales records."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={openNewDialog} onOpenChange={setOpenNewDialog}>
             <DialogTrigger asChild>
               <Button
                 size="sm"
@@ -156,21 +208,9 @@ export default function InvoicesPage() {
                       required
                     />
                   </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="status">Payment Status</Label>
-                    <select
-                      id="status"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      value={invoiceStatus}
-                      onChange={(e) => setInvoiceStatus(e.target.value as "paid" | "pending")}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="paid">Paid</option>
-                    </select>
-                  </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setOpenNewDialog(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -214,6 +254,64 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Mark as Paid Dialog Modal */}
+      <Dialog open={!!selectedInvoice} onOpenChange={(o) => !o && setSelectedInvoice(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleConfirmMarkPaid}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-5" /> Record Payment & Mark Paid
+              </DialogTitle>
+              <DialogDescription>
+                Convert status for{" "}
+                <strong className="text-foreground">{selectedInvoice?.number}</strong> (
+                {selectedInvoice?.customer}) to PAID.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4 text-xs">
+              <div className="grid gap-1.5">
+                <Label htmlFor="recvDate">Receiving Date</Label>
+                <Input
+                  id="recvDate"
+                  type="date"
+                  value={recvDate}
+                  onChange={(e) => setRecvDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="recvAmount">Received Amount (INR)</Label>
+                <Input
+                  id="recvAmount"
+                  type="number"
+                  placeholder="e.g. 135000"
+                  value={recvAmount}
+                  onChange={(e) => setRecvAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="payRef">Payment Reference / UTR / Cheque (Optional)</Label>
+                <Input
+                  id="payRef"
+                  placeholder="e.g. UTR-9823019 or HDFC Cheque #1029"
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSelectedInvoice(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Confirm & Mark Paid
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Generated Invoices Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
@@ -249,9 +347,9 @@ export default function InvoicesPage() {
                 <tr className="border-b border-border bg-muted/40 text-left font-mono uppercase text-[10px] text-muted-foreground">
                   <th className="p-3 font-semibold">Invoice #</th>
                   <th className="p-3 font-semibold">Customer / Client</th>
-                  <th className="p-3 font-semibold">Date</th>
+                  <th className="p-3 font-semibold">Invoice Date</th>
                   <th className="p-3 font-semibold text-right">Amount</th>
-                  <th className="p-3 font-semibold">Status</th>
+                  <th className="p-3 font-semibold">Status & Payment Info</th>
                   <th className="p-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -269,16 +367,42 @@ export default function InvoicesPage() {
                     </td>
                     <td className="p-3">
                       {inv.status === "paid" ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                          Paid
-                        </span>
+                        <div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                            Paid
+                          </span>
+                          {inv.receivedDate && (
+                            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                              Recd: {inv.receivedDate} (
+                              {formatINR(inv.receivedAmount || inv.amount)})
+                            </p>
+                          )}
+                        </div>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold border border-amber-500/20">
-                          Pending
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openMarkPaid(inv)}
+                          title="Click to convert status to Paid (requires receiving date & amount)"
+                          className="px-2.5 py-1 rounded text-[10px] font-mono uppercase bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all cursor-pointer flex items-center gap-1.5 group"
+                        >
+                          <span>Pending</span>
+                          <span className="text-[9px] underline font-medium text-amber-800 dark:text-amber-300 group-hover:text-amber-900">
+                            Record Payment
+                          </span>
+                        </button>
                       )}
                     </td>
                     <td className="p-3 text-right space-x-1">
+                      {inv.status === "pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[10px] border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => openMarkPaid(inv)}
+                        >
+                          Mark Paid
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon-sm" title="Print Invoice">
                         <Printer className="size-3.5 text-muted-foreground" />
                       </Button>
