@@ -17,7 +17,7 @@ export default async function DmsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Documents"
-        description="Store company files, let the AI assistant summarize them, and track company documents."
+        description="Outside incoming files, contracts, policies, and email attachments from waterworksengineering@gmail.com."
         actions={<UploadDialog />}
       />
 

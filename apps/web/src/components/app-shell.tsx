@@ -21,7 +21,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+      // Toggle search palette with Alt+Space or Ctrl/Cmd+K
+      const isCmdK = (event.key === "k" || event.key === "K") && (event.metaKey || event.ctrlKey);
+      const isAltSpace =
+        event.altKey && (event.code === "Space" || event.key === " " || event.key === "Spacebar");
+
+      if (isCmdK || isAltSpace) {
         event.preventDefault();
         setPaletteOpen((open) => !open);
       }

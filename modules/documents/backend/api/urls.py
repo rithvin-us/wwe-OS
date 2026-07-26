@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from django.urls import include, path
+from documents.backend.api.email_views import EmailIngestView
 from documents.backend.api.views import DocumentViewSet
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register("documents", DocumentViewSet, basename="document")
 
-urlpatterns = [path("", include(router.urls))]
+urlpatterns = [
+    path("documents/ingest/email/", EmailIngestView.as_view(), name="email-ingest"),
+    path("", include(router.urls)),
+]

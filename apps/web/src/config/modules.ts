@@ -55,10 +55,17 @@ export const APPS: PlatformApp[] = [
   //   availability: "ready",
   // },
   {
+    slug: "invoices",
+    name: "Invoices",
+    icon: FileText,
+    tagline: "In-house invoice generation and sales billing.",
+    availability: "ready",
+  },
+  {
     slug: "dms",
     name: "Documents",
     icon: FileText,
-    tagline: "Store, find, and share company documents.",
+    tagline: "Outside incoming files, contracts, and email attachments.",
     availability: "ready",
   },
   {
