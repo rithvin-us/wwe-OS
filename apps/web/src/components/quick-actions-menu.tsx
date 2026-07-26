@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileSpreadsheet, PlusCircle, Receipt, Truck, UserPlus, Zap } from "@bop/icons";
+import { FileSpreadsheet, FileText, PlusCircle, Receipt, Truck, UserPlus, Zap } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import {
 
 const QUICK_ACTIONS = [
   { name: "Upload Bill", href: "/purchase", icon: Receipt, module: "Purchases" },
+  { name: "Generate Invoice", href: "/invoices", icon: FileText, module: "Invoices" },
   { name: "Add Employee", href: "/hr/employees", icon: UserPlus, module: "HR" },
   { name: "Generate Report", href: "/reports", icon: FileSpreadsheet, module: "Reports" },
   { name: "Create Delivery Challan", href: "/timeline", icon: Truck, module: "Logistics" },

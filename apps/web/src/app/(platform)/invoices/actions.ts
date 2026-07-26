@@ -71,7 +71,7 @@ export async function correctInvoiceAction(
       method: "PATCH",
       body: JSON.stringify(input),
     });
-    revalidatePath("/invoices/register");
+    revalidatePath("/invoices");
     revalidatePath("/automation");
     return {
       ok: true,
@@ -92,7 +92,7 @@ export async function cancelInvoiceAction(
       method: "POST",
       body: JSON.stringify({ reason }),
     });
-    revalidatePath("/invoices/register");
+    revalidatePath("/invoices");
     revalidatePath("/automation");
     return { ok: true, message: `Invoice ${data.number} cancelled.`, data };
   } catch (error) {

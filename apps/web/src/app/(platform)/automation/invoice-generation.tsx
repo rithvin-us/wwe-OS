@@ -40,7 +40,7 @@ export function InvoiceGeneration({
         </div>
         <div className="flex shrink-0 gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href="/invoices/register">Bill register</Link>
+            <Link href="/invoices">Bill register</Link>
           </Button>
           <GenerateInvoiceDialog customers={customers} />
         </div>
