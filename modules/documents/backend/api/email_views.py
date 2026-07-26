@@ -36,6 +36,10 @@ class EmailIngestView(APIView):
 
         created_docs = []
 
+        tags = payload.get("tags") or payload.get("labels") or []
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+
         for idx, att in enumerate(attachments):
             filename = (
                 att.get("file_name") or att.get("filename") or f"incoming-attachment-{idx + 1}.pdf"
@@ -77,6 +81,7 @@ class EmailIngestView(APIView):
                             "type": "purchase_bill",
                             "id": str(bill.id),
                             "filename": filename,
+                            "tags": tags,
                         }
                     )
                     continue
@@ -101,7 +106,10 @@ class EmailIngestView(APIView):
                 data=data,
                 filename=filename,
                 content_type=content_type,
-                description=(f"Received via email from {sender}. Subject: {subject}\n{body[:300]}"),
+                description=(
+                    f"Received via email from {sender}. Subject: {subject}\n"
+                    f"Tags: {', '.join(tags)}\n{body[:300]}"
+                ),
                 summarize=True,
             )
             created_docs.append(
@@ -110,6 +118,7 @@ class EmailIngestView(APIView):
                     "id": str(doc.id),
                     "filename": filename,
                     "category": category,
+                    "tags": tags,
                 }
             )
 

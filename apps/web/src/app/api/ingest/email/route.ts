@@ -18,6 +18,7 @@ export async function POST(request: Request) {
         sender: body.sender || body.from || "waterworksengineering@gmail.com",
         subject: body.subject || "",
         body: body.body || body.text || "",
+        tags: body.tags || body.labels || [],
         attachments: body.attachments || [],
       }),
       cache: "no-store",
