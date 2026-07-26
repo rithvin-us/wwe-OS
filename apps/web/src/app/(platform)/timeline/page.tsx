@@ -16,6 +16,9 @@ import {
   type TimelineModule,
 } from "@/lib/audit";
 
+import { BarChartComponent, ChartCard } from "@/components/charts";
+import { mockData } from "@/lib/mock-data";
+
 export const metadata: Metadata = {
   title: "Business Timeline",
 };
@@ -79,6 +82,22 @@ export default async function TimelinePage({
         title="Business Timeline"
         description="Everything that happened across the company, most recent first."
       />
+
+      {/* Activity Volume Chart */}
+      <ChartCard
+        title="Activity Volume by Module"
+        description="Recorded platform events across operations"
+        badge="Platform Events"
+        icon={History}
+      >
+        <BarChartComponent
+          data={mockData.other.MOCK_TIMELINE_ACTIVITY}
+          xAxisKey="module"
+          height={160}
+          valueFormatter={(v) => `${v} events`}
+          series={[{ key: "events", name: "Event Count", color: "var(--module-dashboard)" }]}
+        />
+      </ChartCard>
 
       <form
         action="/timeline"

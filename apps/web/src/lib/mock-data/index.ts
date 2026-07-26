@@ -8,6 +8,7 @@
 
 import * as dashboardMock from "./dashboard-data";
 import * as hrMock from "./hr-data";
+import * as otherModulesMock from "./other-modules-data";
 import * as purchaseMock from "./purchase-data";
 
 export const USE_MOCK_DATA =
@@ -17,4 +18,5 @@ export const mockData = {
   dashboard: dashboardMock,
   hr: hrMock,
   purchase: purchaseMock,
+  other: otherModulesMock,
 };
