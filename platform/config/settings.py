@@ -169,9 +169,19 @@ _database_url = env_str("DATABASE_URL")
 if _database_url:
     DATABASES = {
         "default": dj_database_url.parse(
-            _database_url, conn_max_age=env_int("DB_CONN_MAX_AGE", 60)
+            _database_url,
+            conn_max_age=env_int("DB_CONN_MAX_AGE", 0),
+            conn_health_checks=True,
         ),
     }
+    # Neon Postgres & PgBouncer pooler compatibility
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    DATABASES["default"]["OPTIONS"] = DATABASES["default"].get("OPTIONS", {})
+    # Enable keepalive to prevent SSL SYSCALL connection aborts
+    DATABASES["default"]["OPTIONS"].setdefault("keepalives", 1)
+    DATABASES["default"]["OPTIONS"].setdefault("keepalives_idle", 30)
+    DATABASES["default"]["OPTIONS"].setdefault("keepalives_interval", 10)
+    DATABASES["default"]["OPTIONS"].setdefault("keepalives_count", 5)
 else:
     DATABASES = {
         "default": {
