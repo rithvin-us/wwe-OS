@@ -55,9 +55,9 @@ export function DonutChartComponent({
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={45}
-            outerRadius={68}
-            paddingAngle={4}
+            innerRadius={50}
+            outerRadius={72}
+            paddingAngle={3}
             dataKey="value"
           >
             {data.map((entry, index) => (
@@ -82,12 +82,14 @@ export function DonutChartComponent({
       </ResponsiveContainer>
 
       {(centerTitle || centerValue) && (
-        <div className="pointer-events-none absolute flex flex-col items-center justify-center text-center">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           {centerValue && (
-            <span className="font-mono text-base font-bold text-foreground">{centerValue}</span>
+            <span className="font-mono text-base font-bold text-foreground leading-none mb-0.5">
+              {centerValue}
+            </span>
           )}
           {centerTitle && (
-            <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
+            <span className="text-[9px] uppercase font-mono tracking-tight text-muted-foreground leading-tight max-w-[80px]">
               {centerTitle}
             </span>
           )}

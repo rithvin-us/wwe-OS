@@ -392,8 +392,9 @@ STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "") or ""
 # --------------------------------------------------------------------------- #
 GEMINI_API_KEY = env_str("GEMINI_API_KEY", "") or ""
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
-# "mock" answers deterministically without keys — safe default for dev/tests.
-AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", "mock")
+# Auto-switch to gemini-2.5-flash if GEMINI_API_KEY is configured
+_default_ai_model = "gemini-2.5-flash" if GEMINI_API_KEY else "mock"
+AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", _default_ai_model)
 AI_FALLBACK_MODEL = env_str("AI_FALLBACK_MODEL", "") or ""
 AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 30)
 AI_MAX_RETRIES = env_int("AI_MAX_RETRIES", 2)
