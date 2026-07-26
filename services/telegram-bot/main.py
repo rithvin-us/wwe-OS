@@ -159,6 +159,7 @@ def _run_paddle_ocr(file_bytes: bytes) -> str:
     """Run PaddleOCR on raw image bytes if paddleocr is installed."""
     try:
         import tempfile
+
         from paddleocr import PaddleOCR
 
         ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
@@ -187,63 +188,42 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set in environment.")
 
+    pdf_text = ""
+    paddle_text = ""
     system_prompt = (
-        "You are a strict data extraction OCR bot for business purchase bills and invoices in India. "
+        "You are a strict data extraction OCR bot for business purchase bills and invoices. "
         "Extract the following fields from the provided receipt/invoice image or document text:\n"
         "- seller_name: the name of the vendor or store.\n"
-        "- gst_number: the 15-character Indian GSTIN of the vendor (e.g. 33AAACG1234F1Z5) or empty string.\n"
+        "- gst_number: the 15-character Indian GSTIN of vendor (e.g. 33AAACG1234F1Z5) or ''.\n"
         "- invoice_number: bill/invoice number or empty string.\n"
         "- purchase_date: transaction/invoice date, formatted YYYY-MM-DD.\n"
-        "- total_rate: the final grand total as a plain number (e.g. 18144.00, no currency symbols or commas).\n"
+        "- total_rate: final grand total as a plain number (e.g. 18144.00, no symbols).\n"
         "- tax_amount: total GST tax amount (CGST + SGST or IGST) as a number (e.g. 2767.73).\n"
         "- cgst: Central GST amount as a number, or 0.00.\n"
         "- sgst: State GST amount as a number, or 0.00.\n"
         "- igst: Integrated GST amount as a number, or 0.00.\n"
-        "- currency: 3-letter ISO currency code (default INR).\n"
-        "- items: array of extracted line items [{item_name, quantity, unit_price, tax, total}].\n"
-        "Return ONLY a valid JSON object containing these keys."
     )
 
     paddle_text = ""
-    if file_bytes and not file_bytes.startswith(b"%PDF"):
+    if file_bytes:
         paddle_text = _run_paddle_ocr(file_bytes)
 
-    parts: list[dict] = []
-    if file_bytes and file_bytes.startswith(b"%PDF"):
-        try:
-            import io
-
-            import pypdf
-
-            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-            pdf_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
-            if pdf_text:
-                parts.append(
-                    {
-                        "text": (
-                            f"{system_prompt}\n\nExtract receipt/invoice data from "
-                            f"this document text:\n\n{pdf_text}"
-                        )
-                    }
-                )
-        except Exception as err:
-            logger.warning("pypdf text extraction failed, falling back to vision: %s", err)
-
-    if not parts:
+    if not base64_image:
+        parts = [{"text": f"{system_prompt}\n\n[Extracted Text]:\n{paddle_text}"}]
+    else:
         mime_type = "image/jpeg"
-        if file_bytes:
-            if file_bytes.startswith(b"%PDF"):
-                mime_type = "application/pdf"
-            elif file_bytes.startswith(b"\x89PNG"):
-                mime_type = "image/png"
-            elif file_bytes.startswith(b"RIFF") and b"WEBP" in file_bytes[:16]:
-                mime_type = "image/webp"
+        if base64_image.startswith("/9j/"):
+            mime_type = "image/jpeg"
+        elif base64_image.startswith("iVBORw0KGgo"):
+            mime_type = "image/png"
+        elif base64_image.startswith("UklGR"):
+            mime_type = "image/webp"
 
         prompt_text = f"{system_prompt}\n\nExtract data from this receipt/invoice."
         if paddle_text:
             prompt_text += (
                 f"\n\n[PaddleOCR Engine Pre-Extracted Text]:\n{paddle_text}\n\n"
-                "Use the above PaddleOCR text along with the receipt image for 100% accurate extraction."
+                "Use PaddleOCR text along with the receipt image for 100% accurate extraction."
             )
 
         parts = [
@@ -256,7 +236,13 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             },
         ]
 
-    models_to_try = [OCR_MODEL, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-flash-latest"]
+    models_to_try = [
+        OCR_MODEL,
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-flash-latest",
+    ]
     deduped_models: list[str] = []
     for m in models_to_try:
         if m and m not in deduped_models:
@@ -279,7 +265,10 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
                 if response.status_code == 200:
                     break
                 logger.warning(
-                    "Gemini model %s returned status %s: %s", m, response.status_code, response.text[:150]
+                    "Gemini model %s returned status %s: %s",
+                    m,
+                    response.status_code,
+                    response.text[:150],
                 )
                 if response.status_code in (429, 404, 503) and idx < len(deduped_models) - 1:
                     await asyncio.sleep(1.5)

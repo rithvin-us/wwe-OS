@@ -30,7 +30,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.engine import FaceError, build_engine
 from app.schemas import (
-    EmbedResponse, HealthResponse, VerifyResponse, VersionResponse,
+    EmbedResponse,
+    HealthResponse,
+    VerifyResponse,
+    VersionResponse,
 )
 
 logging.basicConfig(
@@ -138,8 +141,10 @@ async def enroll_face(file: UploadFile = File(..., description="Reference face p
     except FaceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
     return EmbedResponse(
-        embedding=embedding, dim=len(embedding),
-        engine=settings.FACE_ENGINE, model=settings.FACE_MODEL,
+        embedding=embedding,
+        dim=len(embedding),
+        engine=settings.FACE_ENGINE,
+        model=settings.FACE_MODEL,
     )
 
 
@@ -170,6 +175,9 @@ async def verify_face(
     except FaceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
     return VerifyResponse(
-        embedding=embedding, dim=len(embedding), liveness=liveness,
-        engine=settings.FACE_ENGINE, model=settings.FACE_MODEL,
+        embedding=embedding,
+        dim=len(embedding),
+        liveness=liveness,
+        engine=settings.FACE_ENGINE,
+        model=settings.FACE_MODEL,
     )

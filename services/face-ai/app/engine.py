@@ -72,9 +72,7 @@ class FaceEngine(ABC):
         """Embedding for one face. `enroll=True` applies strict quality gates."""
 
     @abstractmethod
-    def verify_liveness(
-        self, image_bytes: bytes, extra_frames: list[bytes] | None = None
-    ) -> bool:
+    def verify_liveness(self, image_bytes: bytes, extra_frames: list[bytes] | None = None) -> bool:
         """True if the capture looks like a live face, not a flat spoof.
 
         `extra_frames` is an optional burst captured ~400 ms apart, used for
@@ -102,9 +100,7 @@ class StubEngine(FaceEngine):
         digest = hashlib.sha256(image_bytes).digest()
         return [(b - 127.5) / 127.5 for b in digest[:16]]
 
-    def verify_liveness(
-        self, image_bytes: bytes, extra_frames: list[bytes] | None = None
-    ) -> bool:
+    def verify_liveness(self, image_bytes: bytes, extra_frames: list[bytes] | None = None) -> bool:
         if not image_bytes:
             raise NoFaceDetectedError()
         return True
@@ -168,7 +164,9 @@ class InsightFaceEngine(FaceEngine):
         self.ready = True
         logger.info(
             "Face models loaded: detector=%s recognition=%s (%.0f ms)",
-            self._detector, self._model_name, (time.perf_counter() - t0) * 1000,
+            self._detector,
+            self._model_name,
+            (time.perf_counter() - t0) * 1000,
         )
 
     def _load_detector(self) -> None:
@@ -186,7 +184,7 @@ class InsightFaceEngine(FaceEngine):
     def _load_recognizer(self) -> None:
         """Load ONLY the ArcFace recognition ONNX from the pack (MTCNN detects)."""
         from insightface.model_zoo import get_model  # lazy, heavy
-        from insightface.utils import storage        # lazy
+        from insightface.utils import storage  # lazy
 
         model_dir = storage.ensure_available("models", self._model_name)
         onnx_files = sorted(
@@ -194,24 +192,26 @@ class InsightFaceEngine(FaceEngine):
             key=lambda p: (0 if "w600k" in osp.basename(p) else 1, p),
         )
         rec = None
-        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if self._use_gpu else ["CPUExecutionProvider"]
+        providers = (
+            ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            if self._use_gpu
+            else ["CPUExecutionProvider"]
+        )
         for onnx_path in onnx_files:
             model = get_model(onnx_path, providers=providers)
             if model is not None and getattr(model, "taskname", None) == "recognition":
                 rec = model
                 break
         if rec is None:
-            raise RuntimeError(
-                f"InsightFace pack {self._model_name!r} has no recognition model"
-            )
+            raise RuntimeError(f"InsightFace pack {self._model_name!r} has no recognition model")
         ctx_id = 0 if self._use_gpu else -1
         rec.prepare(ctx_id=ctx_id)  # 0 = GPU 0, -1 = CPU
         self._rec = rec
 
     # -- preprocessing ----------------------------------------------------
     def _preprocess(self, image_bytes: bytes, normalize: bool = True):
-        import numpy as np                      # lazy
-        from PIL import Image, ImageOps         # lazy
+        import numpy as np  # lazy
+        from PIL import Image, ImageOps  # lazy
 
         try:
             img = Image.open(io.BytesIO(image_bytes))
@@ -243,8 +243,8 @@ class InsightFaceEngine(FaceEngine):
 
     # -- detection --------------------------------------------------------
     def _detect(self, rgb):
-        import numpy as np           # lazy
-        from PIL import Image        # lazy
+        import numpy as np  # lazy
+        from PIL import Image  # lazy
 
         pil = Image.fromarray(rgb)
         boxes, probs, points = self._mtcnn.detect(pil, landmarks=True)
@@ -286,8 +286,8 @@ class InsightFaceEngine(FaceEngine):
 
     # -- interface --------------------------------------------------------
     def embed(self, image_bytes: bytes, enroll: bool = False) -> list[float]:
-        import numpy as np                       # lazy
-        import cv2                                # lazy
+        import numpy as np  # lazy
+        import cv2  # lazy
         from insightface.utils import face_align  # lazy
 
         t0 = time.perf_counter()
@@ -309,7 +309,11 @@ class InsightFaceEngine(FaceEngine):
             face_px = int(min(float(box[2] - box[0]), float(box[3] - box[1])))
             logger.info(
                 "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms",
-                enroll, det_conf, face_px, vec.shape[0], (time.perf_counter() - t0) * 1000,
+                enroll,
+                det_conf,
+                face_px,
+                vec.shape[0],
+                (time.perf_counter() - t0) * 1000,
             )
             if enroll and self._save_debug:
                 self._save_debug_crop(aligned)
@@ -317,13 +321,13 @@ class InsightFaceEngine(FaceEngine):
         except FaceError as exc:
             logger.warning(
                 "embed rejected: %s (enroll=%s, %.0fms)",
-                exc.message, enroll, (time.perf_counter() - t0) * 1000,
+                exc.message,
+                enroll,
+                (time.perf_counter() - t0) * 1000,
             )
             raise
 
-    def verify_liveness(
-        self, image_bytes: bytes, extra_frames: list[bytes] | None = None
-    ) -> bool:
+    def verify_liveness(self, image_bytes: bytes, extra_frames: list[bytes] | None = None) -> bool:
         """Basic liveness: texture gate plus, with a frame burst, micro-movement
         and blink detection (mirrors backend app.services.face_recognition).
 
@@ -401,14 +405,12 @@ class InsightFaceEngine(FaceEngine):
         if not deltas:
             return False
         eye_delta = max(deltas)
-        blink = (
-            eye_delta >= self._liveness_eye_delta
-            and eye_delta >= 2.0 * global_motion
-        )
+        blink = eye_delta >= self._liveness_eye_delta and eye_delta >= 2.0 * global_motion
         if blink:
             logger.info(
                 "liveness: blink/micro-movement detected (eye_delta=%.4f motion=%.4f)",
-                eye_delta, global_motion,
+                eye_delta,
+                global_motion,
             )
         return blink
 

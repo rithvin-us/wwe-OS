@@ -1,13 +1,8 @@
 "use client";
 
-import { BarChart3, Clock, IndianRupee, Users } from "@bop/icons";
+import { Clock, IndianRupee, Users } from "@bop/icons";
 
-import {
-  AreaChartComponent,
-  BarChartComponent,
-  ChartCard,
-  DonutChartComponent,
-} from "@/components/charts";
+import { BarChartComponent, ChartCard, DonutChartComponent } from "@/components/charts";
 import { mockData } from "@/lib/mock-data";
 
 export function HrCharts() {

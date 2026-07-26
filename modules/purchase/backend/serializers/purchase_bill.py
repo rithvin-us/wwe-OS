@@ -31,7 +31,9 @@ class IngestBillSerializer(serializers.Serializer):
         help_text="Stable source-document id (e.g. Telegram file_unique_id) used for dedupe.",
     )
     gst_number = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
-    invoice_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    invoice_number = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, default=""
+    )
     tax_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
     )

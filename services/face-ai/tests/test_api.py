@@ -69,7 +69,8 @@ def test_auth_required_when_key_set():
 
 def test_empty_upload_rejected():
     r = client.post(
-        "/enroll-face", headers=AUTH,
+        "/enroll-face",
+        headers=AUTH,
         files={"file": ("empty.jpg", b"", "image/jpeg")},
     )
     assert r.status_code == 400

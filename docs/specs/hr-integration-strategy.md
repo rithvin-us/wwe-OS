@@ -18,9 +18,9 @@ as a concrete plan until the first step (discovery) actually happens. Where
 this document says "the HR app," read that as a placeholder for "whatever
 the real system turns out to look like."
 
-*(Discovery has since happened — see the migration spec. The legacy app is
+_(Discovery has since happened — see the migration spec. The legacy app is
 FastAPI + async SQLAlchemy + Alembic + Pydantic v2, with a Next.js frontend,
-an InsightFace microservice, and a Capacitor check-in app.)*
+an InsightFace microservice, and a Capacitor check-in app.)_
 
 ## Phase 0 — Discovery (do this before any code)
 

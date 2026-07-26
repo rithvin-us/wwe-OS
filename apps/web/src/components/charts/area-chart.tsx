@@ -17,11 +17,11 @@ export interface AreaChartSeries {
 }
 
 export interface AreaChartProps {
-  data: Record<string, any>[];
+  data: Record<string, unknown>[];
   xAxisKey: string;
   series: AreaChartSeries[];
   height?: number;
-  valueFormatter?: (val: any) => string;
+  valueFormatter?: (val: unknown) => string;
 }
 
 export function AreaChartComponent({
@@ -71,7 +71,7 @@ export function AreaChartComponent({
               fontSize: "12px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
-            formatter={(value: any, name: any) => [valueFormatter(value), name]}
+            formatter={(value: unknown, name: unknown) => [valueFormatter(value), String(name)]}
           />
           {series.map((s, idx) => {
             const color = s.color || `var(--chart-${(idx % 5) + 1})`;

@@ -1,15 +1,4 @@
-import {
-  CalendarCheck,
-  CalendarDays,
-  FileSpreadsheet,
-  IndianRupee,
-  Layers,
-  LayoutDashboard,
-  Receipt,
-  Settings,
-  Users,
-  type LucideIcon,
-} from "@bop/icons";
+import { Layers, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 

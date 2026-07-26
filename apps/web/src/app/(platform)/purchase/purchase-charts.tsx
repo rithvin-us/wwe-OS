@@ -1,6 +1,6 @@
 "use client";
 
-import { PieChart as PieChartIcon, TrendingUp, Wallet } from "@bop/icons";
+import { TrendingUp, Wallet } from "@bop/icons";
 
 import { BarChartComponent, ChartCard, DonutChartComponent } from "@/components/charts";
 import { mockData } from "@/lib/mock-data";

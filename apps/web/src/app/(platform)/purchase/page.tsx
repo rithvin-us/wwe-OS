@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@bop/ui/components/page-header";
 import { Send, Wallet, FileText, AlertTriangle, TrendingUp } from "@bop/icons";
 
-import { AutoRefreshPurchases } from "@/app/(platform)/purchase/auto-refresh";
-import { BillsTable } from "@/app/(platform)/purchase/bills-table";
 import { PurchasesViewToggle } from "@/app/(platform)/purchase/purchases-view-toggle";
-import { VendorsPanel } from "@/app/(platform)/purchase/vendors-panel";
 import { SectionCard } from "@/components/dashboard/section-card";
 import {
   getPurchaseBills,

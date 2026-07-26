@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, TrendingUp } from "@bop/icons";
+import { TrendingUp } from "@bop/icons";
 
 interface GstTaxBarProps {
   totalGst: number;

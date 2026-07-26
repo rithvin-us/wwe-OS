@@ -20,8 +20,8 @@ during migration and **has now been deleted** (§ 9), along with the
 `.gitignore` / `.prettierignore` / `eslint.config.mjs` entries that existed only
 to keep it out of the toolchain.
 
-Legacy identity: *AutoSync HR — HR Statutory Register Automation for Water
-Works Engineering*. ~10,800 lines of Python plus a Next.js frontend, a face
+Legacy identity: _AutoSync HR — HR Statutory Register Automation for Water
+Works Engineering_. ~10,800 lines of Python plus a Next.js frontend, a face
 recognition microservice, and a Capacitor mobile check-in app.
 
 ## 2. What the legacy app actually does
@@ -41,15 +41,15 @@ month so submitted figures cannot silently change.
 
 ## 3. Stack gap — and what it means for "do not rewrite verified code"
 
-| | Legacy | WWE OS |
-|---|---|---|
-| Framework | FastAPI | Django 6 + DRF |
-| ORM | async SQLAlchemy 2 | Django ORM |
-| Migrations | Alembic | Django migrations |
-| Schemas | Pydantic v2 | DRF serializers |
-| Identity | own `User` + PyJWT | `platform/auth` |
-| Tenancy | none | `TenantOwnedModel`, tenant-scoped |
-| PKs | autoincrement int | UUID |
+|            | Legacy             | WWE OS                            |
+| ---------- | ------------------ | --------------------------------- |
+| Framework  | FastAPI            | Django 6 + DRF                    |
+| ORM        | async SQLAlchemy 2 | Django ORM                        |
+| Migrations | Alembic            | Django migrations                 |
+| Schemas    | Pydantic v2        | DRF serializers                   |
+| Identity   | own `User` + PyJWT | `platform/auth`                   |
+| Tenancy    | none               | `TenantOwnedModel`, tenant-scoped |
+| PKs        | autoincrement int  | UUID                              |
 
 The frameworks do not overlap, so a literal copy of the whole backend is
 impossible. The rule still holds where it can, so every legacy file is
@@ -80,7 +80,7 @@ change, and the ported tests prove it):
 behaviour decisions get revisited):
 
 - `models/*.py` → Django models, identical fields and identical enum
-  *string values* (the strings appear in the statutory forms and on the
+  _string values_ (the strings appear in the statutory forms and on the
   wire, so they are part of the contract).
 - `repositories/*.py` → Django querysets.
 - `api/*.py` + `schemas/*.py` → DRF views + serializers, same URL shapes.
@@ -91,25 +91,25 @@ behaviour decisions get revisited):
 
 **Rebuilt** — the frontend only, because the Design Bible forbids a second
 sidebar, header, login or notification centre, and legacy screens ship their
-own. Screen *behaviour* is preserved exactly; the components are `@bop/ui`.
+own. Screen _behaviour_ is preserved exactly; the components are `@bop/ui`.
 
 ## 4. Legacy subsystem → platform capability
 
-| Legacy | Fate |
-|---|---|
-| `models/user.py`, `auth/jwt_handler.py`, `api/auth.py` | **Deleted.** `platform/auth` owns identity. `Employee` stays HR business data, separate from the platform `User` (`docs/modules/hr.md` § 3). |
-| `services/audit_service.py`, `models/audit_log.py` | **Deleted.** `platform/audit` → `AuditService.record()`. |
-| `services/archive_service.py` | **Deleted.** `platform/storage` `StorageService.store()` already computes SHA-256 and `verify_integrity()` already checks it; `periods.record_document()` tracks the month's manifest. |
-| `models/generation_log.py` | **Kept as an HR model**, referencing `StoredFile`. Storage has no notion of a *version per month*, nor of close/reopen with a mandatory reason — those are register-compliance facts. |
-| `models/period_lock.py`, `services/period_lock_service.py` | **Promoted to `platform/periods`.** Locking a business month is a capability, not HR meaning, and `periods` already owns period lifecycle (it has `PeriodStatus` but today no write-guard). HR calls `assert_open()`; the model is not recreated in the module. |
-| `excel/*` + `mappings/*` | **Stays in the module.** Indian statutory form layout is domain meaning. `platform/reporting`'s `ReportSpec` is generic columns-and-rows and cannot express a template-filled legal form — using it here would be forcing the wrong shape. Flat data views (wage register, attendance summary) *do* get registered as `reporting` reports. |
-| `services/policy_chat.py` | Re-pointed at `platform/ai` `AIService.generate()`. |
-| `api/assets.py`, `models/asset.py` | **Not migrated.** `modules/assets` already owns assets in WWE OS; duplicating it would break the one-owner rule. Employee↔asset linkage goes through that module. |
-| `api/expenses.py`, `models/expense.py` | **Migrated into HR.** The payroll engine reimburses approved claims after deductions (never into gross, so PF/ESI bases stay untouched) — the coupling is real, and `modules/finance` does not exist yet. |
-| `services/analytics.py` | Migrated into HR; feeds the Executive Dashboard through `apps/web/src/config/dashboard.ts`, not a module-local dashboard. |
-| `face-ai/` | → `services/face-ai/`. `services/` are deployment-isolated with their own Dockerfile and integrate over API — exactly what this already is. |
-| `attendance_app/` (Capacitor) | → the planned `apps/mobile` (Expo) workstream. The public check-in endpoint is preserved so the existing installed app keeps working during cutover. |
-| Search, tags, notifications, workflow | New wiring, not migration: `search/adapter.py`, `PermissionDef` registry, `register_report`, event subscribers — all following `modules/purchase/backend` exactly. |
+| Legacy                                                     | Fate                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `models/user.py`, `auth/jwt_handler.py`, `api/auth.py`     | **Deleted.** `platform/auth` owns identity. `Employee` stays HR business data, separate from the platform `User` (`docs/modules/hr.md` § 3).                                                                                                                                                                                               |
+| `services/audit_service.py`, `models/audit_log.py`         | **Deleted.** `platform/audit` → `AuditService.record()`.                                                                                                                                                                                                                                                                                   |
+| `services/archive_service.py`                              | **Deleted.** `platform/storage` `StorageService.store()` already computes SHA-256 and `verify_integrity()` already checks it; `periods.record_document()` tracks the month's manifest.                                                                                                                                                     |
+| `models/generation_log.py`                                 | **Kept as an HR model**, referencing `StoredFile`. Storage has no notion of a _version per month_, nor of close/reopen with a mandatory reason — those are register-compliance facts.                                                                                                                                                      |
+| `models/period_lock.py`, `services/period_lock_service.py` | **Promoted to `platform/periods`.** Locking a business month is a capability, not HR meaning, and `periods` already owns period lifecycle (it has `PeriodStatus` but today no write-guard). HR calls `assert_open()`; the model is not recreated in the module.                                                                            |
+| `excel/*` + `mappings/*`                                   | **Stays in the module.** Indian statutory form layout is domain meaning. `platform/reporting`'s `ReportSpec` is generic columns-and-rows and cannot express a template-filled legal form — using it here would be forcing the wrong shape. Flat data views (wage register, attendance summary) _do_ get registered as `reporting` reports. |
+| `services/policy_chat.py`                                  | Re-pointed at `platform/ai` `AIService.generate()`.                                                                                                                                                                                                                                                                                        |
+| `api/assets.py`, `models/asset.py`                         | **Not migrated.** `modules/assets` already owns assets in WWE OS; duplicating it would break the one-owner rule. Employee↔asset linkage goes through that module.                                                                                                                                                                          |
+| `api/expenses.py`, `models/expense.py`                     | **Migrated into HR.** The payroll engine reimburses approved claims after deductions (never into gross, so PF/ESI bases stay untouched) — the coupling is real, and `modules/finance` does not exist yet.                                                                                                                                  |
+| `services/analytics.py`                                    | Migrated into HR; feeds the Executive Dashboard through `apps/web/src/config/dashboard.ts`, not a module-local dashboard.                                                                                                                                                                                                                  |
+| `face-ai/`                                                 | → `services/face-ai/`. `services/` are deployment-isolated with their own Dockerfile and integrate over API — exactly what this already is.                                                                                                                                                                                                |
+| `attendance_app/` (Capacitor)                              | → the planned `apps/mobile` (Expo) workstream. The public check-in endpoint is preserved so the existing installed app keeps working during cutover.                                                                                                                                                                                       |
+| Search, tags, notifications, workflow                      | New wiring, not migration: `search/adapter.py`, `PermissionDef` registry, `register_report`, event subscribers — all following `modules/purchase/backend` exactly.                                                                                                                                                                         |
 
 ## 5. Data model translation rules
 
@@ -125,7 +125,7 @@ own. Screen *behaviour* is preserved exactly; the components are `@bop/ui`.
    generated statutory forms and in the attendance grid wire format.
 4. Employees are never hard-deleted — status flips to `Left` with
    `date_of_leaving`. The platform's soft-delete default already matches.
-5. Attendance keeps raw swipe times *and* the per-day computed
+5. Attendance keeps raw swipe times _and_ the per-day computed
    `worked_hours` / `ot_hours`, so monthly OT stays `SUM(daily OT)` and every
    figure remains re-derivable for audit.
 6. `Payroll.employee_name` / `employee_code` stay derived from the
@@ -163,7 +163,7 @@ next starts.
   unchanged, the arithmetic is the same arithmetic.
 - Generated workbooks are compared cell-by-cell against a legacy-generated
   workbook for the same input month, before the legacy app is deleted.
-- Register generation is checked to still: work on a template *copy*, write
+- Register generation is checked to still: work on a template _copy_, write
   an immutable versioned log with a SHA-256, and lock the period.
 
 ## 8. Preserve before deleting — non-code assets
@@ -171,14 +171,14 @@ next starts.
 **These live only inside `HR manager/` and are destroyed with it.** All have
 been copied out; none is regenerable from source code:
 
-| Asset | Copied to |
-|---|---|
+| Asset                                                                                                      | Copied to                                          |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | `backend/templates/HR details Template.xlsx` — the immutable company template every register is built from | `modules/hr/backend/services/registers/templates/` |
-| `backend/mappings/*.json` — the ten form cell maps | `modules/hr/backend/services/registers/mappings/` |
-| `backend/app/data/company_policies.md` — the policy-chat corpus | `modules/hr/backend/data/` |
-| `backend/archive/*.xlsx`, `backend/generated/*.xlsx` — previously generated workbooks | `.hr-migration-data/` (git-ignored) |
-| `backend/uploads/receipts/` — expense claim attachments | `.hr-migration-data/uploads/` |
-| `backend/hr_automation.db`, `backend/data/hr.db` | `.hr-migration-data/db/` |
+| `backend/mappings/*.json` — the ten form cell maps                                                         | `modules/hr/backend/services/registers/mappings/`  |
+| `backend/app/data/company_policies.md` — the policy-chat corpus                                            | `modules/hr/backend/data/`                         |
+| `backend/archive/*.xlsx`, `backend/generated/*.xlsx` — previously generated workbooks                      | `.hr-migration-data/` (git-ignored)                |
+| `backend/uploads/receipts/` — expense claim attachments                                                    | `.hr-migration-data/uploads/`                      |
+| `backend/hr_automation.db`, `backend/data/hr.db`                                                           | `.hr-migration-data/db/`                           |
 
 ### Correction: the database is not where the data is
 

@@ -46,7 +46,11 @@ def main() -> int:
     # 1. health
     try:
         h = client.get("/health").json()
-        check("GET /health", h.get("status") == "ok", f"engine={h.get('engine')} ready={h.get('ready')}")
+        check(
+            "GET /health",
+            h.get("status") == "ok",
+            f"engine={h.get('engine')} ready={h.get('ready')}",
+        )
     except Exception as exc:  # noqa: BLE001
         check("GET /health", False, str(exc))
         return _summary()
@@ -54,7 +58,11 @@ def main() -> int:
     # 2. version -> engine
     v = client.get("/version").json()
     engine = v.get("engine", "")
-    check("GET /version", bool(v.get("version")), f"v{v.get('version')} model={v.get('model')} dim={v.get('embedding_dim')}")
+    check(
+        "GET /version",
+        bool(v.get("version")),
+        f"v{v.get('version')} model={v.get('model')} dim={v.get('embedding_dim')}",
+    )
 
     # 3. auth gate (only when a key is configured server-side)
     if args.api_key:
@@ -67,18 +75,26 @@ def main() -> int:
 
     # 5. engine-specific embedding behaviour
     if engine == "stub":
-        r = client.post("/verify-face", headers=hdr, files={"file": ("s.jpg", b"pretend", "image/jpeg")})
+        r = client.post(
+            "/verify-face", headers=hdr, files={"file": ("s.jpg", b"pretend", "image/jpeg")}
+        )
         ok = r.status_code == 200 and len(r.json().get("embedding", [])) > 0
         check("POST /verify-face (stub) -> embedding", ok, f"got {r.status_code}")
     else:
         # No-face case: random bytes must be rejected 422 by a real detector.
-        r = client.post("/verify-face", headers=hdr, files={"file": ("n.jpg", b"\x00" * 2048, "image/jpeg")})
+        r = client.post(
+            "/verify-face", headers=hdr, files={"file": ("n.jpg", b"\x00" * 2048, "image/jpeg")}
+        )
         check("POST /verify-face no-face -> 422", r.status_code == 422, f"got {r.status_code}")
         if args.sample:
             with open(args.sample, "rb") as f:
                 img = f.read()
-            r = client.post("/enroll-face", headers=hdr, files={"file": ("me.jpg", img, "image/jpeg")})
-            ok = r.status_code == 200 and len(r.json().get("embedding", [])) == v.get("embedding_dim")
+            r = client.post(
+                "/enroll-face", headers=hdr, files={"file": ("me.jpg", img, "image/jpeg")}
+            )
+            ok = r.status_code == 200 and len(r.json().get("embedding", [])) == v.get(
+                "embedding_dim"
+            )
             check("POST /enroll-face (sample) -> embedding", ok, f"got {r.status_code}")
         else:
             print("  [SKIP] enrol with real face — pass --sample <face.jpg> to test recognition")

@@ -23,10 +23,7 @@ from purchase.backend.models import BillStatus, PurchaseBill
 class PurchaseInsightsService(BaseService):
     def get_insights(self, tenant=None) -> dict[str, Any]:
         """Aggregate purchase records into structured insights for Dashboard and Reports."""
-        if tenant:
-            qs = PurchaseBill.objects.filter(tenant=tenant)
-        else:
-            qs = PurchaseBill.objects.all()
+        qs = PurchaseBill.objects.filter(tenant=tenant) if tenant else PurchaseBill.objects.all()
 
         # 1. Total Metrics
         total_bills = qs.count()

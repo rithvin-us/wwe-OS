@@ -4,40 +4,40 @@
   "block_size": 35,
   "block_start_row": 1,
   "header_cells": {
-    "date": {"col": "H", "row_offset": 4},
-    "contractor_name": {"col": "E", "row_offset": 6}
+    "date": { "col": "H", "row_offset": 4 },
+    "contractor_name": { "col": "E", "row_offset": 6 }
   },
   "columns": {
-    "employee_name": {"col": "D", "row_offset": 9},
-    "father_husband_name": {"col": "D", "row_offset": 10},
-    "designation": {"col": "H", "row_offset": 10},
-    "date_of_joining": {"col": "D", "row_offset": 11},
-    "wage_period": {"col": "F", "row_offset": 11},
-    
-    "conv_allowance": {"col": "D", "row_offset": 18},
-    "med_allowance": {"col": "D", "row_offset": 19},
-    "others": {"col": "D", "row_offset": 20},
-    "others_arrear": {"col": "D", "row_offset": 21},
-    "others_deduction": {"col": "D", "row_offset": 24}
+    "employee_name": { "col": "D", "row_offset": 9 },
+    "father_husband_name": { "col": "D", "row_offset": 10 },
+    "designation": { "col": "H", "row_offset": 10 },
+    "date_of_joining": { "col": "D", "row_offset": 11 },
+    "wage_period": { "col": "F", "row_offset": 11 },
+
+    "conv_allowance": { "col": "D", "row_offset": 18 },
+    "med_allowance": { "col": "D", "row_offset": 19 },
+    "others": { "col": "D", "row_offset": 20 },
+    "others_arrear": { "col": "D", "row_offset": 21 },
+    "others_deduction": { "col": "D", "row_offset": 24 }
   },
   "formula_cells": {
-    "basic": {"col": "D", "row_offset": 15},
-    "da": {"col": "D", "row_offset": 16},
-    "hra": {"col": "D", "row_offset": 17},
-    "nfh_wages": {"col": "D", "row_offset": 22},
-    "overtime": {"col": "D", "row_offset": 23},
-    
-    "gross_wages": {"col": "D", "row_offset": 25},
-    
-    "pf_deduction": {"col": "G", "row_offset": 17},
-    "esi_deduction": {"col": "G", "row_offset": 18},
-    "prof_tax": {"col": "G", "row_offset": 19},
-    "advances": {"col": "G", "row_offset": 20},
-    "damages": {"col": "G", "row_offset": 21},
-    "lwf": {"col": "G", "row_offset": 22},
-    
-    "total_deduction": {"col": "G", "row_offset": 23},
-    "net_amount": {"col": "H", "row_offset": 25}
+    "basic": { "col": "D", "row_offset": 15 },
+    "da": { "col": "D", "row_offset": 16 },
+    "hra": { "col": "D", "row_offset": 17 },
+    "nfh_wages": { "col": "D", "row_offset": 22 },
+    "overtime": { "col": "D", "row_offset": 23 },
+
+    "gross_wages": { "col": "D", "row_offset": 25 },
+
+    "pf_deduction": { "col": "G", "row_offset": 17 },
+    "esi_deduction": { "col": "G", "row_offset": 18 },
+    "prof_tax": { "col": "G", "row_offset": 19 },
+    "advances": { "col": "G", "row_offset": 20 },
+    "damages": { "col": "G", "row_offset": 21 },
+    "lwf": { "col": "G", "row_offset": 22 },
+
+    "total_deduction": { "col": "G", "row_offset": 23 },
+    "net_amount": { "col": "H", "row_offset": 25 }
   },
   "notes": "Wage Slip repeats a block of 35 rows per employee. The Excel engine will need to copy the first block (rows 1-35) for each new employee beyond the existing ones in the template."
 }

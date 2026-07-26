@@ -8,6 +8,17 @@ import { PeriodSelector } from "../period-selector";
 
 import { AddDeductionDialog } from "./add-deduction-dialog";
 
+interface DeductionRecord {
+  id: string;
+  employee_name?: string;
+  employee_code?: string;
+  employee?: string;
+  type: string;
+  amount: number | string;
+  notes?: string;
+  created_at?: string;
+}
+
 export default async function DeductionsPage({
   searchParams,
 }: {
@@ -26,7 +37,10 @@ export default async function DeductionsPage({
     employee_name: e.employee_name,
   }));
 
-  const totalDeductions = deductions.reduce((acc, d) => acc + (parseFloat(d.amount) || 0), 0);
+  const totalDeductions = deductions.reduce(
+    (acc: number, d: DeductionRecord) => acc + (parseFloat(String(d.amount)) || 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -76,7 +90,7 @@ export default async function DeductionsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {deductions.map((d: any) => (
+                {deductions.map((d: DeductionRecord) => (
                   <tr key={d.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
                       {d.employee_name || d.employee_code || d.employee}

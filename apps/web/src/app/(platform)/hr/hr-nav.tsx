@@ -25,7 +25,7 @@ const HR_TABS = [
   { name: "Statutory Registers", href: "/hr/registers", icon: FileSpreadsheet },
 ];
 
-export function HrNav({ activeTab }: { activeTab?: string }) {
+export function HrNav({ activeTab: _activeTab }: { activeTab?: string }) {
   const pathname = usePathname();
 
   return (

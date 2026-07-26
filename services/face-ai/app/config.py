@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     # "insightface" = real MTCNN + ArcFace (needs requirements-ml.txt + ~1GB RAM).
     # "stub"        = deterministic pseudo-embedding, zero heavy deps (tests/CI).
     FACE_ENGINE: str = "insightface"
-    FACE_MODEL: str = "buffalo_s"          # buffalo_s (light) | buffalo_l (accurate)
-    FACE_DETECTOR: str = "mtcnn"           # only mtcnn implemented
-    FACE_USE_GPU: bool = False             # use cuda (requires torch+onnxruntime-gpu)
+    FACE_MODEL: str = "buffalo_s"  # buffalo_s (light) | buffalo_l (accurate)
+    FACE_DETECTOR: str = "mtcnn"  # only mtcnn implemented
+    FACE_USE_GPU: bool = False  # use cuda (requires torch+onnxruntime-gpu)
 
     # -- preprocessing / detection gates (mirror the backend defaults) ---
     MAX_FACE_IMAGE_SIZE: int = 1024

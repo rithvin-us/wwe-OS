@@ -19,15 +19,6 @@ export function DMSDashboard({ documents }: { documents: DocumentRecord[] }) {
     categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
   });
 
-  const categoryColors: Record<string, string> = {
-    Contract: "bg-indigo-500 text-indigo-600 dark:text-indigo-400",
-    Invoice: "bg-emerald-500 text-emerald-600 dark:text-emerald-400",
-    Policy: "bg-amber-500 text-amber-600 dark:text-amber-400",
-    Report: "bg-blue-500 text-blue-600 dark:text-blue-400",
-    Correspondence: "bg-purple-500 text-purple-600 dark:text-purple-400",
-    Other: "bg-slate-500 text-slate-600 dark:text-slate-400",
-  };
-
   return (
     <div className="space-y-4">
       {/* 4 Insight Stat Tiles */}

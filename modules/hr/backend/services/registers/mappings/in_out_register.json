@@ -14,13 +14,13 @@
     "3": "OT Hours "
   },
   "columns": {
-    "serial_no": {"col": "A", "row_offset": 0},
-    "employee_code": {"col": "B", "row_offset": 0},
-    "employee_name": {"col": "C", "row_offset": 0},
-    "label_in": {"col": "D", "row_offset": 0, "value": "In"},
-    "label_out": {"col": "D", "row_offset": 1, "value": "Out"},
-    "label_hours": {"col": "D", "row_offset": 2, "value": "Actual Hours worked, "},
-    "label_ot": {"col": "D", "row_offset": 3, "value": "OT Hours "}
+    "serial_no": { "col": "A", "row_offset": 0 },
+    "employee_code": { "col": "B", "row_offset": 0 },
+    "employee_name": { "col": "C", "row_offset": 0 },
+    "label_in": { "col": "D", "row_offset": 0, "value": "In" },
+    "label_out": { "col": "D", "row_offset": 1, "value": "Out" },
+    "label_hours": { "col": "D", "row_offset": 2, "value": "Actual Hours worked, " },
+    "label_ot": { "col": "D", "row_offset": 3, "value": "OT Hours " }
   },
   "daily_data": {
     "start_col": "E",

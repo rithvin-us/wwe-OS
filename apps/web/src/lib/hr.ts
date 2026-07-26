@@ -86,11 +86,14 @@ export async function getExpenseClaims(status?: ClaimStatus): Promise<ExpenseCla
 
 // ---------------------------------------------------------------- deductions
 
-export async function getDeductions(year?: number, month?: number): Promise<any[]> {
+export async function getDeductions(
+  year?: number,
+  month?: number,
+): Promise<Record<string, unknown>[]> {
   const query = new URLSearchParams({ page_size: "200" });
   if (year) query.set("year", year.toString());
   if (month) query.set("month", month.toString());
-  return djangoFetch<any[]>(`/api/v1/hr/deductions/?${query}`);
+  return djangoFetch<Record<string, unknown>[]>(`/api/v1/hr/deductions/?${query}`);
 }
 
 // ---------------------------------------------------------------- checklists

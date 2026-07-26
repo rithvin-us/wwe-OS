@@ -21,10 +21,10 @@ AI is unreachable.
 
 ## Engines (`FACE_ENGINE`)
 
-| value         | what it does                                              | deps |
-|---------------|-----------------------------------------------------------|------|
-| `insightface` | real MTCNN detection + ArcFace embeddings + liveness      | `requirements-ml.txt` (~1.5 GB) |
-| `stub`        | deterministic pseudo-embedding, same image → same vector  | none — CI/wiring only |
+| value         | what it does                                             | deps                            |
+| ------------- | -------------------------------------------------------- | ------------------------------- |
+| `insightface` | real MTCNN detection + ArcFace embeddings + liveness     | `requirements-ml.txt` (~1.5 GB) |
+| `stub`        | deterministic pseudo-embedding, same image → same vector | none — CI/wiring only           |
 
 `production` / `arcface` are accepted aliases for `insightface`.
 
@@ -52,15 +52,15 @@ and `docs/Cloudflare_Setup.md`.
 
 Everything is ENV-driven (`app/config.py`, template in `.env.example`). Key vars:
 
-| var | default | meaning |
-|-----|---------|---------|
-| `FACE_ENGINE` | `insightface` | engine selector |
-| `FACE_MODEL` | `buffalo_s` | ArcFace pack (`buffalo_s` light / `buffalo_l` accurate) |
-| `FACE_AI_API_KEY` | *(empty)* | shared secret required in `X-API-Key`; **set in production** |
-| `FACE_DETECT_MIN_CONFIDENCE` | `0.90` | MTCNN accept threshold |
-| `FACE_BLUR_MIN_VAR` | `40.0` | enrol blur gate (Laplacian variance) |
-| `FACE_SIDE_PROFILE_MAX_RATIO` | `0.35` | enrol frontal-face gate |
-| `FACE_ENABLE_LIVENESS` / `FACE_LIVENESS_MIN_VAR` | `true` / `60.0` | silent anti-spoof |
+| var                                              | default         | meaning                                                      |
+| ------------------------------------------------ | --------------- | ------------------------------------------------------------ |
+| `FACE_ENGINE`                                    | `insightface`   | engine selector                                              |
+| `FACE_MODEL`                                     | `buffalo_s`     | ArcFace pack (`buffalo_s` light / `buffalo_l` accurate)      |
+| `FACE_AI_API_KEY`                                | _(empty)_       | shared secret required in `X-API-Key`; **set in production** |
+| `FACE_DETECT_MIN_CONFIDENCE`                     | `0.90`          | MTCNN accept threshold                                       |
+| `FACE_BLUR_MIN_VAR`                              | `40.0`          | enrol blur gate (Laplacian variance)                         |
+| `FACE_SIDE_PROFILE_MAX_RATIO`                    | `0.35`          | enrol frontal-face gate                                      |
+| `FACE_ENABLE_LIVENESS` / `FACE_LIVENESS_MIN_VAR` | `true` / `60.0` | silent anti-spoof                                            |
 
 ## Model lifecycle
 
