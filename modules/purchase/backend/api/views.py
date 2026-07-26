@@ -126,7 +126,7 @@ class PurchaseBillViewSet(BaseModelViewSet):
     @action(detail=False, methods=["get"])
     def insights(self, request: Request) -> Response:
         """AI Insights: Spend analysis, vendor analysis, duplicate detection, GST summary."""
-        tenant = request.user.tenant if hasattr(request.user, "tenant") else None
+        tenant = getattr(request.user, "tenant", None) or getattr(request.user, "tenant_id", None)
         data = PurchaseInsightsService().get_insights(tenant)
         return Response(data)
 

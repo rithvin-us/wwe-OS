@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@bop/ui/components/page-header";
 import { Send, Wallet, FileText, AlertTriangle, TrendingUp } from "@bop/icons";
 
+import { AutoRefreshPurchases } from "@/app/(platform)/purchase/auto-refresh";
 import { BillsTable } from "@/app/(platform)/purchase/bills-table";
 import { VendorsPanel } from "@/app/(platform)/purchase/vendors-panel";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -102,8 +103,22 @@ export default async function PurchasePage() {
         <SectionCard title="GST & tax summary" icon={TrendingUp}>
           <p className="font-display text-xl font-semibold tabular-nums">{totalGstFormatted}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Claimable tax across {insights?.gst_summary?.bills_with_gst || 0} bills with GST IDs.
+            Claimable Input Tax Credit (ITC) across {insights?.gst_summary?.bills_with_gst || 0}{" "}
+            bills.
           </p>
+          {insights?.gst_summary ? (
+            <div className="flex items-center gap-1.5 pt-2 flex-wrap text-[11px] font-mono">
+              <span className="bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                CGST: {formatINR(insights.gst_summary.total_cgst || 0)}
+              </span>
+              <span className="bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                SGST: {formatINR(insights.gst_summary.total_sgst || 0)}
+              </span>
+              <span className="bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                IGST: {formatINR(insights.gst_summary.total_igst || 0)}
+              </span>
+            </div>
+          ) : null}
         </SectionCard>
 
         <SectionCard
@@ -121,9 +136,16 @@ export default async function PurchasePage() {
       </div>
 
       <section className="space-y-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Send aria-hidden className="size-3.5" />
-          Send a receipt photo or PDF to the Telegram bot to digitize it automatically.
+        <AutoRefreshPurchases intervalMs={3000} />
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Send aria-hidden className="size-3.5" />
+            Send a receipt photo or PDF to the Telegram bot to digitize it automatically.
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live Sync Active
+          </div>
         </div>
         <BillsTable bills={bills} allTags={allTags} />
       </section>

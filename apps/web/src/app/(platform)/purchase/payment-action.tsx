@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@bop/ui/components/popover";
 import { useState, useTransition } from "react";
@@ -7,24 +8,7 @@ import { toast } from "sonner";
 
 import { markBillPaidAction, unmarkBillPaidAction } from "@/app/(platform)/purchase/actions";
 
-/**
- * One confirm-before-you-flip-it interaction for a bill's payment status,
- * reused in the bills table row and the Bill Details Dialog. Marking or
- * unmarking paid is a real financial-state change — it used to fire
- * instantly on a single click with no way back; now both directions ask
- * first, matching the risk ceremony deleting a bill already had.
- */
-export function PaymentAction({
-  billId,
-  isPaid,
-  triggerSize = "sm",
-  triggerVariant = "ghost",
-}: {
-  billId: string;
-  isPaid: boolean;
-  triggerSize?: "sm" | "xs";
-  triggerVariant?: "ghost" | "outline";
-}) {
+export function PaymentAction({ billId, isPaid }: { billId: string; isPaid: boolean }) {
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
@@ -43,9 +27,20 @@ export function PaymentAction({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size={triggerSize} variant={triggerVariant}>
-          {isPaid ? "Unmark" : "Mark paid"}
-        </Button>
+        <button
+          type="button"
+          className="cursor-pointer transition-transform active:scale-95 focus:outline-none"
+        >
+          {isPaid ? (
+            <Badge variant="success" className="cursor-pointer hover:opacity-85">
+              Paid
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="cursor-pointer hover:opacity-85">
+              Unpaid
+            </Badge>
+          )}
+        </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 space-y-3">
         <p className="text-xs text-muted-foreground">
@@ -56,7 +51,7 @@ export function PaymentAction({
             Cancel
           </Button>
           <Button size="sm" onClick={run} disabled={pending}>
-            {isPaid ? "Unmark paid" : "Confirm"}
+            {isPaid ? "Unmark paid" : "Confirm Paid"}
           </Button>
         </div>
       </PopoverContent>

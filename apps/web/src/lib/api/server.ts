@@ -33,11 +33,20 @@ async function fetchEnvelope<T>(path: string, init: RequestInit = {}): Promise<A
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${internalApiUrl()}${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${internalApiUrl()}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch (err: unknown) {
+    throw new ApiRequestError(503, {
+      code: "service_unavailable",
+      message: "Unable to connect to platform API server. Please ensure the backend is running.",
+      details: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   if (response.status === 204) {
     return { success: true, data: null as T };

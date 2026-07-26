@@ -76,6 +76,9 @@ class PurchaseBill(TenantOwnedModel):
     )
     total_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cgst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    sgst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    igst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     payment_method = models.CharField(max_length=50, blank=True, default="")
     confidence_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     is_duplicate = models.BooleanField(default=False)
@@ -87,7 +90,7 @@ class PurchaseBill(TenantOwnedModel):
 
     # --- Payment tracking ---
     payment_status = models.CharField(
-        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.UNPAID, db_index=True
+        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PAID, db_index=True
     )
     paid_at = models.DateTimeField(null=True, blank=True)
 

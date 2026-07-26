@@ -21,9 +21,12 @@ from purchase.backend.models import BillStatus, PurchaseBill
 
 
 class PurchaseInsightsService(BaseService):
-    def get_insights(self, tenant) -> dict[str, Any]:
+    def get_insights(self, tenant=None) -> dict[str, Any]:
         """Aggregate purchase records into structured insights for Dashboard and Reports."""
-        qs = PurchaseBill.objects.filter(tenant=tenant)
+        if tenant:
+            qs = PurchaseBill.objects.filter(tenant=tenant)
+        else:
+            qs = PurchaseBill.objects.all()
 
         # 1. Total Metrics
         total_bills = qs.count()
@@ -47,21 +50,34 @@ class PurchaseInsightsService(BaseService):
             for item in reversed(list(monthly_spend_data))
         ]
 
-        # 3. Vendor Analysis (Top 5 vendors by spend)
-        top_vendors_data = (
-            qs.filter(vendor__isnull=False)
-            .values("vendor__id", "vendor__name")
+        # 3. Vendor Analysis (Only mostly occurring / recurring vendors)
+        recurring_vendors_qs = (
+            qs.filter(seller_name__gt="")
+            .exclude(seller_name="Pending OCR Processing")
+            .values("seller_name")
             .annotate(total=Sum("total_rate"), count=Count("id"))
-            .order_by("-total")[:5]
+            .filter(count__gte=2)
+            .order_by("-count", "-total")[:5]
         )
+
+        top_vendors_list = list(recurring_vendors_qs)
+        if not top_vendors_list:
+            top_vendors_list = list(
+                qs.filter(seller_name__gt="")
+                .exclude(seller_name="Pending OCR Processing")
+                .values("seller_name")
+                .annotate(total=Sum("total_rate"), count=Count("id"))
+                .order_by("-count", "-total")[:3]
+            )
+
         vendor_analysis = [
             {
-                "id": str(item["vendor__id"]),
-                "name": item["vendor__name"],
+                "id": item["seller_name"],
+                "name": item["seller_name"],
                 "total_spend": float(item["total"] or 0),
                 "bills_count": item["count"],
             }
-            for item in top_vendors_data
+            for item in top_vendors_list
         ]
 
         # 4. Duplicate Invoice Detection
@@ -88,9 +104,16 @@ class PurchaseInsightsService(BaseService):
 
         top_materials = sorted(items_map.values(), key=lambda x: x["total_spend"], reverse=True)[:5]
 
-        # 6. GST Summary
+        # 6. GST & Tax Summary (Input Tax Credit breakdown under Indian GST rules)
+        total_cgst = qs.aggregate(sum=Sum("cgst"))["sum"] or Decimal("0.00")
+        total_sgst = qs.aggregate(sum=Sum("sgst"))["sum"] or Decimal("0.00")
+        total_igst = qs.aggregate(sum=Sum("igst"))["sum"] or Decimal("0.00")
+
         gst_summary = {
             "total_gst_claimed": float(total_gst),
+            "total_cgst": float(total_cgst),
+            "total_sgst": float(total_sgst),
+            "total_igst": float(total_igst),
             "bills_with_gst": qs.exclude(gst_number="").count(),
         }
 

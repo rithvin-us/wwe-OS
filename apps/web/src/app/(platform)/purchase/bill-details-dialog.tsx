@@ -234,8 +234,8 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
           </div>
         )}
 
-        {/* Key Financial & Metadata Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-xl border border-border bg-card/60 p-4">
+        {/* Key Financial & Metadata Tiles - 2 Clean Rows */}
+        <div className="grid grid-cols-2 gap-y-4 gap-x-6 rounded-xl border border-border bg-card/60 p-4">
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               Grand Total
@@ -301,11 +301,7 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
               </div>
             </div>
 
-            <PaymentAction
-              billId={bill.id}
-              isPaid={bill.payment_status === "paid"}
-              triggerVariant="outline"
-            />
+            <PaymentAction billId={bill.id} isPaid={bill.payment_status === "paid"} />
           </div>
         </div>
 

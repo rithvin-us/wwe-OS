@@ -30,6 +30,21 @@ class IngestBillSerializer(serializers.Serializer):
         default="",
         help_text="Stable source-document id (e.g. Telegram file_unique_id) used for dedupe.",
     )
+    gst_number = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
+    invoice_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    tax_amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
+    )
+    cgst = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
+    )
+    sgst = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
+    )
+    igst = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, default=0.00
+    )
+    items = serializers.ListField(child=serializers.DictField(), required=False, default=list)
     source_channel = serializers.CharField(max_length=50, required=False, default="telegram")
     caption = serializers.CharField(required=False, allow_blank=True, default="")
     document_base64 = serializers.CharField(required=False, allow_blank=True, default="")

@@ -77,6 +77,9 @@ export interface PurchaseInsights {
   top_materials: Array<{ name: string; quantity: number; total_spend: number }>;
   gst_summary: {
     total_gst_claimed: number;
+    total_cgst?: number;
+    total_sgst?: number;
+    total_igst?: number;
     bills_with_gst: number;
   };
 }

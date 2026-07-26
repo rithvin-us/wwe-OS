@@ -155,24 +155,58 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     )
 
 
+def _run_paddle_ocr(file_bytes: bytes) -> str:
+    """Run PaddleOCR on raw image bytes if paddleocr is installed."""
+    try:
+        import tempfile
+        from paddleocr import PaddleOCR
+
+        ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp.write(file_bytes)
+            tmp_path = tmp.name
+
+        result = ocr.ocr(tmp_path, cls=True)
+        if not result or not result[0]:
+            return ""
+
+        extracted_lines = []
+        for line in result[0]:
+            if line and len(line) >= 2 and line[1]:
+                extracted_lines.append(str(line[1][0]))
+
+        return "\n".join(extracted_lines)
+    except Exception as exc:
+        logger.debug("PaddleOCR extraction skipped/unavailable: %s", exc)
+        return ""
+
+
 async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = None) -> dict:
-    """Call the OCR / AI model and return fields shaped for the platform's ingest contract."""
+    """Call hybrid PaddleOCR + Gemini Vision API model to extract structured bill fields."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set in environment.")
 
     system_prompt = (
-        "You are a strict data extraction OCR bot. Extract the following from the "
-        "provided receipt/invoice image or document text:\n"
+        "You are a strict data extraction OCR bot for business purchase bills and invoices in India. "
+        "Extract the following fields from the provided receipt/invoice image or document text:\n"
         "- seller_name: the name of the vendor or store.\n"
-        "- purchase_date: the transaction date, formatted YYYY-MM-DD.\n"
-        "- total_rate: the total final amount as a plain number, no currency symbol "
-        "or thousands separators (e.g. 150.00, not '$150.00' or '1,500').\n"
-        "currency: the 3-letter ISO 4217 currency code (e.g. INR, USD, EUR). Default to INR "
-        "if there is no explicit currency symbol or signal.\n"
-        "Return ONLY a valid JSON object with keys 'seller_name', 'purchase_date', "
-        "'total_rate', and 'currency'."
+        "- gst_number: the 15-character Indian GSTIN of the vendor (e.g. 33AAACG1234F1Z5) or empty string.\n"
+        "- invoice_number: bill/invoice number or empty string.\n"
+        "- purchase_date: transaction/invoice date, formatted YYYY-MM-DD.\n"
+        "- total_rate: the final grand total as a plain number (e.g. 18144.00, no currency symbols or commas).\n"
+        "- tax_amount: total GST tax amount (CGST + SGST or IGST) as a number (e.g. 2767.73).\n"
+        "- cgst: Central GST amount as a number, or 0.00.\n"
+        "- sgst: State GST amount as a number, or 0.00.\n"
+        "- igst: Integrated GST amount as a number, or 0.00.\n"
+        "- currency: 3-letter ISO currency code (default INR).\n"
+        "- items: array of extracted line items [{item_name, quantity, unit_price, tax, total}].\n"
+        "Return ONLY a valid JSON object containing these keys."
     )
+
+    paddle_text = ""
+    if file_bytes and not file_bytes.startswith(b"%PDF"):
+        paddle_text = _run_paddle_ocr(file_bytes)
 
     parts: list[dict] = []
     if file_bytes and file_bytes.startswith(b"%PDF"):
@@ -205,8 +239,15 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             elif file_bytes.startswith(b"RIFF") and b"WEBP" in file_bytes[:16]:
                 mime_type = "image/webp"
 
+        prompt_text = f"{system_prompt}\n\nExtract data from this receipt/invoice."
+        if paddle_text:
+            prompt_text += (
+                f"\n\n[PaddleOCR Engine Pre-Extracted Text]:\n{paddle_text}\n\n"
+                "Use the above PaddleOCR text along with the receipt image for 100% accurate extraction."
+            )
+
         parts = [
-            {"text": f"{system_prompt}\n\nExtract data from this receipt/invoice."},
+            {"text": prompt_text},
             {
                 "inline_data": {
                     "mime_type": mime_type,
@@ -215,25 +256,62 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             },
         ]
 
-    model_name = OCR_MODEL
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": parts}],
-        "generationConfig": {
-            "response_mime_type": "application/json",
-            "temperature": 0.1,
-            "maxOutputTokens": 2048,
-        },
-    }
+    models_to_try = [OCR_MODEL, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-flash-latest"]
+    deduped_models: list[str] = []
+    for m in models_to_try:
+        if m and m not in deduped_models:
+            deduped_models.append(m)
 
+    response = None
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, json=payload)
-        if response.status_code == 404 and model_name != "gemini-flash-latest":
-            logger.warning("Model %s returned 404, falling back to gemini-flash-latest", model_name)
-            fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
-            response = await client.post(fallback_url, json=payload)
-        if response.status_code != 200:
-            raise RuntimeError(f"Gemini API returned {response.status_code}: {response.text}")
+        for idx, m in enumerate(deduped_models):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": parts}],
+                "generationConfig": {
+                    "response_mime_type": "application/json",
+                    "temperature": 0.1,
+                    "maxOutputTokens": 2048,
+                },
+            }
+            try:
+                response = await client.post(url, json=payload)
+                if response.status_code == 200:
+                    break
+                logger.warning(
+                    "Gemini model %s returned status %s: %s", m, response.status_code, response.text[:150]
+                )
+                if response.status_code in (429, 404, 503) and idx < len(deduped_models) - 1:
+                    await asyncio.sleep(1.5)
+            except Exception as exc:
+                logger.warning("Gemini request to model %s failed: %s", m, exc)
+
+        if not response or response.status_code != 200:
+            # Fallback to local raw text parsing if Gemini quota is exceeded
+            raw_text = (pdf_text if "pdf_text" in locals() and pdf_text else "") or (
+                paddle_text if "paddle_text" in locals() and paddle_text else ""
+            )
+            if raw_text:
+                logger.info("Using local text fallback parser for document extraction.")
+                dates = re.findall(
+                    r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b", raw_text
+                )
+                totals = re.findall(
+                    r"(?:total|grand total|amount|net amount|rs|₹)\s*[:\.]?\s*(\d+[\.,]\d{2})",
+                    raw_text,
+                    re.IGNORECASE,
+                )
+                first_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+                return {
+                    "seller_name": first_lines[0][:150] if first_lines else "Scanned Document",
+                    "purchase_date": dates[0] if dates else str(datetime.date.today()),
+                    "total_rate": totals[0].replace(",", "") if totals else "0.00",
+                    "currency": "INR",
+                }
+            raise RuntimeError(
+                f"Gemini API returned status {response.status_code if response else 'unknown'}"
+            )
+
         data = response.json()
         candidates = data.get("candidates", [])
         if not candidates or "content" not in candidates[0]:
@@ -383,6 +461,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             ),
             "total_rate": total_amt,
             "currency": curr,
+            "gst_number": str(extracted.get("gst_number") or ""),
+            "invoice_number": str(extracted.get("invoice_number") or ""),
+            "tax_amount": float(extracted.get("tax_amount") or 0.0),
+            "cgst": float(extracted.get("cgst") or 0.0),
+            "sgst": float(extracted.get("sgst") or 0.0),
+            "igst": float(extracted.get("igst") or 0.0),
+            "items": extracted.get("items") if isinstance(extracted.get("items"), list) else [],
             "telegram_user_id": update.effective_user.id,
             "telegram_username": user_handle,
             "document_url": document_url,

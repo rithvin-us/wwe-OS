@@ -15,6 +15,7 @@ import { deleteBillAction, updateBillAction } from "@/app/(platform)/purchase/ac
 import { BillDetailsDialog } from "@/app/(platform)/purchase/bill-details-dialog";
 import { DeleteBillWarning } from "@/app/(platform)/purchase/delete-bill-warning";
 import { formatDate, formatMoney } from "@/app/(platform)/purchase/format";
+import { PaymentAction } from "@/app/(platform)/purchase/payment-action";
 import type { PurchaseBill } from "@/lib/purchase";
 import type { Tag } from "@/lib/tags";
 
@@ -45,7 +46,7 @@ function PaymentCell({ bill }: { bill: PurchaseBill }) {
   const isPaid = bill.payment_status === "paid";
   return (
     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-      {isPaid ? <Badge variant="success">Paid</Badge> : <Badge variant="secondary">Unpaid</Badge>}
+      <PaymentAction billId={bill.id} isPaid={isPaid} />
     </div>
   );
 }
@@ -86,7 +87,7 @@ function RowActions({
     <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
       <Button size="sm" variant="secondary" onClick={() => onViewDetails(bill)}>
         <Eye className="size-3.5 mr-1.5" />
-        View Details & Preview
+        Preview
       </Button>
 
       {bill.status === "needs_attention" && (

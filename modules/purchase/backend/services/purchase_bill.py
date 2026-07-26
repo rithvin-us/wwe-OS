@@ -238,6 +238,26 @@ class PurchaseBillService(BaseService):
                 document_base64=data.get("document_base64", ""),
             )
 
+        gst_number = (data.get("gst_number") or "").strip()
+        invoice_number = (data.get("invoice_number") or "").strip()
+        tax_amount = data.get("tax_amount") or 0.00
+        cgst = data.get("cgst") or 0.00
+        sgst = data.get("sgst") or 0.00
+        igst = data.get("igst") or 0.00
+        items = data.get("items") or []
+
+        # Auto-match or create Vendor in Vendor directory to populate vendor analytics
+        vendor = None
+        if seller_name and seller_name != "Pending OCR Processing":
+            vendor, _ = Vendor.objects.get_or_create(
+                tenant=tenant,
+                name=seller_name,
+                defaults={"gst_number": gst_number},
+            )
+            if gst_number and not vendor.gst_number:
+                vendor.gst_number = gst_number
+                vendor.save(update_fields=["gst_number"])
+
         try:
             with transaction.atomic():
                 if existing:
@@ -251,13 +271,38 @@ class PurchaseBillService(BaseService):
                         bill.document_url = document_url
                     if raw_extraction:
                         bill.raw_extraction = raw_extraction
+                    if gst_number:
+                        bill.gst_number = gst_number
+                    if invoice_number:
+                        bill.invoice_number = invoice_number
+                    if tax_amount > 0:
+                        bill.tax_amount = tax_amount
+                    if cgst > 0:
+                        bill.cgst = cgst
+                    if sgst > 0:
+                        bill.sgst = sgst
+                    if igst > 0:
+                        bill.igst = igst
+                    if items:
+                        bill.items = items
+                    if vendor:
+                        bill.vendor = vendor
+                    bill.save()
                 else:
                     bill = PurchaseBill.objects.create(
                         tenant=tenant,
+                        vendor=vendor,
                         seller_name=seller_name,
+                        invoice_number=invoice_number,
                         purchase_date=purchase_date,
                         total_rate=total_rate,
                         currency=currency,
+                        gst_number=gst_number,
+                        tax_amount=tax_amount,
+                        cgst=cgst,
+                        sgst=sgst,
+                        igst=igst,
+                        items=items,
                         document_url=document_url,
                         telegram_user_id=data.get("telegram_user_id"),
                         external_ref=external_ref,

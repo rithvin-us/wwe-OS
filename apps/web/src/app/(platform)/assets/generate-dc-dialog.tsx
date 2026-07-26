@@ -121,13 +121,14 @@ export function GenerateDCDialog({ sites }: { sites: { id: string; name: string 
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="site_id">Site (Optional)</Label>
+              <Label htmlFor="site_id">Delivery Site Location</Label>
               <select
                 id="site_id"
                 name="site_id"
+                required
                 className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                <option value="">Select site (optional)...</option>
+                <option value="">Select destination site...</option>
                 {sites.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -135,15 +136,6 @@ export function GenerateDCDialog({ sites }: { sites: { id: string; name: string 
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="deliver_to">Deliver To / Site Address</Label>
-            <Input
-              id="deliver_to"
-              name="deliver_to"
-              placeholder="e.g. Water Works Site 4, Peelamedu, Coimbatore"
-            />
           </div>
 
           <div className="space-y-2">
