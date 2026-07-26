@@ -10,20 +10,26 @@ import {
   FunnelChartComponent,
   LineChartComponent,
 } from "@/components/charts";
-import { mockData } from "@/lib/mock-data";
 
 export interface DashboardChartsProps {
   loading?: boolean;
   error?: string | null;
+  financialTrend?: Array<{ month: string; revenue: number; expenses: number }>;
+  spendTrend?: Array<{ month: string; spend: number }>;
+  attendanceTrend?: Array<{ month: string; attendanceRate: number }>;
+  categoryBreakdown?: Array<{ name: string; value: number; color?: string }>;
+  processFunnel?: Array<{ step: string; count: number; percentage: number }>;
 }
 
-export function DashboardCharts({ loading = false, error = null }: DashboardChartsProps) {
-  const financialTrend = mockData.dashboard.MOCK_FINANCIAL_TREND;
-  const spendTrend = mockData.dashboard.MOCK_SPEND_TREND;
-  const attendanceTrend = mockData.dashboard.MOCK_ATTENDANCE_TREND;
-  const categoryBreakdown = mockData.dashboard.MOCK_CATEGORY_BREAKDOWN;
-  const processFunnel = mockData.dashboard.MOCK_PROCESS_FUNNEL;
-
+export function DashboardCharts({
+  loading = false,
+  error = null,
+  financialTrend = [],
+  spendTrend = [],
+  attendanceTrend = [],
+  categoryBreakdown = [],
+  processFunnel = [],
+}: DashboardChartsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {/* 1. Revenue vs Expenses Line Chart */}
@@ -35,6 +41,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
         loading={loading}
         error={error}
         empty={financialTrend.length === 0}
+        emptyMessage="No financial performance data recorded yet."
       >
         <LineChartComponent
           data={financialTrend}
@@ -57,6 +64,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
         loading={loading}
         error={error}
         empty={spendTrend.length === 0}
+        emptyMessage="No procurement spend recorded yet."
       >
         <BarChartComponent
           data={spendTrend}
@@ -76,6 +84,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
         loading={loading}
         error={error}
         empty={attendanceTrend.length === 0}
+        emptyMessage="No attendance logs recorded yet."
       >
         <AreaChartComponent
           data={attendanceTrend}
@@ -90,11 +99,12 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
       <ChartCard
         title="Procurement Categories"
         description="Spend distribution by item category"
-        badge="Jul 2026"
+        badge="Categories"
         icon={PieChartIcon}
         loading={loading}
         error={error}
         empty={categoryBreakdown.length === 0}
+        emptyMessage="No category breakdown available yet."
       >
         <DonutChartComponent
           data={categoryBreakdown}
@@ -114,6 +124,7 @@ export function DashboardCharts({ loading = false, error = null }: DashboardChar
         loading={loading}
         error={error}
         empty={processFunnel.length === 0}
+        emptyMessage="No bill extraction activity in pipeline yet."
         className="md:col-span-2 lg:col-span-2"
       >
         <FunnelChartComponent data={processFunnel} />

@@ -3,13 +3,17 @@
 import { Clock, IndianRupee, Users } from "@bop/icons";
 
 import { BarChartComponent, ChartCard, DonutChartComponent } from "@/components/charts";
-import { mockData } from "@/lib/mock-data";
+export interface HrChartsProps {
+  deptHeadcount?: Array<{ department: string; attendanceRate: number }>;
+  overtimeByDept?: Array<{ department: string; hours: number }>;
+  payrollBreakdown?: Array<{ category: string; amount: number; color?: string }>;
+}
 
-export function HrCharts() {
-  const deptHeadcount = mockData.hr.MOCK_DEPARTMENT_HEADCOUNT;
-  const overtimeByDept = mockData.hr.MOCK_OVERTIME_BY_DEPT;
-  const payrollBreakdown = mockData.hr.MOCK_PAYROLL_COST_BREAKDOWN;
-
+export function HrCharts({
+  deptHeadcount = [],
+  overtimeByDept = [],
+  payrollBreakdown = [],
+}: HrChartsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {/* 1. Department Headcount & Attendance Bar Chart */}
@@ -18,6 +22,8 @@ export function HrCharts() {
         description="Attendance % across key departments"
         badge="Current Month"
         icon={Users}
+        empty={deptHeadcount.length === 0}
+        emptyMessage="No department attendance data recorded yet."
       >
         <BarChartComponent
           data={deptHeadcount}
@@ -32,8 +38,10 @@ export function HrCharts() {
       <ChartCard
         title="Overtime Hours by Department"
         description="Recorded OT hours per department"
-        badge="July 2026"
+        badge="Monthly OT"
         icon={Clock}
+        empty={overtimeByDept.length === 0}
+        emptyMessage="No overtime hours logged for this period."
       >
         <BarChartComponent
           data={overtimeByDept}
@@ -48,8 +56,10 @@ export function HrCharts() {
       <ChartCard
         title="Payroll Cost Structure"
         description="Wages, DA, OT & Statutory deductions split"
-        badge="Projections"
+        badge="Payroll"
         icon={IndianRupee}
+        empty={payrollBreakdown.length === 0}
+        emptyMessage="No payroll calculation data available yet."
       >
         <DonutChartComponent
           data={payrollBreakdown.map((p) => ({
@@ -59,7 +69,7 @@ export function HrCharts() {
           }))}
           height={180}
           centerTitle="Total Gross"
-          centerValue="₹7.07L"
+          centerValue={`${payrollBreakdown.reduce((sum, p) => sum + p.amount, 0)}`}
           valueFormat="currency"
         />
       </ChartCard>

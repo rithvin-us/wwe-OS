@@ -3,12 +3,12 @@
 import { TrendingUp, Wallet } from "@bop/icons";
 
 import { BarChartComponent, ChartCard, DonutChartComponent } from "@/components/charts";
-import { mockData } from "@/lib/mock-data";
+export interface PurchaseChartsProps {
+  vendorAnalysis?: Array<{ name: string; total_spend: number }>;
+  trend?: Array<{ month: string; spend: number }>;
+}
 
-export function PurchaseCharts() {
-  const vendorAnalysis = mockData.purchase.MOCK_VENDOR_SPEND_ANALYSIS;
-  const trend = mockData.purchase.MOCK_PURCHASE_MONTHLY_TREND;
-
+export function PurchaseCharts({ vendorAnalysis = [], trend = [] }: PurchaseChartsProps) {
   const vendorChartData = vendorAnalysis.map((v) => ({
     name: v.name,
     value: v.total_spend,
@@ -22,6 +22,8 @@ export function PurchaseCharts() {
         description="Total purchase volume over 6 months"
         badge="6 Months"
         icon={TrendingUp}
+        empty={trend.length === 0}
+        emptyMessage="No purchase spend trend recorded yet."
       >
         <BarChartComponent
           data={trend}
@@ -38,12 +40,14 @@ export function PurchaseCharts() {
         description="Share of total spend by top vendors"
         badge="Top Vendors"
         icon={Wallet}
+        empty={vendorChartData.length === 0}
+        emptyMessage="No vendor spend distribution data available yet."
       >
         <DonutChartComponent
           data={vendorChartData}
           height={180}
           centerTitle="Top Vendor"
-          centerValue="₹8.2L"
+          centerValue={`${vendorChartData.length}`}
           valueFormat="currency"
         />
       </ChartCard>
