@@ -10,7 +10,7 @@ from __future__ import annotations
 import base64
 
 from documents.backend.models import DocumentCategory
-from documents.backend.services import DocumentService
+from documents.backend.services.document import DocumentService
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
