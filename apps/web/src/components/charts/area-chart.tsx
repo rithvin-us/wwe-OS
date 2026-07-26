@@ -10,6 +10,8 @@ import {
   YAxis,
 } from "@bop/charts";
 
+export type ChartDataRecord = Record<string, string | number | boolean | null | undefined>;
+
 export interface AreaChartSeries {
   key: string;
   name: string;
@@ -17,11 +19,11 @@ export interface AreaChartSeries {
 }
 
 export interface AreaChartProps {
-  data: Record<string, unknown>[];
+  data: ChartDataRecord[];
   xAxisKey: string;
   series: AreaChartSeries[];
   height?: number;
-  valueFormatter?: (val: unknown) => string;
+  valueFormatter?: (val: string | number | boolean | null | undefined) => string;
 }
 
 export function AreaChartComponent({

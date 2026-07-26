@@ -48,7 +48,7 @@ export default async function AutomationPage() {
         title="Automation Execution Health"
         description="Scheduled rule triggers and collection runs"
         badge="Weekly Execution"
-        icon={Zap}
+        icon={<Zap className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
       >
         <BarChartComponent
           data={automationRuns}

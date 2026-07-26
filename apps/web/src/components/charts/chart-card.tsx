@@ -8,7 +8,7 @@ export interface ChartCardProps {
   title: string;
   description?: string;
   badge?: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   loading?: boolean;
   error?: string | null;
   empty?: boolean;
@@ -33,6 +33,8 @@ export function ChartCard({
   className,
   headerClassName,
 }: ChartCardProps) {
+  const IconComp = typeof Icon === "function" ? Icon : null;
+
   return (
     <div
       className={cn(
@@ -44,7 +46,11 @@ export function ChartCard({
       <div className={cn("flex items-start justify-between gap-3 pb-3", headerClassName)}>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            {Icon && <Icon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+            {React.isValidElement(Icon) ? (
+              Icon
+            ) : IconComp ? (
+              <IconComp className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            ) : null}
             <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
           </div>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}

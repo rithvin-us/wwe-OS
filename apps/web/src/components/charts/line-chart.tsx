@@ -10,6 +10,8 @@ import {
   YAxis,
 } from "@bop/charts";
 
+export type ChartDataRecord = Record<string, string | number | boolean | null | undefined>;
+
 export interface LineChartSeries {
   key: string;
   name: string;
@@ -17,11 +19,11 @@ export interface LineChartSeries {
 }
 
 export interface LineChartProps {
-  data: Record<string, unknown>[];
+  data: ChartDataRecord[];
   xAxisKey: string;
   series: LineChartSeries[];
   height?: number;
-  valueFormatter?: (val: unknown) => string;
+  valueFormatter?: (val: string | number | boolean | null | undefined) => string;
 }
 
 export function LineChartComponent({

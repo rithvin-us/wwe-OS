@@ -26,10 +26,12 @@ export default async function DeductionsPage({
 }) {
   const { year, month } = periodFromParams(await searchParams);
 
-  const [deductions, fetchedEmployees] = await Promise.all([
+  const [fetchedDeductions, fetchedEmployees] = await Promise.all([
     getDeductions(year, month).catch(() => []),
     getEmployees().catch(() => []),
   ]);
+
+  const deductions = fetchedDeductions as unknown as DeductionRecord[];
 
   const employees = fetchedEmployees.map((e) => ({
     id: e.id,
@@ -101,7 +103,7 @@ export default async function DeductionsPage({
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono font-semibold text-foreground">
-                      ₹{parseFloat(d.amount).toLocaleString("en-IN")}
+                      ₹{parseFloat(String(d.amount)).toLocaleString("en-IN")}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{d.notes || "—"}</td>
                     <td className="px-4 py-3 font-mono text-muted-foreground text-[11px]">

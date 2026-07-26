@@ -1,3 +1,5 @@
+"use client";
+
 import { Archive, CheckCircle2, FileText, HardDrive, PieChart, Sparkles } from "@bop/icons";
 
 import { ChartCard, DonutChartComponent } from "@/components/charts";

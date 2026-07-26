@@ -20,7 +20,7 @@ export interface DonutChartProps {
   height?: number;
   centerTitle?: string;
   centerValue?: string;
-  valueFormatter?: (val: unknown) => string;
+  valueFormatter?: (val: string | number | boolean | null | undefined) => string;
 }
 
 export function DonutChartComponent({
