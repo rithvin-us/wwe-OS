@@ -37,8 +37,8 @@ export const APPS: PlatformApp[] = [
     slug: "hr",
     name: "HR",
     icon: Users,
-    tagline: "Employees, leave, attendance, and onboarding.",
-    availability: "in-progress",
+    tagline: "Employees, attendance, payroll, and statutory registers.",
+    availability: "ready",
   },
   {
     slug: "purchase",

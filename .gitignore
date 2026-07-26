@@ -44,3 +44,9 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Salvaged legacy HR data: the sqlite files and the filed statutory workbooks
+# copied out of the retired HR app before it was deleted
+# (docs/specs/hr-migration.md § 8). Business data, not source — never commit it.
+.hr-migration-data/
+

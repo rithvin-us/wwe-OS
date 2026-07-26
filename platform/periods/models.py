@@ -27,6 +27,32 @@ class BusinessPeriod(TenantOwnedModel):
     )
     closed_at = models.DateTimeField(null=True, blank=True)
 
+    # ---- Locking ---------------------------------------------------------- #
+    # A locked period refuses writes to the business data filed against it, so
+    # figures already submitted to an authority cannot silently change
+    # afterwards. `status` tracks where a period is in its lifecycle; this is
+    # the enforcement flag, and PeriodService.assert_open() is the guard
+    # modules call. Unlocking demands a reason: that reason is the audit trail
+    # for why submitted numbers were reopened.
+    is_locked = models.BooleanField(default=False, db_index=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    locked_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="periods_locked",
+    )
+    unlock_reason = models.TextField(blank=True)
+    unlocked_at = models.DateTimeField(null=True, blank=True)
+    unlocked_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="periods_unlocked",
+    )
+
     class Meta(TenantOwnedModel.Meta):
         db_table = "periods_business_period"
         constraints = [

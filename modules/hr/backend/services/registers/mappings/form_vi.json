@@ -1,0 +1,22 @@
+{
+  "sheet_name": "Form VI",
+  "header_cells": {
+    "year": "A2",
+    "contractor_name": "E3",
+    "principal_employer_and_location": "E4",
+    "holiday_dates_names": "E7"
+  },
+  "data_start_row": 8,
+  "rows_per_employee": 1,
+  "columns": {
+    "serial_no": "A",
+    "employee_name": "B",
+    "father_husband_name": "C",
+    "date_of_joining": "D",
+    "remarks_left": "P"
+  },
+  "holiday_status": {
+    "start_col": "E",
+    "max_holidays": 10
+  }
+}

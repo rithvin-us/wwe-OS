@@ -61,6 +61,7 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("workflow.control", "Pause, resume, cancel, or retry a pipeline run", "Workflow"),
     # Periods (business period manager & document library)
     PermissionDef("periods.view", "View business periods and the document library", "Periods"),
+    PermissionDef("periods.lock", "Lock and unlock a business period", "Periods"),
     # Identity (source identity resolution)
     PermissionDef("identity.view", "View source identities", "Identity"),
     # Metadata (unified document metadata)

@@ -1,0 +1,19 @@
+{
+  "sheet_name": "Form B Consolidated Wages",
+  "header_cells": {
+    "contractor_name": "B5"
+  },
+  "data_start_row": 8,
+  "rows_per_month": 1,
+  "columns": {
+    "month_date": "B",
+    "total_employees": "C",
+    "total_emoluments": "D",
+    "deductions_epf": "E",
+    "deductions_esi": "F",
+    "deductions_advance_fine": "G",
+    "deductions_others": "H",
+    "deductions_lwf": "I"
+  },
+  "formula_cells": ["J", "K"]
+}

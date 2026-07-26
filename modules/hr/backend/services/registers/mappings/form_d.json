@@ -1,0 +1,21 @@
+{
+  "sheet_name": "Form D Equal Wages Register",
+  "header_cells": {
+    "contractor_name": "A4",
+    "total_men": "J4",
+    "total_women": "J5",
+    "month_year": "A7"
+  },
+  "data_start_row": 10,
+  "rows_per_category": 1,
+  "columns": {
+    "category": "A",
+    "description": "B",
+    "number_of_men": "C",
+    "number_of_women": "D",
+    "total_rate_paid": "E",
+    "basic_salary": "F",
+    "da": "G"
+  },
+  "formula_cells": ["H"]
+}

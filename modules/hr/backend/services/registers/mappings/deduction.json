@@ -1,0 +1,31 @@
+{
+  "sheet_name": "Deduction",
+  "header_cells": {
+    "principal_employer": "D3",
+    "month": "Q3",
+    "year": "T3",
+    "contractor_name": "D4"
+  },
+  "data_start_row": 7,
+  "rows_per_employee": 1,
+  "columns": {
+    "serial_no": "A",
+    "employee_code": "B",
+    "employee_name": "C",
+    "father_husband_name": "D",
+    "designation": "E",
+    "advance_date_of_payment": "F",
+    "advance_amount": "G",
+    "advance_installments": "H",
+    "advance_recovery_date": "I",
+    "damage_description": "J",
+    "damage_showcause_date": "K",
+    "damage_amount": "L",
+    "damage_installments": "M",
+    "damage_recovery_date": "N",
+    "fine_act_omission": "O",
+    "fine_showcause_date": "P",
+    "fine_amount": "Q",
+    "fine_recovery_date": "R"
+  }
+}

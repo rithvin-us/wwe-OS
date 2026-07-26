@@ -1,0 +1,38 @@
+{
+  "sheet_name": "In -out register",
+  "description": "Register of In and Out register - Gate Entry tracking",
+  "header_cells": {
+    "month_date": "S1",
+    "contractor_name": "V2"
+  },
+  "data_start_row": 5,
+  "rows_per_employee": 4,
+  "row_layout": {
+    "0": "In",
+    "1": "Out",
+    "2": "Actual Hours worked, ",
+    "3": "OT Hours "
+  },
+  "columns": {
+    "serial_no": {"col": "A", "row_offset": 0},
+    "employee_code": {"col": "B", "row_offset": 0},
+    "employee_name": {"col": "C", "row_offset": 0},
+    "label_in": {"col": "D", "row_offset": 0, "value": "In"},
+    "label_out": {"col": "D", "row_offset": 1, "value": "Out"},
+    "label_hours": {"col": "D", "row_offset": 2, "value": "Actual Hours worked, "},
+    "label_ot": {"col": "D", "row_offset": 3, "value": "OT Hours "}
+  },
+  "daily_data": {
+    "start_col": "E",
+    "day_offset": 0,
+    "max_days": 31,
+    "row_offsets": {
+      "in_time": 0,
+      "out_time": 1,
+      "hours_formula": 2,
+      "ot_formula": 3
+    }
+  },
+  "formula_rows": [2, 3],
+  "notes": "Each employee occupies 4 consecutive rows. Row 0=In times, Row 1=Out times, Row 2=Hours (formula), Row 3=OT (formula). Days 1-31 mapped to columns E-AI; AJ/AK/AL hold per-block totals."
+}

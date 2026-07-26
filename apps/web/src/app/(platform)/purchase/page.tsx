@@ -4,6 +4,7 @@ import { Send, Wallet, FileText, AlertTriangle, TrendingUp } from "@bop/icons";
 
 import { AutoRefreshPurchases } from "@/app/(platform)/purchase/auto-refresh";
 import { BillsTable } from "@/app/(platform)/purchase/bills-table";
+import { PurchasesViewToggle } from "@/app/(platform)/purchase/purchases-view-toggle";
 import { VendorsPanel } from "@/app/(platform)/purchase/vendors-panel";
 import { SectionCard } from "@/components/dashboard/section-card";
 import {
@@ -135,22 +136,7 @@ export default async function PurchasePage() {
         </SectionCard>
       </div>
 
-      <section className="space-y-3">
-        <AutoRefreshPurchases intervalMs={3000} />
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Send aria-hidden className="size-3.5" />
-            Send a receipt photo or PDF to the Telegram bot to digitize it automatically.
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live Sync Active
-          </div>
-        </div>
-        <BillsTable bills={bills} allTags={allTags} />
-      </section>
-
-      <VendorsPanel vendors={vendors} />
+      <PurchasesViewToggle bills={bills} vendors={vendors} allTags={allTags} />
     </div>
   );
 }

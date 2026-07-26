@@ -1,9 +1,13 @@
 # HR Integration Strategy
 
-**Do not rebuild HR.** An HR Automation application already exists and runs
-in production, separately from this repository. `modules/hr/` stays an empty
-shell until this integration is scheduled (`CLAUDE.md`,
-`docs/roadmap/single-operator-plan.md`).
+> **Superseded — read `docs/specs/hr-migration.md` instead.**
+>
+> The operator has scheduled the full migration: the standalone HR app's
+> source is now in the repo and is being moved into `modules/hr`. That means
+> Phase 4 below is the plan and Phases 1–3 are skipped. This document is kept
+> for the reasoning behind the phasing and the rollback thinking (§ Phase 5,
+> § Non-negotiables), which still apply. Everything it guesses about the HR
+> app's stack is now answered — by the migration spec, from the real source.
 
 ## An honest caveat before anything else
 
@@ -13,6 +17,10 @@ surface, because I have not seen that system. Nothing below should be taken
 as a concrete plan until the first step (discovery) actually happens. Where
 this document says "the HR app," read that as a placeholder for "whatever
 the real system turns out to look like."
+
+*(Discovery has since happened — see the migration spec. The legacy app is
+FastAPI + async SQLAlchemy + Alembic + Pydantic v2, with a Next.js frontend,
+an InsightFace microservice, and a Capacitor check-in app.)*
 
 ## Phase 0 — Discovery (do this before any code)
 

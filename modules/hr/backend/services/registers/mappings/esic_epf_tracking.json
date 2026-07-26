@@ -1,0 +1,24 @@
+{
+  "sheet_name": "ESIC_EPF_Tracking sheet",
+  "header_cells": {
+    "month_year": "B1",
+    "contractor_name": "B3",
+    "address": "B4",
+    "esic_code": "B6",
+    "epf_code": "B7"
+  },
+  "data_start_row": 14,
+  "rows_per_employee": 1,
+  "columns": {
+    "serial_no": "A",
+    "employee_name": "B",
+    "uan": "C",
+    "pf_number": "D",
+    "epf_page_no": "E",
+    "epf_sl_no": "F",
+    "esic_number": "G",
+    "esic_page_no": "H",
+    "esic_sl_no": "I",
+    "location": "J"
+  }
+}

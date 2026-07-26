@@ -1,0 +1,40 @@
+{
+  "sheet_name": "Form No.XXVI",
+  "header_cells": {
+    "principal_employer": "D2",
+    "main_contractor": "Y2",
+    "work_site": "D3",
+    "sub_contractor": "Y3",
+    "month": "AV2",
+    "year": "AV3"
+  },
+  "data_start_row": 7,
+  "rows_per_employee": 1,
+  "columns": {
+    "serial_no": "A",
+    "employee_code": "B",
+    "employee_name": "C",
+    "age_gender": "D",
+    "address": "E",
+    "designation": "F",
+    "father_husband_name": "G",
+    "date_of_joining": "H",
+    "number_of_days_worked": "AO",
+    "holiday_days": "AP",
+    "holiday_working_days": "AQ",
+    "paid_leave_days": "AR",
+    "week_off_days": "AS",
+    "total_paid_days": "AT",
+    "termination_date": "AV"
+  },
+  "daily_data": {
+    "start_col": "I",
+    "day_offset": 0,
+    "max_days": 31,
+    "row_offsets": {
+      "status": 0
+    }
+  },
+  "formula_cells": ["AN", "AR", "AT"],
+  "total_row_offset_from_last_data": 1
+}

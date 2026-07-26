@@ -23,7 +23,19 @@ class BusinessPeriodSerializer(BaseModelSerializer):
 
     class Meta:
         model = BusinessPeriod
-        fields = ("id", "year", "month", "status", "closed_at", "manifest", "created_at")
+        fields = (
+            "id",
+            "year",
+            "month",
+            "status",
+            "closed_at",
+            "is_locked",
+            "locked_at",
+            "unlock_reason",
+            "unlocked_at",
+            "manifest",
+            "created_at",
+        )
         read_only_fields = fields
 
     def get_manifest(self, obj: BusinessPeriod) -> dict:
@@ -31,3 +43,10 @@ class BusinessPeriodSerializer(BaseModelSerializer):
         if manifest is None:
             return {"document_counts": {}, "total_count": 0, "updated_at": None}
         return PeriodManifestSerializer(manifest).data
+
+
+class UnlockPeriodSerializer(serializers.Serializer):
+    """Unlocking a period always carries a reason — it becomes the audit
+    record of why already-submitted figures were reopened."""
+
+    reason = serializers.CharField(allow_blank=False)

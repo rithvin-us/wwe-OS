@@ -7,7 +7,9 @@ docs/superpowers/specs/2026-07-24-business-period-manager-design.md
 from __future__ import annotations
 
 from django.db.models import Count
-from shared.exceptions import ValidationError
+from django.utils import timezone
+from shared import context
+from shared.exceptions import ConflictError, ValidationError
 from shared.services import BaseService
 from storage.models import StoredFile
 
@@ -61,3 +63,82 @@ class PeriodService(BaseService):
         period.status = status
         period.save(update_fields=["status", "updated_at"])
         return period
+
+    # ----------------------------------------------------------------- locking
+
+    def lock(self, *, tenant, year: int, month: int, actor=None) -> BusinessPeriod:
+        """Close a period to further writes.
+
+        Called after a module has produced the authoritative output for the
+        month (e.g. a statutory register workbook), so the figures behind that
+        output cannot drift afterwards. Idempotent: locking a locked period is
+        a no-op, not an error.
+        """
+        period = self.get_or_create_period(tenant=tenant, year=year, month=month)
+        if period.is_locked:
+            return period
+
+        period.is_locked = True
+        period.locked_at = timezone.now()
+        period.locked_by = actor or context.current_user()
+        period.status = PeriodStatus.CLOSED
+        period.closed_at = period.locked_at
+        period.save(
+            update_fields=[
+                "is_locked",
+                "locked_at",
+                "locked_by",
+                "status",
+                "closed_at",
+                "updated_at",
+            ]
+        )
+        return period
+
+    def unlock(self, *, tenant, year: int, month: int, reason: str, actor=None) -> BusinessPeriod:
+        """Reopen a locked period. The reason is mandatory and audit-critical —
+        it is the record of why already-submitted figures were reopened."""
+        if not (reason or "").strip():
+            raise ValidationError(detail={"reason": ["A reason is required to unlock a period."]})
+
+        period = self.get_or_create_period(tenant=tenant, year=year, month=month)
+        if not period.is_locked:
+            return period
+
+        period.is_locked = False
+        period.unlock_reason = reason.strip()
+        period.unlocked_at = timezone.now()
+        period.unlocked_by = actor or context.current_user()
+        period.status = PeriodStatus.OPEN
+        period.closed_at = None
+        period.save(
+            update_fields=[
+                "is_locked",
+                "unlock_reason",
+                "unlocked_at",
+                "unlocked_by",
+                "status",
+                "closed_at",
+                "updated_at",
+            ]
+        )
+        return period
+
+    def is_locked(self, *, tenant, year: int, month: int) -> bool:
+        """Whether the period is locked. A period that has never been created
+        is open — absence of a row is not a lock."""
+        return BusinessPeriod.objects.filter(
+            tenant=tenant, year=year, month=month, is_locked=True
+        ).exists()
+
+    def assert_open(self, *, tenant, year: int, month: int) -> None:
+        """Guard for any write to data filed against a business period.
+
+        Modules call this before mutating month-scoped business data. Raising
+        here rather than returning a boolean means a caller cannot forget to
+        check the result.
+        """
+        if self.is_locked(tenant=tenant, year=year, month=month):
+            raise ConflictError(
+                f"Period {year}-{month:02d} is locked. Unlock it with a reason before editing."
+            )

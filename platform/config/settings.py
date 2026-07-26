@@ -108,6 +108,7 @@ PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 # here only once its backend is actually implemented; see docs/modules/*.md
 # for the ones still unimplemented shells.
 MODULE_APPS = [
+    "hr.backend",
     "purchase.backend",
     "documents.backend",
     "contracts.backend",
@@ -235,6 +236,9 @@ REST_FRAMEWORK = {
         "login": env_str("THROTTLE_LOGIN", "10/minute"),
         "password_reset": env_str("THROTTLE_PASSWORD_RESET", "5/hour"),
         "ingestion": env_str("THROTTLE_INGESTION", "60/minute"),
+        # Public, unauthenticated self-service attendance check-in (HR). Each
+        # request runs face matching, so it is capped well below "anon".
+        "hr_checkin": env_str("THROTTLE_HR_CHECKIN", "20/minute"),
     },
 }
 

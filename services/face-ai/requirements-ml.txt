@@ -1,0 +1,17 @@
+# Real face-recognition stack — install for FACE_ENGINE=insightface.
+#   MTCNN detection ....... facenet-pytorch (torch)
+#   ArcFace recognition ... insightface (buffalo_s) + onnxruntime
+#   preprocessing ......... opencv-python-headless + Pillow + numpy
+#
+# Install a CPU-only torch FIRST (see Dockerfile) to avoid the huge CUDA wheel:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+#   pip install --no-cache-dir -r requirements-ml.txt
+#
+# WARNING: ~1.5 GB on disk, ~1 GB RAM once models load. Run on a real box, not a
+# 512 MB free tier.
+numpy
+Pillow
+opencv-python-headless
+onnxruntime
+insightface
+facenet-pytorch

@@ -29,6 +29,33 @@ select = [
     "SIM", # simplify
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Statutory register generation: the legacy HR app's verified openpyxl code,
+# migrated across unchanged apart from its imports (docs/specs/hr-migration.md
+# § 3). Its long lines are form-filling call signatures and cell-map literals;
+# reflowing 890 lines of Indian labour-law form layout risks breaking a cell
+# reference for no behavioural gain, so the line limit is waived here only.
+# Do not extend this list to newly written code.
+"modules/hr/backend/services/registers/generator.py" = ["E501"]
+"modules/hr/backend/services/registers/mapper.py" = ["E501"]
+"modules/hr/backend/services/registers/writer.py" = ["E501"]
+
+# Face matching: also migrated verbatim from the legacy HR app.
+#   B905 — `zip()` without `strict=`: adding strict=True would *raise* where the
+#          verified code deliberately truncates on a length mismatch. Changing it
+#          would change behaviour, which the migration forbids.
+#   E741 — `l` as a face-landmark variable, straight from the original.
+#   SIM105 — a try/except/pass in the circuit-breaker teardown path.
+"modules/hr/backend/services/face_recognition.py" = ["B905", "E741"]
+"modules/hr/backend/services/face_client.py" = ["SIM105"]
+"modules/hr/backend/services/attendance_punch.py" = ["E501", "UP047"]
+
+# services/face-ai is a deployment-isolated FastAPI microservice migrated
+# wholesale (own Dockerfile, own requirements, integrated over HTTP only).
+# B008 flags `= File(...)` / `= Form(...)` defaults, which are FastAPI's
+# documented idiom, not a bug.
+"services/face-ai/**" = ["B008", "B904", "E501", "E741", "I001"]
+
 [tool.ruff.format]
 quote-style = "double"
 

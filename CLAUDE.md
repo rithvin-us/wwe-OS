@@ -23,9 +23,12 @@ The company is run by **one person who is HR + IT + Accounts**. Build for that:
   surface across all areas + quick actions.
 - **Automation first.** Each module ships self-service/automatic paths before
   manual admin screens; the operator handles exceptions only.
-- **HR already exists — do not build it.** An HR Automation app is already
-  deployed separately; WWE OS integrates with it (see
-  `docs/specs/hr-integration-strategy.md`), it never gets rebuilt here.
+- **HR has been migrated in.** The standalone HR Automation app (FastAPI +
+  SQLAlchemy) was retired into `modules/hr` — employees, attendance, payroll,
+  statutory registers, leave, onboarding, expenses, face check-in. Its
+  verified engines were copied, not rewritten; see
+  `docs/specs/hr-migration.md` for what moved verbatim and what became a
+  platform capability. `hr-integration-strategy.md` is superseded.
 - **Native mobile app** (`apps/mobile`, Expo/React Native) is a planned workstream;
   design every new feature mobile-first, reusing the design tokens and the API.
 
@@ -171,7 +174,10 @@ exactly, not reinvent them.
 
 - Conventional Commits (`feat(hr): …`, `fix(platform/auth): …`).
 - Architectural decisions get an ADR in `docs/adr/`.
-- HR migration: **do not** migrate or write HR business logic yet;
-  `modules/hr/` stays a prepared shell until the migration is scheduled.
+- HR migration: **done.** `modules/hr/` is a real, tested module. Its payroll
+  and shift engines were copied from the legacy app rather than rewritten, and
+  the legacy test suites run against them unchanged — treat those files as
+  load-bearing and change their arithmetic only deliberately
+  (`docs/specs/hr-migration.md` § 3).
 - Verify before claiming done: run the build/lint commands above and report
   their actual output.

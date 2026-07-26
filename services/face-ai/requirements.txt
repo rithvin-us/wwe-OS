@@ -1,0 +1,8 @@
+# Base deps — the service boots and the STUB engine runs with just these.
+# Real recognition additionally needs requirements-ml.txt (see that file).
+fastapi==0.128.8
+uvicorn[standard]==0.34.0
+pydantic==2.11.3
+pydantic-settings==2.9.1
+python-multipart==0.0.20
+httpx==0.28.1          # FastAPI TestClient + smoke script

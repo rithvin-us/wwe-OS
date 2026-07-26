@@ -61,9 +61,27 @@ async function fetchEnvelope<T>(path: string, init: RequestInit = {}): Promise<A
   try {
     envelope = JSON.parse(text) as ApiEnvelope<T>;
   } catch {
-    throw new ApiRequestError(response.status, {
-      code: "invalid_response",
-      message: `Backend returned non-JSON response (${response.status}): ${text.slice(0, 150)}`,
+    const status = response.status;
+    const code =
+      status === 404
+        ? "not_found"
+        : status === 401
+          ? "not_authenticated"
+          : status === 403
+            ? "permission_denied"
+            : "invalid_response";
+    const msg =
+      status === 404
+        ? `The requested API endpoint was not found (${path}).`
+        : status === 403
+          ? "You do not have permission to perform this action."
+          : status === 401
+            ? "Authentication credentials were not provided."
+            : `Backend returned non-JSON response (${status}): ${text.slice(0, 150)}`;
+
+    throw new ApiRequestError(status, {
+      code,
+      message: msg,
       details: text,
     });
   }

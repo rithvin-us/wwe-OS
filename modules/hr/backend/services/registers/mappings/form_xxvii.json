@@ -1,0 +1,40 @@
+{
+  "sheet_name": "Form XXVII Register of Wages",
+  "header_cells": {
+    "work_location": "D2",
+    "contractor_name": "AC2",
+    "principal_employer": "D3",
+    "sub_contractor": "AC3",
+    "month_year": "AJ3"
+  },
+  "data_start_row": 7,
+  "rows_per_employee": 1,
+  "columns": {
+    "serial_no": "A",
+    "employee_code": "B",
+    "employee_name": "C",
+    "gender": "D",
+    "designation": "E",
+    "wage_period": "G",
+    "days_worked": "H",
+    "national_holidays": "I",
+    "daily_rate": "J",
+    "ot_hours": "K",
+    "basic_declared": "N",
+    "da_declared": "O",
+    "hra_declared": "P",
+    "med_allowance_declared": "Q",
+    "conv_allowance_declared": "R",
+    "basic_earned": "S",
+    "da_earned": "T",
+    "hra_earned": "U",
+    "med_allowance_earned": "V",
+    "conv_allowance_earned": "W",
+    "nfh_wages": "X",
+    "leave_wages": "Z",
+    "bonus_earned": "AA",
+    "arrear": "AB"
+  },
+  "formula_cells": ["F", "L", "M", "Y", "AC", "AD", "AE", "AF", "AG", "AH", "AI"],
+  "total_row_offset_from_last_data": 1
+}

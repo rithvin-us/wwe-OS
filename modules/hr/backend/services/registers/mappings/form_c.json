@@ -1,0 +1,25 @@
+{
+  "sheet_name": "Form C Register of Unpaid",
+  "header_cells": {
+    "contractor_name": "A4",
+    "year": "A7"
+  },
+  "data_start_row": 10,
+  "columns": {
+    "q1": "B",
+    "q2": "C",
+    "q3": "D",
+    "q4": "E"
+  },
+  "rows": {
+    "fines": 10,
+    "basic_wages": 12,
+    "da_other_allowances": 13,
+    "overtime": 14,
+    "bonus": 15,
+    "gratuity": 16,
+    "other_unpaid": 17,
+    "standing_orders_deductions": 18,
+    "payment_of_wages_act_deductions": 19
+  }
+}
