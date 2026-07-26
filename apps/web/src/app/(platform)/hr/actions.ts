@@ -153,6 +153,55 @@ export async function reopenTask(id: string): Promise<ActionResult> {
 
 // ----------------------------------------------------------------- employees
 
+export async function createEmployee(data: {
+  employee_code: string;
+  name: string;
+  department?: string;
+  designation?: string;
+  category?: string;
+  date_of_joining?: string;
+  basic_rate?: number;
+  da_rate?: number;
+  pf_number?: string;
+  esic_number?: string;
+  uan_number?: string;
+  bank_account_number?: string;
+  bank_ifsc?: string;
+}): Promise<ActionResult> {
+  try {
+    await djangoFetch("/api/v1/hr/employees/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    revalidatePath("/hr/employees");
+    revalidatePath("/hr");
+    return { ok: true };
+  } catch (err) {
+    return failed(err);
+  }
+}
+
+export async function createDeduction(data: {
+  employee: string;
+  type: string;
+  amount: number;
+  year: number;
+  month: number;
+  notes?: string;
+}): Promise<ActionResult> {
+  try {
+    await djangoFetch("/api/v1/hr/deductions/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    revalidatePath("/hr/deductions");
+    revalidatePath("/hr");
+    return { ok: true };
+  } catch (err) {
+    return failed(err);
+  }
+}
+
 export async function offboardEmployee(id: string, dateOfLeaving: string): Promise<ActionResult> {
   try {
     await djangoFetch(`/api/v1/hr/employees/${id}/?date_of_leaving=${dateOfLeaving}`, {

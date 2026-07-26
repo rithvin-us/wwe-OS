@@ -13,7 +13,7 @@ import { formatRelative } from "@/config/dashboard";
  * a surface the operator is meant to trust for real decisions needs to say
  * how fresh what it's showing is, not just what day it is.
  */
-export function Greeting({ dataAsOf }: { dataAsOf: string }) {
+export function Greeting({ dataAsOf, name = "LAKSHMANAN" }: { dataAsOf: string; name?: string }) {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -56,7 +56,9 @@ export function Greeting({ dataAsOf }: { dataAsOf: string }) {
       key={now === null ? "loading" : "ready"}
       className="animate-in fade-in space-y-1.5 duration-(--duration-base) ease-out-quart"
     >
-      <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{part}</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+        {part}, {name}
+      </h1>
       <p className="text-sm text-muted-foreground">
         Here&rsquo;s how {COMPANY.name} is doing today.{" "}
         <span className="text-muted-foreground-subtle tabular-nums">{dateLabel}</span>

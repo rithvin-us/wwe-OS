@@ -1,4 +1,15 @@
-import { LayoutDashboard, Layers, Settings, type LucideIcon } from "@bop/icons";
+import {
+  CalendarCheck,
+  CalendarDays,
+  FileSpreadsheet,
+  IndianRupee,
+  Layers,
+  LayoutDashboard,
+  Receipt,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
@@ -56,17 +67,16 @@ export function getAdminPage(slug: string): AdminPage | undefined {
 
 export const NAVIGATION: NavGroup[] = [
   {
-    label: null,
-    items: [{ name: "Dashboard", href: "/", icon: LayoutDashboard }],
-  },
-  {
-    label: "Apps",
-    items: APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
-  },
-  {
-    label: null,
+    label: "CORE MODULES",
     items: [
-      { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true }, // Using Settings icon, or maybe Wrench
+      { name: "Dashboard", href: "/", icon: LayoutDashboard },
+      ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
+    ],
+  },
+  {
+    label: "SYSTEM",
+    items: [
+      { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
       { name: "Services", href: "/services", icon: Layers, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
     ],

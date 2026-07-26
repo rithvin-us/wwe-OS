@@ -3,11 +3,12 @@ import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { getExpenseClaims } from "@/lib/hr";
+import { HrNav } from "../hr-nav";
 
 import { ExpenseClaimList } from "./expense-claims";
 
 export default async function ExpensesPage() {
-  const claims = await getExpenseClaims();
+  const claims = await getExpenseClaims().catch(() => []);
 
   const pending = claims.filter((claim) => claim.status === "pending");
   const decided = claims.filter((claim) => claim.status !== "pending");
@@ -18,6 +19,8 @@ export default async function ExpensesPage() {
         title="Expense claims"
         description="An approved claim is reimbursed with that month's salary, after deductions — it never enters gross, so PF and ESI are unaffected."
       />
+
+      <HrNav activeTab="expenses" />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">

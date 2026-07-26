@@ -1,6 +1,7 @@
 "use client";
 
-import { PanelLeft, Search } from "@bop/icons";
+import { useEffect, useState } from "react";
+import { Clock, PanelLeft, PanelLeftClose, Search, User } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 
 import { NotificationCenter } from "@/components/notification-center";
@@ -9,18 +10,46 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * The one header. Fixed height from the design system; hosts search,
- * notifications, and the theme switch. No account chrome — the platform
- * presents as one piece of company software.
+ * notifications, live time, user status, and the theme switch.
  */
 export function AppHeader({
   onOpenPalette,
   onOpenMobileNav,
+  onToggleSidebar,
+  sidebarCollapsed,
 }: {
   onOpenPalette: () => void;
   onOpenMobileNav: () => void;
+  onToggleSidebar?: () => void;
+  sidebarCollapsed?: boolean;
 }) {
+  const [timeString, setTimeString] = useState<string>("");
+
+  useEffect(() => {
+    function updateClock() {
+      const d = new Date();
+      const datePart = d.toLocaleDateString("en-US", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const timePart = d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+      setTimeString(`${datePart}  ${timePart}`);
+    }
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <header className="sticky top-0 z-20 flex h-(--layout-header-height) shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
+      {/* Mobile nav toggle */}
       <Button
         variant="ghost"
         size="icon-sm"
@@ -31,10 +60,27 @@ export function AppHeader({
         <PanelLeft aria-hidden className="size-4" />
       </Button>
 
+      {/* Desktop sidebar toggle */}
+      {onToggleSidebar && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="hidden lg:inline-flex"
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={onToggleSidebar}
+        >
+          {sidebarCollapsed ? (
+            <PanelLeft aria-hidden className="size-4" />
+          ) : (
+            <PanelLeftClose aria-hidden className="size-4" />
+          )}
+        </Button>
+      )}
+
       <button
         type="button"
         onClick={onOpenPalette}
-        className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="flex h-8 w-full max-w-xs items-center gap-2 rounded-md border border-input bg-card px-3 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <Search aria-hidden className="size-3.5" />
         <span className="flex-1 text-left">Search…</span>
@@ -43,7 +89,24 @@ export function AppHeader({
         </kbd>
       </button>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-2">
+        {/* Live Date / Time Clock Pill */}
+        {timeString && (
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-md border border-border bg-card text-xs font-mono tabular-nums text-foreground">
+            <Clock className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{timeString}</span>
+          </div>
+        )}
+
+        {/* Signed in user badge */}
+        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md border border-border bg-card text-xs">
+          <User className="size-3.5 text-muted-foreground" />
+          <div className="flex flex-col text-[11px] leading-tight">
+            <span className="font-semibold text-foreground">LAKSHMANAN</span>
+            <span className="text-[9px] text-muted-foreground font-mono">Signed in</span>
+          </div>
+        </div>
+
         <NotificationCenter />
         <ThemeToggle />
         <SignOutButton />

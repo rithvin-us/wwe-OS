@@ -3,13 +3,17 @@ import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { currentPeriod, getLeaveBalances, getLeaveRequests } from "@/lib/hr";
+import { HrNav } from "../hr-nav";
 
 import { LeaveBalanceTable } from "./leave-balances";
 import { LeaveRequestList } from "./leave-requests";
 
 export default async function LeavePage() {
   const { year } = currentPeriod();
-  const [requests, balances] = await Promise.all([getLeaveRequests(), getLeaveBalances(year)]);
+  const [requests, balances] = await Promise.all([
+    getLeaveRequests().catch(() => []),
+    getLeaveBalances(year).catch(() => []),
+  ]);
 
   const pending = requests.filter((request) => request.status === "pending");
   const decided = requests.filter((request) => request.status !== "pending");
@@ -20,6 +24,8 @@ export default async function LeavePage() {
         title="Leave"
         description="Requests come in from employees; you only handle the decision. Approving deducts from the balance for the year the leave starts in."
       />
+
+      <HrNav activeTab="leave" />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">

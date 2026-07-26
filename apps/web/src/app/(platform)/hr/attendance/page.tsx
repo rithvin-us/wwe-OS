@@ -4,7 +4,7 @@ import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { getAttendanceGrid, getWorkforceSummary, periodFromParams } from "@/lib/hr";
-
+import { HrNav } from "../hr-nav";
 import { PeriodSelector } from "../period-selector";
 import { AttendanceGridEditor } from "./attendance-grid";
 
@@ -36,6 +36,8 @@ export default async function AttendancePage({
           </div>
         }
       />
+
+      <HrNav activeTab="attendance" />
 
       {grid.rows.length === 0 ? (
         <EmptyState

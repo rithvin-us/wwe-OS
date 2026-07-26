@@ -4,6 +4,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import { getPayroll, getWorkforceSummary, periodFromParams } from "@/lib/hr";
 
+import { HrNav } from "../hr-nav";
 import { PeriodSelector } from "../period-selector";
 import { StatTile } from "../stat-tile";
 import { PayrollTable } from "./payroll-table";
@@ -35,6 +36,8 @@ export default async function PayrollPage({
           </div>
         }
       />
+
+      <HrNav activeTab="payroll" />
 
       {payroll.records.length === 0 ? (
         <EmptyState

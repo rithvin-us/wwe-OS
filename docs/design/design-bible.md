@@ -218,3 +218,24 @@ wrong and how to fix it. No exclamation marks, no filler, no emoji.
 2. On merge, update `tokens.css` / `@bop/ui` to match.
 3. `pnpm build` + visual pass in light and dark.
 4. Never patch a one-off in an app; the system changes or nothing does.
+
+---
+
+## 13. Industrial Operations Control Theme (`SYS :: AUTOSYNC`)
+
+Inspired by the industrial operations control plane (`SYS :: AUTOSYNC HR_TERMINAL_V1`), every platform application adheres to these layout & navigation standards:
+
+1. **Sidebar Branding & Grouping:**
+   - **Terminal Brand Badge:** Top sidebar brand identifier reads `SYS :: AUTOSYNC` with monospace terminal subtitle (`HR_TERMINAL_V1` / `OPERATIONS_V1`) and brand status dot.
+   - **Section Categorization:** Sidebar navigation items are strictly grouped under uppercase monospace section headers (`CORE MODULES`, `INTELLIGENCE`, `OUTPUTS`, `APPS`).
+   - **Active Navigation Pill:** Active navigation items render as a soft emerald pill (`bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 font-semibold border-l-2 border-emerald-600`).
+   - **Status Footer:** Bottom sidebar renders real-time connectivity status (`W.W.E. CORP · Connected`).
+
+2. **Top Header & Global Controls:**
+   - **Breadcrumb & Page Title:** Left header displays current page section breadcrumb.
+   - **Live Clock Pill:** Right header displays live date/time status pill (`Sun, 26 Jul, 2026 03:57:43 pm`).
+   - **User Session Status:** Displays authenticated user pill (`admin Signed In`) with quick sign-out action.
+
+3. **Page Controls & Workflow Cards:**
+   - **Month Stepper Header:** Period-scoped pages feature integrated month stepper control (`[ < ] [ Jul 2026 ] [ > ] ↻`).
+   - **Numbered Workflow Cards:** Sequential operational tasks render as numbered step cards (`1 Attendance`, `2 Payroll`, `3 Generate registers`) with clear status pills (`Open grid`, `Pending`).

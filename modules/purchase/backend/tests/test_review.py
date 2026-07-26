@@ -17,6 +17,7 @@ def processed_bill(db, tenant) -> PurchaseBill:
         currency="USD",
         document_url="https://storage.internal/a.pdf",
         status=BillStatus.PROCESSED,
+        payment_status="unpaid",
         confidence_score=0.95,
     )
 

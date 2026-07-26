@@ -18,11 +18,11 @@ import {
   getWorkforceSummary,
   MONTH_NAMES,
   periodFromParams,
-  type Anomaly,
   type AnomalyReport,
   type WorkforceSummary,
 } from "@/lib/hr";
 
+import { HrNav } from "./hr-nav";
 import { PeriodSelector } from "./period-selector";
 import { StatTile } from "./stat-tile";
 
@@ -106,6 +106,8 @@ export default async function HrPage({
         description="Employees, attendance, payroll, and statutory registers."
         actions={<PeriodSelector year={year} month={month} />}
       />
+
+      <HrNav activeTab="overview" />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile

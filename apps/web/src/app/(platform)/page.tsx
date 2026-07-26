@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { AlertRow } from "@/components/dashboard/alert-row";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Greeting } from "@/components/dashboard/greeting";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
@@ -161,6 +162,9 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {/* Visual insight charts */}
+      <DashboardCharts purchaseCount={purchaseStats?.processed ?? 0} />
+
       <div className="grid gap-4 lg:grid-cols-12">
         {/* Primary column */}
         <div className="space-y-4 lg:col-span-8">
@@ -192,8 +196,81 @@ export default async function DashboardPage() {
           </SectionCard>
         </div>
 
-        {/* Attention column */}
+        {/* Right sidebar column */}
         <div className="space-y-4 lg:col-span-4">
+          {/* Monthly Operations Workflow — vertical stepper */}
+          <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Monthly Workflow
+              </h2>
+              <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase">
+                Jul 2026
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/30">
+                    1
+                  </span>
+                  <span className="w-px flex-1 bg-border my-1" />
+                </div>
+                <div className="flex-1 pb-3">
+                  <h3 className="text-xs font-semibold">Attendance Grid</h3>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Fill presence, leave codes, and swipe times.
+                  </p>
+                  <a
+                    href="/hr/attendance"
+                    className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-muted text-[11px] font-medium hover:bg-accent transition-colors"
+                  >
+                    <span className="size-1.5 rounded-full bg-emerald-500" /> Open grid
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30">
+                    2
+                  </span>
+                  <span className="w-px flex-1 bg-border my-1" />
+                </div>
+                <div className="flex-1 pb-3">
+                  <h3 className="text-xs font-semibold">Payroll Execution</h3>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Compute wages, OT, PF, and ESI from attendance.
+                  </p>
+                  <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    <span className="size-1.5 rounded-full bg-amber-500" /> Pending
+                  </span>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30">
+                    3
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xs font-semibold">Generate Registers</h3>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Produce 10 statutory workbooks, hash-archived.
+                  </p>
+                  <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    <span className="size-1.5 rounded-full bg-amber-500" /> Pending
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <SectionCard
             title="Operational alerts"
             icon={TriangleAlert}

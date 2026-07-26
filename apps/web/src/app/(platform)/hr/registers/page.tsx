@@ -4,6 +4,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import { getRegisters, getWorkforceSummary, MONTH_NAMES, periodFromParams } from "@/lib/hr";
 
+import { HrNav } from "../hr-nav";
 import { PeriodSelector } from "../period-selector";
 import { GenerateRegistersButton } from "./generate-button";
 import { RegisterHistory } from "./register-history";
@@ -15,12 +16,12 @@ export default async function RegistersPage({
 }) {
   const { year, month } = periodFromParams(await searchParams);
   const [registers, summary] = await Promise.all([
-    getRegisters(),
-    getWorkforceSummary(year, month),
+    getRegisters().catch(() => []),
+    getWorkforceSummary(year, month).catch(() => null),
   ]);
 
-  const thisPeriod = registers.filter((log) => log.year === year && log.month === month);
-  const payrollReady = summary.payroll_generated > 0;
+  const thisPeriod = (registers || []).filter((log) => log.year === year && log.month === month);
+  const payrollReady = (summary?.payroll_generated || 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -39,6 +40,8 @@ export default async function RegistersPage({
           </div>
         }
       />
+
+      <HrNav activeTab="registers" />
 
       <section className="rounded-lg border border-border bg-card p-4 text-sm shadow-xs">
         <h2 className="mb-2 font-semibold">
