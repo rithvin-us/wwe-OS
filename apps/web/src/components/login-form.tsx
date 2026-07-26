@@ -44,10 +44,16 @@ export function LoginForm() {
 
     if (!response.ok) {
       const body = await response.json().catch(() => null);
-      const message =
-        response.status === 429
-          ? "Too many attempts. Wait a few minutes before trying again."
-          : (body?.message ?? "Incorrect email or password.");
+      let message = "Incorrect email or password.";
+      if (response.status === 429) {
+        message = "Too many attempts. Wait a few minutes before trying again.";
+      } else if (response.status >= 500) {
+        message =
+          body?.message ??
+          "Backend service unavailable. Please ensure the backend server is running.";
+      } else if (body?.message) {
+        message = body.message;
+      }
       setError("root", { message });
       return;
     }
