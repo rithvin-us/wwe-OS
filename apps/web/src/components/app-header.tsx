@@ -5,6 +5,7 @@ import { Clock, PanelLeft, PanelLeftClose, Search, User } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 
 import { NotificationCenter } from "@/components/notification-center";
+import { QuickActionsMenu } from "@/components/quick-actions-menu";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -107,6 +108,7 @@ export function AppHeader({
           </div>
         </div>
 
+        <QuickActionsMenu />
         <NotificationCenter />
         <ThemeToggle />
         <SignOutButton />

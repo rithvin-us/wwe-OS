@@ -58,6 +58,14 @@
 
   /* --- Module status (the platform signature) --- */
   --status-operational: oklch(0.58 0.13 160);
+
+  /* --- Module Design Tokens --- */
+  --module-dashboard: oklch(0.55 0.13 160);
+  --module-hr: oklch(0.55 0.14 190);
+  --module-purchases: oklch(0.52 0.15 250);
+  --module-documents: oklch(0.55 0.15 290);
+  --module-reports: oklch(0.65 0.15 75);
+  --module-automation: oklch(0.58 0.16 35);
   --status-building: oklch(0.66 0.13 75);
   --status-planned: oklch(0.55 0.02 250);
   --status-attention: oklch(0.55 0.2 25);

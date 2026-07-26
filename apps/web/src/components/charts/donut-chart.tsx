@@ -1,0 +1,80 @@
+"use client";
+
+import {
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  chartPalette,
+} from "@bop/charts";
+
+export interface DonutChartDataItem {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+export interface DonutChartProps {
+  data: DonutChartDataItem[];
+  height?: number;
+  centerTitle?: string;
+  centerValue?: string;
+  valueFormatter?: (val: any) => string;
+}
+
+export function DonutChartComponent({
+  data,
+  height = 200,
+  centerTitle,
+  centerValue,
+  valueFormatter = (v) => `${v}%`,
+}: DonutChartProps) {
+  return (
+    <div style={{ height }} className="relative flex items-center justify-center w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsPieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={45}
+            outerRadius={68}
+            paddingAngle={4}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.color || chartPalette[index % chartPalette.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "var(--card)",
+              borderColor: "var(--border)",
+              borderRadius: "8px",
+              fontSize: "12px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+            formatter={(value: any, name: any) => [valueFormatter(value), name]}
+          />
+        </RechartsPieChart>
+      </ResponsiveContainer>
+
+      {(centerTitle || centerValue) && (
+        <div className="pointer-events-none absolute flex flex-col items-center justify-center text-center">
+          {centerValue && (
+            <span className="font-mono text-base font-bold text-foreground">{centerValue}</span>
+          )}
+          {centerTitle && (
+            <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
+              {centerTitle}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

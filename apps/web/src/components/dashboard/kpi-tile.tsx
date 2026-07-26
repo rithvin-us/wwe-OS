@@ -2,22 +2,12 @@ import { ArrowDownRight, ArrowUpRight } from "@bop/icons";
 import { cn } from "@bop/ui/lib/utils";
 import Link from "next/link";
 
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { formatValue, type Kpi } from "@/config/dashboard";
 
 /**
  * A single company KPI. Shows the live figure, its period change, and where
- * it comes from. When a figure isn't available yet it reads "—" with a quiet
- * note — never a placeholder number.
- *
- * Only wired KPIs (kpi.href set) are real links — an unwired metric has
- * nowhere honest to send the operator, so it stays a plain, non-interactive
- * tile rather than a dead click target.
- *
- * No mount animation of its own: the KPI grid resolves in lockstep with the
- * rest of the dashboard, and the route-level crossfade in app-shell.tsx
- * already confirms "this content just arrived" once, at the page level. A
- * second, per-tile staggered entrance on top of that was decorative
- * repetition, not a second real event worth confirming.
+ * it comes from.
  */
 export function KpiTile({ kpi }: { kpi: Kpi }) {
   const display = formatValue(kpi.value, kpi.format);
@@ -48,7 +38,11 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
                 : "text-muted-foreground-subtle",
           )}
         >
-          {display}
+          {hasValue && typeof kpi.value === "number" ? (
+            <AnimatedCounter value={kpi.value} prefix={kpi.format === "currency" ? "₹" : ""} />
+          ) : (
+            display
+          )}
         </span>
         {kpi.deltaPct !== null ? (
           <span

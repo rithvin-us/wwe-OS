@@ -163,7 +163,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* Visual insight charts */}
-      <DashboardCharts purchaseCount={purchaseStats?.processed ?? 0} />
+      <DashboardCharts />
 
       <div className="grid gap-4 lg:grid-cols-12">
         {/* Primary column */}
