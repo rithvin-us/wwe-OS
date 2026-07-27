@@ -8,6 +8,8 @@ import { getEmployee, getEmployeeTasks, SHIFT_NAMES } from "@/lib/hr";
 
 import { ChecklistPanel } from "./checklist-panel";
 
+import { EnrollFaceDialog } from "./enroll-face-dialog";
+
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [employee, tasks] = await Promise.all([
@@ -75,15 +77,24 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       </div>
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-xs">
-        <div className="flex items-center gap-2">
-          <ScanFace className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">Photo check-in</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <ScanFace className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-semibold">AI Face Recognition & Photo Check-in</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {employee.enrolled_at
+                ? `Enrolled on ${new Date(employee.enrolled_at).toLocaleDateString("en-IN")}. Reference biometric embedding is active.`
+                : "Not enrolled. Upload a photo below so InsightFace AI can extract their biometric template for self-service attendance."}
+            </p>
+          </div>
+          <EnrollFaceDialog
+            employeeId={employee.id}
+            employeeName={employee.employee_name}
+            isEnrolled={Boolean(employee.enrolled_at)}
+          />
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {employee.enrolled_at
-            ? `Enrolled on ${new Date(employee.enrolled_at).toLocaleDateString("en-IN")}. They can check in from the shared check-in link.`
-            : "Not enrolled. Until a reference photo is captured, this employee cannot use self-service check-in."}
-        </p>
       </section>
 
       {onboarding.length > 0 ? (

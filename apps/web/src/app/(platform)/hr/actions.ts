@@ -244,3 +244,17 @@ export async function offboardEmployee(id: string, dateOfLeaving: string): Promi
     return failed(err);
   }
 }
+
+export async function enrollFace(id: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await djangoFetch(`/api/v1/hr/employees/${id}/enroll/`, {
+      method: "POST",
+      body: formData,
+    });
+    revalidatePath(`/hr/employees/${id}`);
+    revalidatePath("/hr/employees");
+    return { ok: true };
+  } catch (err) {
+    return failed(err);
+  }
+}

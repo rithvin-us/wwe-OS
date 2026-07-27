@@ -35,7 +35,9 @@ export async function isAuthenticated(): Promise<boolean> {
 async function fetchEnvelope<T>(path: string, init: RequestInit = {}): Promise<ApiSuccess<T>> {
   const token = await getAccessToken();
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  if (!(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response: Response;
