@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, ScanFace, CheckCircle2, AlertCircle, RefreshCw, Building2 } from "@bop/icons";
+import { MapPin, CheckCircle2, AlertCircle, RefreshCw } from "@bop/icons";
 
 export default function PublicMobileCheckInPage() {
   const [cameraActive, setCameraActive] = useState(false);
@@ -30,7 +30,7 @@ export default function PublicMobileCheckInPage() {
     try {
       setErrorMessage(null);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: "user" },
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -71,7 +71,7 @@ export default function PublicMobileCheckInPage() {
     );
 
     if (!selfieBlob) {
-      setErrorMessage("Failed to capture live camera frame.");
+      setErrorMessage("Failed to capture photo frame.");
       return;
     }
 
@@ -93,7 +93,7 @@ export default function PublicMobileCheckInPage() {
       if (res.ok) {
         setResult(data);
       } else {
-        setErrorMessage(data.message || data.detail || "Selfie check-in failed.");
+        setErrorMessage(data.message || data.detail || "Check-in failed. Please try again.");
       }
     } catch (err) {
       setScanning(false);
@@ -102,103 +102,87 @@ export default function PublicMobileCheckInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-between p-4 sm:p-6 font-sans">
-      {/* Header */}
-      <header className="w-full max-w-md flex items-center justify-between py-2 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <Building2 className="size-6 text-emerald-400" />
-          <span className="font-bold text-base tracking-wide text-white">WWE OS Attendance</span>
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-between p-4 sm:p-6 font-sans">
+      <main className="w-full max-w-md mx-auto my-auto space-y-4">
+        {/* Header Title matching exact user screenshot */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance check-in</h1>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Face the camera and stay at the work site, then tap check-in. No login needed.
+          </p>
         </div>
-        <span className="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/30">
-          Mobile Kiosk
-        </span>
-      </header>
 
-      {/* Main Viewfinder Card */}
-      <main className="w-full max-w-md my-auto py-4 space-y-4">
         {/* Result Banner */}
         {result?.matched ? (
-          <div className="p-5 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 space-y-2 animate-in fade-in zoom-in-95 shadow-lg">
-            <div className="flex items-center gap-2 font-bold text-lg text-emerald-400">
-              <CheckCircle2 className="size-6 text-emerald-400 shrink-0" />
-              Marked {result.action || "PUNCH"} Successfully!
+          <div className="p-4 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 space-y-1 animate-in fade-in">
+            <div className="flex items-center gap-2 font-bold text-base text-emerald-800">
+              <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
+              Marked {result.action || "PUNCH"} Successfully
             </div>
-            <p className="text-base font-semibold text-white">
+            <p className="text-sm font-semibold text-slate-900">
               {result.employee_name} ({result.employee_code})
             </p>
-            <p className="text-xs text-slate-300">{result.message || result.timestamp}</p>
+            <p className="text-xs text-slate-600">{result.message || result.timestamp}</p>
           </div>
         ) : result && !result.matched ? (
-          <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 text-xs space-y-1">
-            <p className="font-bold text-sm">Face Not Recognized</p>
-            <p className="opacity-90">
-              {result.message || "Position your face clearly inside the circle with good lighting."}
+          <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-900 text-xs space-y-1">
+            <p className="font-bold text-sm text-amber-800">Face Not Recognized</p>
+            <p className="text-slate-700">
+              {result.message || "Please face the camera directly with good lighting."}
             </p>
           </div>
         ) : errorMessage ? (
-          <div className="p-4 rounded-xl border border-rose-500/40 bg-rose-500/15 text-rose-300 text-xs flex items-start gap-2">
-            <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-400" />
+          <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
             <div>{errorMessage}</div>
           </div>
         ) : null}
 
-        {/* Camera Container */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-2 shadow-2xl flex items-center justify-center min-h-[320px]">
+        {/* Camera Viewfinder (Clean Rounded Box, NO green circle overlay) */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm aspect-[3/4] flex items-center justify-center">
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className={`w-full h-80 object-cover rounded-xl border border-emerald-500/30 ${cameraActive ? "block" : "hidden"}`}
+            className={`w-full h-full object-cover rounded-2xl ${cameraActive ? "block" : "hidden"}`}
           />
 
           {!cameraActive ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center text-slate-400 space-y-3">
-              <Camera className="size-12 text-slate-600" />
-              <p className="text-xs max-w-xs">
-                Allow camera permission to scan your face for mobile attendance.
-              </p>
+            <div className="flex flex-col items-center justify-center p-8 text-center text-slate-300 space-y-3">
+              <p className="text-xs text-slate-400">Camera feed initializing...</p>
               <button
                 onClick={startCamera}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition-colors cursor-pointer"
               >
                 <RefreshCw className="size-3.5" /> Enable Camera
               </button>
             </div>
-          ) : (
-            /* Face Oval Viewfinder Overlay */
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="size-56 rounded-full border-2 border-dashed border-emerald-400/90 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-pulse" />
-            </div>
-          )}
+          ) : null}
 
           {scanning ? (
-            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center text-emerald-400 space-y-2">
-              <ScanFace className="size-12 animate-bounce text-emerald-400" />
-              <span className="text-sm font-semibold tracking-wide">
-                Matching Face Biometrics...
-              </span>
+            <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
+              <RefreshCw className="size-8 animate-spin text-emerald-400" />
+              <span className="text-sm font-semibold tracking-wide">Processing Check-in...</span>
             </div>
           ) : null}
         </div>
 
-        {/* Main Punch Button */}
-        <div className="space-y-2 pt-2">
-          <button
-            onClick={() => captureAndPunch()}
-            disabled={scanning || !cameraActive}
-            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Camera className="size-5" />
-            {scanning ? "Processing Face..." : "Scan Face & Mark Attendance"}
-          </button>
-        </div>
-      </main>
+        {/* Check in / out Button (Matching exact green button from screenshot) */}
+        <button
+          onClick={() => captureAndPunch()}
+          disabled={scanning || !cameraActive}
+          className="w-full py-3.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+        >
+          <MapPin className="size-5" />
+          {scanning ? "Checking in..." : "Check in / out"}
+        </button>
 
-      {/* Footer */}
-      <footer className="w-full max-w-md text-center py-2 text-[11px] text-slate-500 border-t border-slate-900">
-        Waterworks Engineering OS · Biometric Attendance System
-      </footer>
+        {/* Notice text matching exact screenshot */}
+        <p className="text-center text-xs text-slate-500 pt-1">
+          Your photo is used only to verify identity and is not stored.
+        </p>
+      </main>
     </div>
   );
 }

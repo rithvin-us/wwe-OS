@@ -186,12 +186,7 @@ export function FaceKioskDialog() {
                   <RefreshCw className="size-3" /> Retry Camera Access
                 </Button>
               </div>
-            ) : (
-              /* Oval Biometric Overlay */
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="size-48 rounded-full border-2 border-dashed border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse" />
-              </div>
-            )}
+            ) : null}
 
             {scanning ? (
               <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-emerald-400 space-y-2">
