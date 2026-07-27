@@ -222,8 +222,12 @@ class HttpFaceService(FaceRecognitionService):
         except Exception:  # noqa: BLE001
             detail = resp.text
         if resp.status_code == 401:
-            logger.error("face-ai rejected API key (401)")
-            raise FaceServiceUnavailableError("Face service authentication failed")
+            logger.error("face-ai rejected API key (401): %s", detail)
+            raise FaceError(
+                "Face-AI authentication failed (401): FACE_AI_API_KEY on your "
+                "local desktop service does not match HR_FACE_AI_API_KEY on web platform. "
+                "Leave FACE_AI_API_KEY blank in services/face-ai/.env for local dev."
+            )
         # 422 (and other 4xx) carry a user-safe face-quality message.
         raise FaceError(detail or "Face could not be processed")
 
