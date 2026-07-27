@@ -84,7 +84,9 @@ class FaceSettings:
         default_factory=lambda: _str("HR_FACE_AI_URL", _str("FACE_AI_URL", "http://localhost:9000"))
     )
     # Shared secret sent as X-API-Key; must equal FACE_AI_API_KEY on the service.
-    FACE_AI_API_KEY: str = field(default_factory=lambda: _str("HR_FACE_AI_API_KEY", ""))
+    FACE_AI_API_KEY: str = field(
+        default_factory=lambda: _str("HR_FACE_AI_API_KEY", _str("FACE_AI_API_KEY", ""))
+    )
     FACE_AI_TIMEOUT: float = field(default_factory=lambda: _float("HR_FACE_AI_TIMEOUT", 10.0))
     FACE_AI_CONNECT_TIMEOUT: float = field(
         default_factory=lambda: _float("HR_FACE_AI_CONNECT_TIMEOUT", 3.0)
