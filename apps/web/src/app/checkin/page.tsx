@@ -1,21 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Camera,
-  ScanFace,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Upload,
-  MapPin,
-  Building2,
-} from "@bop/icons";
+import { Camera, ScanFace, CheckCircle2, AlertCircle, RefreshCw, Building2 } from "@bop/icons";
 
 export default function PublicMobileCheckInPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [geoCoords, setGeoCoords] = useState<{ lat?: number; lon?: number; accuracy?: number }>({});
   const [result, setResult] = useState<{
     matched: boolean;
     employee_code?: string;
@@ -31,29 +21,10 @@ export default function PublicMobileCheckInPage() {
 
   useEffect(() => {
     startCamera();
-    obtainGeoLocation();
     return () => {
       stopCamera();
     };
   }, []);
-
-  function obtainGeoLocation() {
-    if (typeof window !== "undefined" && "geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeoCoords({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-          });
-        },
-        (err) => {
-          console.warn("Geolocation warning:", err.message);
-        },
-        { enableHighAccuracy: true, timeout: 10000 },
-      );
-    }
-  }
 
   async function startCamera() {
     try {
@@ -80,31 +51,27 @@ export default function PublicMobileCheckInPage() {
     setCameraActive(false);
   }
 
-  async function captureAndPunch(fileToSubmit?: File) {
-    let selfieBlob: Blob | undefined = fileToSubmit;
-
-    if (!selfieBlob) {
-      if (!videoRef.current || !cameraActive) {
-        setErrorMessage("Webcam is not active. Please allow camera permissions.");
-        return;
-      }
-
-      const video = videoRef.current;
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      selfieBlob =
-        (await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92))) ||
-        undefined;
+  async function captureAndPunch() {
+    if (!videoRef.current || !cameraActive) {
+      setErrorMessage("Camera is not active. Please allow camera permissions.");
+      return;
     }
 
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const selfieBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92),
+    );
+
     if (!selfieBlob) {
-      setErrorMessage("Failed to capture selfie frame.");
+      setErrorMessage("Failed to capture live camera frame.");
       return;
     }
 
@@ -113,14 +80,6 @@ export default function PublicMobileCheckInPage() {
 
     const formData = new FormData();
     formData.append("file", selfieBlob, "selfie.jpg");
-
-    if (geoCoords.lat !== undefined && geoCoords.lon !== undefined) {
-      formData.append("lat", String(geoCoords.lat));
-      formData.append("lon", String(geoCoords.lon));
-      if (geoCoords.accuracy !== undefined) {
-        formData.append("accuracy", String(geoCoords.accuracy));
-      }
-    }
 
     try {
       const res = await fetch("/api/hr/attendance/checkin", {
@@ -139,13 +98,6 @@ export default function PublicMobileCheckInPage() {
     } catch (err) {
       setScanning(false);
       setErrorMessage(err instanceof Error ? err.message : "Network error during check-in.");
-    }
-  }
-
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      captureAndPunch(file);
     }
   }
 
@@ -230,17 +182,6 @@ export default function PublicMobileCheckInPage() {
           ) : null}
         </div>
 
-        {/* Location Indicator */}
-        {geoCoords.lat !== undefined ? (
-          <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400">
-            <MapPin className="size-3 text-emerald-400" />
-            <span>
-              GPS Location Verified (
-              {geoCoords.accuracy ? `±${Math.round(geoCoords.accuracy)}m` : "Active"})
-            </span>
-          </div>
-        ) : null}
-
         {/* Main Punch Button */}
         <div className="space-y-2 pt-2">
           <button
@@ -251,14 +192,6 @@ export default function PublicMobileCheckInPage() {
             <Camera className="size-5" />
             {scanning ? "Processing Face..." : "Scan Face & Mark Attendance"}
           </button>
-
-          {/* Upload Backup */}
-          <div className="text-center pt-1">
-            <label className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 cursor-pointer">
-              <Upload className="size-3.5" /> Upload Selfie Photo Instead
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-            </label>
-          </div>
         </div>
       </main>
 

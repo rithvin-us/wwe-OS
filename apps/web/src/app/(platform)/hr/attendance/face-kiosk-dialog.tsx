@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, ScanFace, CheckCircle2, AlertCircle, RefreshCw, Upload } from "@bop/icons";
+import { Camera, ScanFace, CheckCircle2, AlertCircle, RefreshCw } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,
@@ -68,28 +68,24 @@ export function FaceKioskDialog() {
     setCameraActive(false);
   }
 
-  async function captureAndPunch(blobToSubmit?: Blob) {
-    let selfieBlob = blobToSubmit;
-
-    if (!selfieBlob) {
-      if (!videoRef.current || !cameraActive) {
-        toast.error("Webcam is not active.");
-        return;
-      }
-
-      const video = videoRef.current;
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      selfieBlob =
-        (await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92))) ||
-        undefined;
+  async function captureAndPunch() {
+    if (!videoRef.current || !cameraActive) {
+      toast.error("Webcam is not active.");
+      return;
     }
+
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const selfieBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92),
+    );
 
     if (!selfieBlob) {
       toast.error("Failed to capture webcam frame.");
@@ -119,13 +115,6 @@ export function FaceKioskDialog() {
     } else {
       setErrorMessage(res.error || "Attendance punch failed.");
       toast.error(res.error || "Attendance punch failed.");
-    }
-  }
-
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      captureAndPunch(file);
     }
   }
 
@@ -213,26 +202,19 @@ export function FaceKioskDialog() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
-            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
-              <Upload className="size-3.5" /> Upload Photo Instead
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-            </label>
-
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-                Close
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => captureAndPunch()}
-                disabled={scanning || !cameraActive}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
-              >
-                <Camera className="size-4" />
-                {scanning ? "Scanning..." : "Scan & Punch"}
-              </Button>
-            </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+              Close
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => captureAndPunch()}
+              disabled={scanning || !cameraActive}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+            >
+              <Camera className="size-4" />
+              {scanning ? "Scanning..." : "Scan & Punch"}
+            </Button>
           </div>
         </div>
       </DialogContent>
