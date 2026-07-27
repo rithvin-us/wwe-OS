@@ -9,6 +9,7 @@ import { PeriodSelector } from "../period-selector";
 import { AttendanceGridEditor } from "./attendance-grid";
 
 import { FaceKioskDialog } from "./face-kiosk-dialog";
+import { ShareCheckInLinkButton } from "./share-link-button";
 
 export default async function AttendancePage({
   searchParams,
@@ -28,6 +29,7 @@ export default async function AttendancePage({
         description="One row per employee, one column per day. Present days are given the shift's standard timings automatically."
         actions={
           <div className="flex items-center gap-2">
+            <ShareCheckInLinkButton />
             <FaceKioskDialog />
             {summary.period_locked ? (
               <Badge variant="outline" className="gap-1">
