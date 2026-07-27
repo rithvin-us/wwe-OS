@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { Search } from "@bop/icons";
+import { Eye, Search } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
+import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 
 import { SHIFT_NAMES, type Employee } from "@/lib/hr-constants";
+import { EnrollFaceDialog } from "./[id]/enroll-face-dialog";
 
 /**
  * The employee master. Filtering is client-side on purpose: the whole list is
@@ -66,6 +68,7 @@ export function EmployeeTable({ employees }: { employees: Employee[] }) {
               <th className="px-3 py-2 font-medium">Shift</th>
               <th className="px-3 py-2 text-right font-medium">Joined</th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -102,11 +105,26 @@ export function EmployeeTable({ employees }: { employees: Employee[] }) {
                     <Badge variant="outline">Left {employee.date_of_leaving}</Badge>
                   )}
                 </td>
+                <td className="px-3 py-2 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button asChild size="sm" variant="outline" className="h-7 px-2 text-xs gap-1">
+                      <Link href={`/hr/employees/${employee.id}`}>
+                        <Eye className="size-3.5 text-muted-foreground" />
+                        View Profile
+                      </Link>
+                    </Button>
+                    <EnrollFaceDialog
+                      employeeId={employee.id}
+                      employeeName={employee.employee_name}
+                      isEnrolled={Boolean(employee.enrolled_at)}
+                    />
+                  </div>
+                </td>
               </tr>
             ))}
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="px-3 py-6 text-center text-sm text-muted-foreground">
                   No employees match that search.
                 </td>
               </tr>
