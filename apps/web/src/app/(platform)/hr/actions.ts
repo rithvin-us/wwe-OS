@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ApiRequestError } from "@/lib/api/envelope";
 import { djangoFetch } from "@/lib/api/server";
 
 /**
@@ -12,6 +13,21 @@ import { djangoFetch } from "@/lib/api/server";
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 function failed(err: unknown): ActionResult {
+  if (err instanceof ApiRequestError) {
+    if (err.details && typeof err.details === "object") {
+      const fieldErrors = Object.entries(err.details as Record<string, unknown>)
+        .map(([field, msgs]) => {
+          const fieldName = field.replace(/_/g, " ");
+          const msgList = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+          return `${fieldName}: ${msgList}`;
+        })
+        .join(" | ");
+      if (fieldErrors) {
+        return { ok: false, error: fieldErrors };
+      }
+    }
+    return { ok: false, error: err.message };
+  }
   return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
 }
 
@@ -169,9 +185,24 @@ export async function createEmployee(data: {
   bank_ifsc?: string;
 }): Promise<ActionResult> {
   try {
+    const payload = {
+      employee_code: data.employee_code,
+      employee_name: data.name,
+      department: data.department || "Production",
+      designation: data.designation || "Operator",
+      skill_category: data.category || "Skilled",
+      date_of_joining: data.date_of_joining,
+      salary: data.basic_rate || 0,
+      pf_number: data.pf_number || "",
+      esic_number: data.esic_number || "",
+      uan: data.uan_number || "",
+      bank_account: data.bank_account_number || "",
+      ifsc_code: data.bank_ifsc || "",
+    };
+
     await djangoFetch("/api/v1/hr/employees/", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     revalidatePath("/hr/employees");
     revalidatePath("/hr");
