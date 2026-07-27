@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import re
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import httpx
 from dotenv import load_dotenv
@@ -499,6 +501,27 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
 
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(b'{"status":"ok","mode":"active","service":"telegram-bot"}')
+
+    def log_message(self, format, *args):
+        pass
+
+
+def _start_health_server(port: int) -> None:
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        logger.info(f"Telegram Bot HTTP health endpoint listening on http://0.0.0.0:{port}/health")
+    except Exception as exc:
+        logger.warning(f"Could not start health server on port {port}: {exc}")
+
+
 def main() -> None:
     """Start the bot."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -506,6 +529,9 @@ def main() -> None:
     if not token:
         logger.error("No TELEGRAM_BOT_TOKEN provided. Please set it in the .env file.")
         return
+
+    port = int(os.getenv("PORT", os.getenv("TELEGRAM_BOT_PORT", "9001")))
+    webhook_url = os.getenv("WEBHOOK_URL")
 
     application = Application.builder().token(token).build()
 
@@ -518,7 +544,21 @@ def main() -> None:
 
     application.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_document))
 
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    if webhook_url:
+        secret_token = os.getenv("WEBHOOK_SECRET", "wwe-telegram-secret")
+        logger.info(f"Starting Telegram bot Webhook listener on 0.0.0.0:{port} -> {webhook_url}")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path="telegram",
+            webhook_url=f"{webhook_url}/telegram",
+            secret_token=secret_token,
+            allowed_updates=Update.ALL_TYPES,
+        )
+    else:
+        _start_health_server(port)
+        logger.info(f"Starting Telegram bot in long-polling mode on port {port}...")
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
