@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { Eye, Search } from "@bop/icons";
+import { Search } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
-import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 
 import { SHIFT_NAMES, type Employee } from "@/lib/hr-constants";
 import { EnrollFaceDialog } from "./[id]/enroll-face-dialog";
+import { EmployeeProfileDialog } from "./employee-profile-dialog";
 
 /**
  * The employee master. Filtering is client-side on purpose: the whole list is
@@ -78,18 +77,11 @@ export function EmployeeTable({ employees }: { employees: Employee[] }) {
                 className="border-t border-border/60 transition-colors hover:bg-accent/50"
               >
                 <td className="px-3 py-2 font-mono text-xs">
-                  <Link href={`/hr/employees/${employee.id}`} className="hover:underline">
+                  <span className="font-semibold text-foreground font-mono">
                     {employee.employee_code}
-                  </Link>
+                  </span>
                 </td>
-                <td className="px-3 py-2">
-                  <Link
-                    href={`/hr/employees/${employee.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {employee.employee_name}
-                  </Link>
-                </td>
+                <td className="px-3 py-2 font-medium">{employee.employee_name}</td>
                 <td className="px-3 py-2 text-muted-foreground">{employee.designation || "—"}</td>
                 <td className="px-3 py-2 text-muted-foreground">{employee.department || "—"}</td>
                 <td className="px-3 py-2 text-muted-foreground">
@@ -107,12 +99,7 @@ export function EmployeeTable({ employees }: { employees: Employee[] }) {
                 </td>
                 <td className="px-3 py-2 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Button asChild size="sm" variant="outline" className="h-7 px-2 text-xs gap-1">
-                      <Link href={`/hr/employees/${employee.id}`}>
-                        <Eye className="size-3.5 text-muted-foreground" />
-                        View Profile
-                      </Link>
-                    </Button>
+                    <EmployeeProfileDialog employee={employee} />
                     <EnrollFaceDialog
                       employeeId={employee.id}
                       employeeName={employee.employee_name}

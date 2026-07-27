@@ -8,6 +8,8 @@ import { HrNav } from "../hr-nav";
 import { AddEmployeeDialog } from "./add-employee-dialog";
 import { EmployeeTable } from "./employee-table";
 
+import { ShareCheckInLinkButton } from "../attendance/share-link-button";
+
 export default async function EmployeesPage() {
   const employees = await getEmployees().catch(() => []);
 
@@ -19,7 +21,12 @@ export default async function EmployeesPage() {
       <PageHeader
         title="Employees"
         description="The master record every register, payslip and attendance sheet is built from."
-        actions={<AddEmployeeDialog />}
+        actions={
+          <div className="flex items-center gap-2">
+            <ShareCheckInLinkButton />
+            <AddEmployeeDialog />
+          </div>
+        }
       />
 
       <HrNav activeTab="employees" />
