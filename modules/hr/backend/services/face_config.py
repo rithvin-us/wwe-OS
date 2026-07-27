@@ -72,14 +72,16 @@ class FaceSettings:
         default_factory=lambda: _int("HR_PUNCH_COOLDOWN_MINUTES", 1)
     )
 
-    # ---- Engine selection ------------------------------------------------- #
-    # "stub" (no ML, the default), "insightface" (in-process, needs ~1 GB RAM),
-    # or "http" (delegate to services/face-ai — the production mode).
-    FACE_ENGINE: str = field(default_factory=lambda: _str("HR_FACE_ENGINE", "stub"))
+    FACE_ENGINE: str = field(
+        default_factory=lambda: _str(
+            "HR_FACE_ENGINE",
+            "http" if _str("HR_FACE_AI_URL", "") or _str("FACE_AI_URL", "") else "stub",
+        )
+    )
 
     # ---- face-ai microservice client (FACE_ENGINE=http) ------------------- #
     FACE_AI_URL: str = field(
-        default_factory=lambda: _str("HR_FACE_AI_URL", "http://localhost:9000")
+        default_factory=lambda: _str("HR_FACE_AI_URL", _str("FACE_AI_URL", "http://localhost:9000"))
     )
     # Shared secret sent as X-API-Key; must equal FACE_AI_API_KEY on the service.
     FACE_AI_API_KEY: str = field(default_factory=lambda: _str("HR_FACE_AI_API_KEY", ""))
