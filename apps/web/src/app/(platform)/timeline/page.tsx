@@ -55,11 +55,12 @@ export default async function TimelinePage({
   }>;
 }) {
   const params = await searchParams;
-  const module = params.module && isTimelineModule(params.module) ? params.module : undefined;
+  const selectedModule =
+    params.module && isTimelineModule(params.module) ? params.module : undefined;
   const page = Math.max(Number(params.page) || 1, 1);
 
   const data = await getTimeline({
-    module,
+    module: selectedModule,
     dateFrom: params.date_from || undefined,
     dateTo: params.date_to || undefined,
     vendor: params.vendor || undefined,
@@ -68,7 +69,7 @@ export default async function TimelinePage({
 
   function pageHref(nextPage: number): string {
     const next = new URLSearchParams();
-    if (module) next.set("module", module);
+    if (selectedModule) next.set("module", selectedModule);
     if (params.date_from) next.set("date_from", params.date_from);
     if (params.date_to) next.set("date_to", params.date_to);
     if (params.vendor) next.set("vendor", params.vendor);
@@ -110,7 +111,7 @@ export default async function TimelinePage({
           <select
             id="timeline-module"
             name="module"
-            defaultValue={module ?? ""}
+            defaultValue={selectedModule ?? ""}
             className={SELECT_CLASS}
           >
             <option value="">All</option>
@@ -145,7 +146,7 @@ export default async function TimelinePage({
             className="h-9 w-36"
           />
         </div>
-        {!module || module === "purchase" ? (
+        {!selectedModule || selectedModule === "purchase" ? (
           <div className="space-y-1.5">
             <Label htmlFor="timeline-vendor" className="text-xs text-muted-foreground">
               Vendor (purchases only)

@@ -94,8 +94,9 @@ class TagService(BaseService):
         object_id = str(object_id)
         with transaction.atomic():
             resolved: list[Tag] = list(Tag.objects.filter(tenant=tenant, id__in=tag_ids or []))
-            for name in tag_names or []:
-                resolved.append(self.get_or_create_tag(tenant=tenant, name=name))
+            resolved.extend(
+                self.get_or_create_tag(tenant=tenant, name=name) for name in tag_names or []
+            )
 
             resolved_ids = {tag.id for tag in resolved}
             current_qs = TaggedItem.objects.filter(

@@ -188,9 +188,7 @@ def count_attendance_days(
                 hours, ot, swipe_warnings = compute_hours_from_swipe(
                     record.in_time, record.out_time, std_hours
                 )
-                ot_hours += ot
-                for w in swipe_warnings:
-                    warnings.append(f"Day {day_num}: {w}")
+                warnings.extend(f"Day {day_num}: {w}" for w in swipe_warnings)
 
         elif status in LEAVE_STATUSES:
             leave += 1

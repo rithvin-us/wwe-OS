@@ -173,11 +173,9 @@ def _run_paddle_ocr(file_bytes: bytes) -> str:
         if not result or not result[0]:
             return ""
 
-        extracted_lines = []
-        for line in result[0]:
-            if line and len(line) >= 2 and line[1]:
-                extracted_lines.append(str(line[1][0]))
-
+        extracted_lines = [
+            str(line[1][0]) for line in result[0] if line and len(line) >= 2 and line[1]
+        ]
         return "\n".join(extracted_lines)
     except Exception as exc:
         logger.debug("PaddleOCR extraction skipped/unavailable: %s", exc)
@@ -384,7 +382,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         base64_image = base64.b64encode(file_bytes).decode("utf-8")
 
         raw_path = new_file.file_path
-        if raw_path.startswith("http://") or raw_path.startswith("https://"):
+        if raw_path.startswith(("http://", "https://")):
             document_url = raw_path
         else:
             document_url = (

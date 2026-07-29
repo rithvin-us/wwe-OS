@@ -398,9 +398,8 @@ STORAGE_S3_REGION = env_str("STORAGE_S3_REGION", "auto")
 STORAGE_S3_ACCESS_KEY_ID = env_str("STORAGE_S3_ACCESS_KEY_ID", "") or ""
 STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "") or ""
 
-# --------------------------------------------------------------------------- #
-# Invoicing (modules/finance)
-# --------------------------------------------------------------------------- #
+# Invoicing configuration for finance module.
+
 # The master invoice workbook. Everything generated is a fill of this file —
 # it is never edited in place. Overridable so the company can point at their
 # own copy without a code change.

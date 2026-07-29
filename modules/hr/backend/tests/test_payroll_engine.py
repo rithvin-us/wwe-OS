@@ -149,12 +149,9 @@ class TestComputeHoursFromSwipe:
 class TestCountAttendanceDays:
     def test_full_month_26_working_days(self):
         """Employee present all 26 working days (4 Sundays as WH, 1 NH)."""
-        attendance = []
         # 26 present days + 4 weekly holidays + 1 national holiday = 31
-        for d in range(1, 27):
-            attendance.append(make_attendance(d, "P"))
-        for d in [27, 28, 29, 30]:
-            attendance.append(make_attendance(d, "WH"))
+        attendance = [make_attendance(d, "P") for d in range(1, 27)]
+        attendance.extend(make_attendance(d, "WH") for d in [27, 28, 29, 30])
         attendance.append(make_attendance(31, "NH"))
 
         days = count_attendance_days(attendance, date(2024, 1, 1), None, 2024, 1)
@@ -164,11 +161,8 @@ class TestCountAttendanceDays:
 
     def test_mid_month_joiner(self):
         """Employee joins on the 15th — only days ≥ 15 should count."""
-        attendance = []
         # Days 1-14: NJ (or no record)
-        for d in range(15, 32):
-            if d <= 31:
-                attendance.append(make_attendance(d, "P"))
+        attendance = [make_attendance(d, "P") for d in range(15, 32)]
 
         days = count_attendance_days(attendance, date(2024, 1, 15), None, 2024, 1)
         # Should only count days 15-31 = 17 days
@@ -177,11 +171,8 @@ class TestCountAttendanceDays:
 
     def test_mid_month_leaver(self):
         """Employee leaves on the 10th — only days ≤ 10 should count."""
-        attendance = []
-        for d in range(1, 11):
-            attendance.append(make_attendance(d, "P"))
-        for d in range(11, 32):
-            attendance.append(make_attendance(d, "LEFT"))
+        attendance = [make_attendance(d, "P") for d in range(1, 11)]
+        attendance.extend(make_attendance(d, "LEFT") for d in range(11, 32))
 
         days = count_attendance_days(attendance, date(2024, 1, 1), date(2024, 1, 10), 2024, 1)
         assert days.present == 10
@@ -514,8 +505,7 @@ class TestComputeEmployeePayroll:
         config = make_config()
 
         attendance = [make_attendance(d, "P") for d in range(1, 27)]
-        for d in range(27, 32):
-            attendance.append(make_attendance(d, "WH"))
+        attendance.extend(make_attendance(d, "WH") for d in range(27, 32))
 
         result = compute_employee_payroll(emp, attendance, components, [], config, 2024, 1)
 

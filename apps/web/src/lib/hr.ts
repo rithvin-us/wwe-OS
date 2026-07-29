@@ -1,6 +1,5 @@
 import { djangoFetch } from "@/lib/api/server";
 import type {
-  Anomaly,
   AnomalyReport,
   AttendanceGrid,
   ClaimStatus,
@@ -127,5 +126,3 @@ export async function getAttendanceTrends(
     `/api/v1/hr/analytics/trends/?year=${year}&month=${month}&months=${months}`,
   );
 }
-
-export type { Anomaly };

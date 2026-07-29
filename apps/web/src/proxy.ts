@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 /**
  * Cheap, edge-level gate: no session cookie at all means "never signed in"
@@ -12,15 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * proxy isn't a full session/authorization solution. Real authorization
  * happens on every Django call regardless of what this function decides.
  */
-export function proxy(_request: NextRequest) {
-  // sessionCookie is fetched for debugging or future usage in this proxy
-
-  // if (!hasSession) {
-  //   const url = new URL("/login", request.url);
-  //   url.searchParams.set("next", request.nextUrl.pathname);
-  //   return NextResponse.redirect(url);
-  // }
-
+export function proxy() {
   return NextResponse.next();
 }
 

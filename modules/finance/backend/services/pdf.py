@@ -241,18 +241,18 @@ def render_invoice_pdf(
         )
         style_commands.append(("SPAN", (1, 1), (6, 1)))
 
-    for line in lines:
-        rows.append(
-            [
-                cell(line.position),
-                cell(line.description),
-                cell(line.hsn),
-                cell(_trim_quantity(line.quantity)),
-                cell(line.uom),
-                cell(_inr(line.rate)),
-                cell(_inr(line.amount)),
-            ]
-        )
+    rows.extend(
+        [
+            cell(line.position),
+            cell(line.description),
+            cell(line.hsn),
+            cell(_trim_quantity(line.quantity)),
+            cell(line.uom),
+            cell(_inr(line.rate)),
+            cell(_inr(line.amount)),
+        ]
+        for line in lines
+    )
 
     primary_label, secondary_label = tax_labels(tax_mode=tax_mode, gst_rate=gst_rate)
     tax_rows = [

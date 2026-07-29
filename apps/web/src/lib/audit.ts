@@ -135,10 +135,10 @@ const MODULE_LIST_HREF: Record<TimelineModule, string> = {
  * module's list page (assets and purchase bills open in a dialog from
  * their list, with no deep-linkable detail URL today). */
 export function timelineHref(entry: Pick<AuditLogEntry, "module" | "object_id">): string | null {
-  const module = entry.module as TimelineModule;
-  const detail = MODULE_DETAIL_HREF[module];
+  const entryModule = entry.module as TimelineModule;
+  const detail = MODULE_DETAIL_HREF[entryModule];
   if (detail && entry.object_id) return detail(entry.object_id);
-  return MODULE_LIST_HREF[module] ?? null;
+  return MODULE_LIST_HREF[entryModule] ?? null;
 }
 
 /** A one-line label for an entry: whatever the recording module put in

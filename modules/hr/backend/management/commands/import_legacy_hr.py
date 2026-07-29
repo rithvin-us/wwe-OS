@@ -135,7 +135,7 @@ class Command(BaseCommand):
 
         self._report(counts, commit)
 
-    # ------------------------------------------------------------- importers
+    # Legacy HR data importers.
 
     def _import_employees(
         self, source: _Source, tenant: Tenant, counts: dict

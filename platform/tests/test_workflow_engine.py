@@ -241,9 +241,7 @@ def test_concurrent_finish_only_publishes_once(tenant, monkeypatch):
     assert len(published) == 1
 
 
-# --------------------------------------------------------------------------- #
-# Compensation (rollback)
-# --------------------------------------------------------------------------- #
+# Compensation and rollback test suite.
 
 
 def test_compensation_runs_prior_successful_steps_in_reverse_order(tenant):
