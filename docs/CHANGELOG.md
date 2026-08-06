@@ -14,5 +14,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-commit hooks configuration (Ruff, Prettier).
 - Python (Ruff, Pytest) and Node (pnpm, ESLint, Prettier) environment configurations.
 - Initial Docker Compose infrastructure (PostgreSQL, Redis, Mailpit).
-- Added `walkthrough.md` for project reference and command list.
-- Added `CHANGELOG.md` to track ongoing project changes.
+- Added `docs/reference/walkthrough.md` for project reference and command list.
+- Added `docs/CHANGELOG.md` to track ongoing project changes.

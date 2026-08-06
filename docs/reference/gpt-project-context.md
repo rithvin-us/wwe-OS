@@ -3,7 +3,7 @@
 > **Last Updated:** July 24, 2026  
 > **Repository:** `rithvin-us/wwe-OS`  
 > **Architecture:** Single-operator Enterprise Business Operations Platform (Monorepo)  
-> **Detailed Knowledge Base:** See [GPT_KNOWLEDGE_BASE.md](file:///e:/w/wwe%20OS/GPT_KNOWLEDGE_BASE.md) for full system specifications.
+> **Detailed Knowledge Base:** See [gpt-knowledge-base.md](gpt-knowledge-base.md) for full system specifications.
 
 ---
 

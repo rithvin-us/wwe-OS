@@ -71,7 +71,7 @@ if it still cannot.
 
 ## Endpoints
 
-See [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md). Summary: `POST /enroll-face`,
+See [`api-documentation.md`](api-documentation.md). Summary: `POST /enroll-face`,
 `POST /verify-face` (both need `X-API-Key`), `GET /health`, `GET /version` (open).
 
 ## Tests

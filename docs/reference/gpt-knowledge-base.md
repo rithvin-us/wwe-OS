@@ -165,8 +165,8 @@ wwe-OS/
 │ └── main.py # Telegram Listener & OCR Ingestion
 ├── docker-compose.yml # Dev Container Orchestration
 ├── CLAUDE.md # Development Rules & Instructions
-├── GPT_PROJECT_CONTEXT.md # Quick Context Summary
-└── GPT_KNOWLEDGE_BASE.md # Master Copy-Pasteable Knowledge Base
+├── docs/reference/gpt-project-context.md # Quick Context Summary
+└── docs/reference/gpt-knowledge-base.md # Master Copy-Pasteable Knowledge Base
 
 ````
 
