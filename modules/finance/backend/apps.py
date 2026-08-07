@@ -29,6 +29,8 @@ class FinanceConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         # In-memory registrations (safe at import; no DB access).
+        from finance.backend.demo_reset import register_demo_reset
         from finance.backend.document_types import register_document_types
 
         register_document_types()
+        register_demo_reset()
