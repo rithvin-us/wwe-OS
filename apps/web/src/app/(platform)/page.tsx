@@ -27,6 +27,7 @@ import { activityLabel, getTodayActivity } from "@/lib/audit";
 import { getActiveRules } from "@/lib/automation";
 import { getContracts } from "@/lib/contracts";
 import { getPurchaseBillStats, getRecentTelegramBills } from "@/lib/purchase";
+import { mockData } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -163,7 +164,13 @@ export default async function DashboardPage() {
       </section>
 
       {/* Visual insight charts */}
-      <DashboardCharts />
+      <DashboardCharts
+        financialTrend={mockData.dashboard.MOCK_FINANCIAL_TREND}
+        spendTrend={mockData.dashboard.MOCK_SPEND_TREND}
+        attendanceTrend={mockData.dashboard.MOCK_ATTENDANCE_TREND}
+        categoryBreakdown={mockData.dashboard.MOCK_CATEGORY_BREAKDOWN}
+        processFunnel={mockData.dashboard.MOCK_PROCESS_FUNNEL}
+      />
 
       <div className="grid gap-4 lg:grid-cols-12">
         {/* Primary column */}
