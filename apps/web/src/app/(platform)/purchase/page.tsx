@@ -14,6 +14,7 @@ import { listTags } from "@/lib/tags";
 
 import { GstTaxBar } from "./gst-tax-bar";
 import { PurchaseCharts } from "./purchase-charts";
+import { PurchaseUploadCard } from "./purchase-upload-card";
 
 export const metadata: Metadata = {
   title: "Purchases & AI Insights",
@@ -67,6 +68,8 @@ export default async function PurchasePage() {
         title="Purchases & AI Insights"
         description="Digitized purchase records, automated OCR extraction, and spend intelligence."
       />
+
+      <PurchaseUploadCard />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Processed" value={stats.processed} icon={FileText} />

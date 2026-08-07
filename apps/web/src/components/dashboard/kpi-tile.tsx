@@ -9,11 +9,16 @@ import { formatValue, type Kpi } from "@/config/dashboard";
  * A single company KPI. Shows the live figure, its period change, and where
  * it comes from.
  */
-function KpiSparkline({ up }: { up: boolean }) {
-  const points = up
-    ? "0,22 15,18 30,20 45,12 60,14 75,6 90,8 105,3 120,5"
-    : "0,5 15,8 30,12 45,10 60,18 75,15 90,22 105,20 120,25";
-  const strokeColor = up ? "oklch(0.68 0.15 160)" : "oklch(0.65 0.18 25)";
+/** No time-series backs this yet — the curve's steepness is derived from
+ * `deltaPct`'s magnitude so it stays honest about direction and size of
+ * change without implying a literal history the platform doesn't have. */
+function KpiSparkline({ deltaPct }: { deltaPct: number }) {
+  const up = deltaPct >= 0;
+  const rise = Math.min(Math.abs(deltaPct), 30) / 30;
+  const y0 = up ? 22 : 6;
+  const y1 = up ? 22 - rise * 18 : 6 + rise * 18;
+  const points = `0,${y0} 30,${(y0 + y1) / 2 + (up ? 4 : -4)} 60,${(y0 + y1) / 2} 90,${(y0 + y1) / 2 - (up ? 2 : -2)} 120,${y1}`;
+  const strokeColor = up ? "var(--success)" : "var(--destructive)";
 
   return (
     <svg
@@ -46,7 +51,7 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
           {kpi.label}
         </span>
         <div className="flex items-center gap-2">
-          <KpiSparkline up={up} />
+          <KpiSparkline deltaPct={kpi.deltaPct ?? 0} />
           <kpi.icon
             aria-hidden
             className={cn("size-4 shrink-0", isError ? "text-warning" : "text-muted-foreground")}

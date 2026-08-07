@@ -22,7 +22,9 @@ class IngestBillSerializer(serializers.Serializer):
     telegram_username = serializers.CharField(
         max_length=150, required=False, allow_blank=True, default=""
     )
-    document_url = serializers.URLField(max_length=500)
+    document_url = serializers.URLField(
+        max_length=500, required=False, allow_blank=True, default=""
+    )
     external_ref = serializers.CharField(
         max_length=128,
         required=False,
@@ -58,6 +60,8 @@ class IngestBillSerializer(serializers.Serializer):
         return value.upper()
 
     def validate_document_url(self, value: str) -> str:
+        if not value:
+            return value
         if not value.lower().startswith("https://") and not value.lower().startswith("http://"):
             raise serializers.ValidationError("Document URL must use http or https.")
         return value

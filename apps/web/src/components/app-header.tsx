@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Clock, PanelLeft, PanelLeftClose, Search, User } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 
+import { ActivityTicker } from "@/components/activity-ticker";
 import { NotificationCenter } from "@/components/notification-center";
 import { QuickActionsMenu } from "@/components/quick-actions-menu";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -86,11 +87,13 @@ export function AppHeader({
         <Search aria-hidden className="size-3.5" />
         <span className="flex-1 text-left">Search…</span>
         <kbd className="pointer-events-none hidden rounded-sm border border-border bg-muted px-1.5 font-mono text-[10px] font-semibold text-foreground/80 sm:inline-block">
-          Alt Space
+          ⌘K
         </kbd>
       </button>
 
       <div className="ml-auto flex items-center gap-2">
+        <ActivityTicker />
+
         {/* Live Date / Time Clock Pill */}
         {timeString && (
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-md border border-border bg-card text-xs font-mono tabular-nums text-foreground">
