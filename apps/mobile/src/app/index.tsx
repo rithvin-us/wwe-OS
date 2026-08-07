@@ -105,6 +105,30 @@ export default function HomeScreen() {
                 Employees, leave, expenses
               </ThemedText>
             </Pressable>
+            <Pressable
+              onPress={() => router.push("/purchase/scan")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Scan a bill</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Camera OCR digitization
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/purchase")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Purchases</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Bills & vendors
+              </ThemedText>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>

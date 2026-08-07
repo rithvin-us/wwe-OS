@@ -9,7 +9,7 @@ import { secureTokenStorage } from "@/lib/token-storage";
  * printed on `expo start`), with the Django server bound to 0.0.0.0:8000,
  * not 127.0.0.1:8000.
  */
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export const api = createApiClient({
   baseUrl: API_URL,

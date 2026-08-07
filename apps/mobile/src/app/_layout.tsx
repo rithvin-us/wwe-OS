@@ -28,6 +28,11 @@ function RootNavigator() {
         <Stack.Screen name="hr/leave/new" options={{ presentation: "modal" }} />
         <Stack.Screen name="hr/expenses/index" />
         <Stack.Screen name="hr/expenses/new" options={{ presentation: "modal" }} />
+        <Stack.Screen name="purchase/bills/index" />
+        <Stack.Screen name="purchase/bills/[id]" />
+        <Stack.Screen name="purchase/index" />
+        <Stack.Screen name="purchase/scan" options={{ presentation: "fullScreenModal" }} />
+        <Stack.Screen name="purchase/vendors" />
       </Stack.Protected>
       <Stack.Protected guard={user === null}>
         <Stack.Screen name="login" />

@@ -28,11 +28,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  const signIn = useCallback(async (email: string, password: string, rememberMe = false) => {
+    setIsSigningIn(true);
+    try {
+      await api.login(email, password, rememberMe);
+      const me = await api.me();
+      setUser(me.user);
+    } finally {
+      setIsSigningIn(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
     async function hydrate() {
       const accessToken = await secureTokenStorage.getAccessToken();
       if (!accessToken) {
+        if (DEV_AUTO_LOGIN) {
+          try {
+            await signIn(DEV_EMAIL, DEV_PASSWORD);
+          } catch {
+            // Backend unreachable or dev creds stale — falls through to the
+            // real login screen, same as with the flag off.
+          }
+        }
         if (active) setIsLoading(false);
         return;
       }
@@ -52,23 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
-
-  const signIn = useCallback(async (email: string, password: string, rememberMe = false) => {
-    setIsSigningIn(true);
-    try {
-      await api.login(email, password, rememberMe);
-      const me = await api.me();
-      setUser(me.user);
-    } finally {
-      setIsSigningIn(false);
-    }
-  }, []);
+  }, [signIn]);
 
   const signOut = useCallback(async () => {
     await api.logout();
     setUser(null);
-  }, []);
+    // With auto-login on, "signing out" of a dev bypass would just land on
+    // a login screen that isn't meant to be reachable right now — sign
+    // straight back in instead of leaving a dead end.
+    if (DEV_AUTO_LOGIN) {
+      try {
+        await signIn(DEV_EMAIL, DEV_PASSWORD);
+      } catch {
+        // Backend unreachable — leaves user === null, real login screen
+        // is still there and fully functional as a fallback.
+      }
+    }
+  }, [signIn]);
 
   const value = useMemo(
     () => ({ user, isLoading, isSigningIn, signIn, signOut }),

@@ -8,8 +8,12 @@ import type {
   Vendor,
 } from "@bop/shared-types";
 
-import { api } from "@/lib/api";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
+
+import { api, API_URL } from "@/lib/api";
 import { fileFormData, type LocalFile } from "@/lib/local-file";
+import { secureTokenStorage } from "@/lib/token-storage";
 
 export function getPurchaseBills(params: { status?: string } = {}) {
   const query = new URLSearchParams({ page_size: "100", ...params });
@@ -66,6 +70,23 @@ export function uploadBill(photo: LocalFile) {
 /** Binary passthrough (image/pdf), not an envelope — use requestRaw like HR's register downloads. */
 export function getBillFileUrl(id: string): string {
   return `/api/v1/purchase/bills/${id}/file/`;
+}
+
+/**
+ * Downloads the original bill image/PDF straight from Django (JWT-gated,
+ * `GET .../file/` — no signed-URL indirection) and hands it to the OS share
+ * sheet, since RN has no built-in inline PDF/image viewer for an arbitrary
+ * downloaded file.
+ */
+export async function openBillFile(id: string): Promise<void> {
+  const token = await secureTokenStorage.getAccessToken();
+  const file = await File.downloadFileAsync(`${API_URL}${getBillFileUrl(id)}`, Paths.cache, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    idempotent: true,
+  });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri);
+  }
 }
 
 export function getVendors() {
