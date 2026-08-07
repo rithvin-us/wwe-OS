@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 import { Bot, Check, Copy, ExternalLink, FileText, Mail, Send, Sparkles, X } from "@bop/icons";
+
+/** Renders text with **bold** markdown as <strong> elements */
+function renderMarkdownText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { cn } from "@bop/ui/lib/utils";
@@ -156,7 +167,7 @@ export function RithuChatWidget() {
                       : "bg-muted/60 text-foreground border border-border rounded-bl-none",
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                  <p className="whitespace-pre-wrap">{renderMarkdownText(msg.text)}</p>
                 </div>
 
                 {/* Email Draft Card */}
