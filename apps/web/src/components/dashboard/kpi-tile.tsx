@@ -9,6 +9,30 @@ import { formatValue, type Kpi } from "@/config/dashboard";
  * A single company KPI. Shows the live figure, its period change, and where
  * it comes from.
  */
+function KpiSparkline({ up }: { up: boolean }) {
+  const points = up
+    ? "0,22 15,18 30,20 45,12 60,14 75,6 90,8 105,3 120,5"
+    : "0,5 15,8 30,12 45,10 60,18 75,15 90,22 105,20 120,25";
+  const strokeColor = up ? "oklch(0.68 0.15 160)" : "oklch(0.65 0.18 25)";
+
+  return (
+    <svg
+      className="h-6 w-20 shrink-0 overflow-visible opacity-70 transition-opacity group-hover:opacity-100"
+      viewBox="0 0 120 28"
+      fill="none"
+    >
+      <polyline
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+}
+
 export function KpiTile({ kpi }: { kpi: Kpi }) {
   const display = formatValue(kpi.value, kpi.format);
   const hasValue = kpi.value !== null;
@@ -18,19 +42,22 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
   const content = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
+        <span className="font-mono text-[10px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
           {kpi.label}
         </span>
-        <kpi.icon
-          aria-hidden
-          className={cn("size-4", isError ? "text-warning" : "text-muted-foreground-subtle")}
-        />
+        <div className="flex items-center gap-2">
+          <KpiSparkline up={up} />
+          <kpi.icon
+            aria-hidden
+            className={cn("size-4 shrink-0", isError ? "text-warning" : "text-muted-foreground")}
+          />
+        </div>
       </div>
 
       <div className="flex items-end justify-between gap-2">
         <span
           className={cn(
-            "font-display text-2xl font-semibold tracking-tight tabular-nums",
+            "font-display text-2xl font-bold tracking-tight tabular-nums",
             hasValue
               ? "text-foreground"
               : isError
@@ -47,17 +74,16 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
         {kpi.deltaPct !== null ? (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-              // Semantic success/attention, not the module-status palette —
-              // a KPI trending up or down is a different kind of "state"
-              // than a module being operational or needing attention.
-              up ? "text-success" : "text-destructive",
+              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums shadow-xs",
+              up
+                ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                : "bg-rose-500/10 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
             )}
           >
             {up ? (
-              <ArrowUpRight aria-hidden className="size-3.5" />
+              <ArrowUpRight aria-hidden className="size-3" />
             ) : (
-              <ArrowDownRight aria-hidden className="size-3.5" />
+              <ArrowDownRight aria-hidden className="size-3" />
             )}
             {Math.abs(kpi.deltaPct)}%
           </span>
@@ -65,7 +91,10 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
       </div>
 
       <span
-        className={cn("text-[11px]", isError ? "text-warning" : "text-muted-foreground-subtle")}
+        className={cn(
+          "text-[11px] font-medium",
+          isError ? "text-warning" : "text-muted-foreground",
+        )}
       >
         {hasValue
           ? kpi.source
@@ -76,18 +105,22 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
     </>
   );
 
+  const containerClasses =
+    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs";
+
   if (kpi.href) {
     return (
       <Link
         href={kpi.href}
-        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-shadow duration-(--duration-base) hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        className={cn(
+          containerClasses,
+          "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+        )}
       >
         {content}
       </Link>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">{content}</div>
-  );
+  return <div className={containerClasses}>{content}</div>;
 }

@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Download, ExternalLink, FileSpreadsheet, FileText, Plus, Trash2 } from "@bop/icons";
+import {
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  FileText,
+  Plus,
+  Trash2,
+  TriangleAlert,
+} from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import {
@@ -455,6 +463,44 @@ export function GenerateInvoiceDialog({
                   </div>
                 ))}
               </div>
+
+              {/* Real-time Subtotal & High-Value Sanity Guard */}
+              {(() => {
+                const currentSubtotal = lines.reduce((acc, item) => {
+                  const qty = Number.parseFloat(item.quantity) || 0;
+                  const rate = Number.parseFloat(item.rate) || 0;
+                  return acc + qty * rate;
+                }, 0);
+                const highValue = currentSubtotal > 1000000;
+                return (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between px-1 font-mono text-xs">
+                      <span className="text-muted-foreground">
+                        Calculated Subtotal (excl. tax):
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {formatRupees(currentSubtotal)}
+                      </span>
+                    </div>
+
+                    {highValue ? (
+                      <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground dark:border-amber-500/30 dark:bg-amber-500/15">
+                        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <div className="space-y-1">
+                          <p className="font-semibold text-amber-700 dark:text-amber-400">
+                            High Invoice Amount Alert ({formatRupees(currentSubtotal)})
+                          </p>
+                          <p className="text-muted-foreground">
+                            Please verify rate and quantity. If rate contains accidental zeroes
+                            (e.g. 40,05,36,000 instead of 40,053.60), correct it above before
+                            saving.
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })()}
             </div>
 
             {preview ? <PreviewPanel preview={preview} /> : null}
