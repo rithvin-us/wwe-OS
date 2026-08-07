@@ -103,8 +103,10 @@ def _fetch_and_store_document(
         for attempt in range(1, DOCUMENT_FETCH_RETRIES + 1):
             try:
                 response = httpx.get(document_url, timeout=DOCUMENT_FETCH_TIMEOUT)
+                response.raise_for_status()
                 raw_ct = response.headers.get("content-type", content_type)
                 content_type = raw_ct.split(";")[0].strip()
+                data = response.content
                 break
             except httpx.HTTPError as exc:
                 logger.warning(
