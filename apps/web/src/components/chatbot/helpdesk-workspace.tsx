@@ -83,6 +83,10 @@ export function HelpdeskWorkspace() {
         body: JSON.stringify({ prompt: promptText }),
       });
       const data: ChatMessage = await res.json();
+      data.timestamp = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
       setMessages((prev) => [...prev, data]);
     } catch {
       toast.error("Could not process request.");

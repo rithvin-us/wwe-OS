@@ -77,6 +77,20 @@ export function withdrawLeaveRequest(id: string) {
   return api.request<null>(`/api/v1/hr/leave/requests/${id}/`, { method: "DELETE" });
 }
 
+export function decideLeave(id: string, status: "approved" | "rejected", note?: string) {
+  return api.request<LeaveRequest>(`/api/v1/hr/leave/requests/${id}/decide/`, {
+    method: "POST",
+    body: JSON.stringify({ status, note: note ?? "" }),
+  });
+}
+
+export function decideExpense(id: string, status: "approved" | "rejected", note?: string) {
+  return api.request<ExpenseClaim>(`/api/v1/hr/expenses/${id}/decide/`, {
+    method: "POST",
+    body: JSON.stringify({ status, note: note ?? "" }),
+  });
+}
+
 export function getExpenseClaims(status?: string) {
   const query = status ? `?page_size=200&status=${status}` : "?page_size=200";
   return api.request<ExpenseClaim[]>(`/api/v1/hr/expenses/${query}`);

@@ -80,24 +80,32 @@ export default function HomeScreen() {
           <ThemedText type="smallBold" themeColor="mutedForeground" style={styles.sectionLabel}>
             QUICK ACTIONS
           </ThemedText>
-          <Pressable
-            onPress={() => router.push("/hr/checkin")}
-            style={[styles.quickAction, { borderColor: theme.border, backgroundColor: theme.card }]}
-          >
-            <ThemedText type="smallBold">Photo check-in</ThemedText>
-            <ThemedText type="small" themeColor="mutedForeground">
-              Face match attendance
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("/hr/employees")}
-            style={[styles.quickAction, { borderColor: theme.border, backgroundColor: theme.card }]}
-          >
-            <ThemedText type="smallBold">Employees</ThemedText>
-            <ThemedText type="small" themeColor="mutedForeground">
-              Directory & face enrollment
-            </ThemedText>
-          </Pressable>
+          <View style={styles.kpiGrid}>
+            <Pressable
+              onPress={() => router.push("/hr/checkin")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Photo check-in</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Face match attendance
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/hr")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">HR</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Employees, leave, expenses
+              </ThemedText>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -147,6 +155,8 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   quickAction: {
+    flexBasis: "47%",
+    flexGrow: 1,
     padding: Spacing.three,
     borderRadius: 12,
     borderWidth: 1,
