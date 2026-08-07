@@ -85,7 +85,7 @@ export function AppHeader({
       >
         <Search aria-hidden className="size-3.5" />
         <span className="flex-1 text-left">Search…</span>
-        <kbd className="pointer-events-none hidden rounded-sm border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
+        <kbd className="pointer-events-none hidden rounded-sm border border-border bg-muted px-1.5 font-mono text-[10px] font-semibold text-foreground/80 sm:inline-block">
           Alt Space
         </kbd>
       </button>

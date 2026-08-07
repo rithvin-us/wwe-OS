@@ -41,10 +41,7 @@ export function SectionCard({
         <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
           <Icon
             aria-hidden
-            className={cn(
-              "size-4",
-              tone === "warning" ? "text-warning" : "text-muted-foreground/80",
-            )}
+            className={cn("size-4", tone === "warning" ? "text-warning" : "text-muted-foreground")}
           />
           {title}
         </h2>

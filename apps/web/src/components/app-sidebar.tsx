@@ -58,7 +58,7 @@ export function AppSidebar({
           {NAVIGATION.map((group, index) => (
             <div key={group.label ?? `group-${index}`} className="flex flex-col gap-1">
               {group.label && !collapsed ? (
-                <p className="px-2.5 pb-1 font-mono text-[10px] font-bold tracking-[0.14em] text-muted-foreground/70 uppercase">
+                <p className="px-2.5 pb-1 font-mono text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                   {group.label}
                 </p>
               ) : null}
@@ -81,8 +81,8 @@ export function AppSidebar({
                       active
                         ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 font-semibold shadow-xs"
                         : item.subtle
-                          ? "text-sidebar-foreground/50 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
-                          : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                          ? "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                          : "text-sidebar-foreground/95 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                       active && !collapsed && "border-l-2 border-emerald-600",
                     )}
                   >
