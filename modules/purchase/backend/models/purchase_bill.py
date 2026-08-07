@@ -89,8 +89,11 @@ class PurchaseBill(TenantOwnedModel):
     )
 
     # --- Payment tracking ---
+    # A freshly ingested bill is money the company still owes: it starts
+    # UNPAID and moves to PAID only when the operator settles it (mark_paid).
+    # Defaulting to PAID would silently hide payables from the unpaid worklist.
     payment_status = models.CharField(
-        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PAID, db_index=True
+        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.UNPAID, db_index=True
     )
     paid_at = models.DateTimeField(null=True, blank=True)
 

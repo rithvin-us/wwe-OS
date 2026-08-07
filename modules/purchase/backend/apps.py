@@ -34,6 +34,7 @@ class PurchaseConfig(AppConfig):
         # In-memory registrations (safe at import; no DB access).
         from purchase.backend.collectible import register_collectible
         from purchase.backend.document_types import register_document_types
+        from purchase.backend.ingest_port import register_ingest_port
         from purchase.backend.metadata_provider import register_metadata_provider_for_purchase
         from purchase.backend.reports import register_reports
         from purchase.backend.search.adapter import register_search
@@ -43,6 +44,7 @@ class PurchaseConfig(AppConfig):
         register_collectible()
         register_document_types()
         register_metadata_provider_for_purchase()
+        register_ingest_port()
 
         # Subscribe to this module's own events. Modules may import platform
         # capabilities (audit, notifications) — never the reverse, and never

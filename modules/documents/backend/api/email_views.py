@@ -8,6 +8,7 @@ Ingests email payloads via ServiceTokenAuthentication.
 from __future__ import annotations
 
 import base64
+import logging
 
 from documents.backend.models import DocumentCategory
 from documents.backend.services.document import DocumentService
@@ -15,8 +16,11 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.ingest import IngestKind, get_ingest_handler
 from shared.service_auth import ServiceTokenAuthentication
 from tenancy.models import Tenant
+
+logger = logging.getLogger(__name__)
 
 
 class EmailIngestView(APIView):
@@ -65,28 +69,41 @@ class EmailIngestView(APIView):
             )
 
             if is_purchase_bill:
-                # Route to purchase bill processing
-                try:
-                    from purchase.backend.services import PurchaseBillService
-
-                    bill = PurchaseBillService().create_from_ingest(
-                        tenant=tenant,
-                        file_data=data,
-                        filename=filename,
-                        content_type=content_type,
-                        channel="email",
+                # Route to the Purchase module through the platform ingest port
+                # (shared.ingest) — never by importing PurchaseBillService here.
+                # If Purchase has no handler registered, or ingestion raises,
+                # fall back to filing the attachment as a Document so nothing
+                # is ever silently lost — but log the fall-through instead of
+                # swallowing it.
+                handler = get_ingest_handler(IngestKind.PURCHASE_BILL)
+                if handler is not None:
+                    try:
+                        bill = handler(
+                            tenant=tenant,
+                            file_data=data,
+                            filename=filename,
+                            content_type=content_type,
+                            channel="email",
+                        )
+                        created_docs.append(
+                            {
+                                "type": "purchase_bill",
+                                "id": str(bill.id),
+                                "filename": filename,
+                                "tags": tags,
+                            }
+                        )
+                        continue
+                    except Exception:
+                        logger.exception(
+                            "Purchase ingest failed for %s; filing it as a Document instead.",
+                            filename,
+                        )
+                else:
+                    logger.warning(
+                        "No purchase ingest handler registered; filing %s as a Document.",
+                        filename,
                     )
-                    created_docs.append(
-                        {
-                            "type": "purchase_bill",
-                            "id": str(bill.id),
-                            "filename": filename,
-                            "tags": tags,
-                        }
-                    )
-                    continue
-                except Exception:
-                    pass  # Fallback to Document storage if purchase service unavailable
 
             # Determine category for External Document
             if any(kw in low_filename or kw in low_subject for kw in ("inv", "invoice")):
