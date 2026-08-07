@@ -14,5 +14,6 @@ from permissions.registry import PermissionDef
 PURCHASE_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("purchase.bill.read", "View purchase bills", "Purchase"),
     PermissionDef("purchase.bill.review", "Confirm or reject purchase bills", "Purchase"),
+    PermissionDef("purchase.bill.upload", "Upload purchase bills for OCR digitization", "Purchase"),
     PermissionDef("purchase.vendor.manage", "Manage vendors", "Purchase"),
 ]

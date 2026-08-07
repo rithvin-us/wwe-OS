@@ -42,3 +42,4 @@ export interface PurchaseBillStats {
 }
 
 export * from "./hr";
+export * from "./purchase";

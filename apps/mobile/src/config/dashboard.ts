@@ -1,6 +1,6 @@
 import type { PurchaseBillStats } from "@bop/shared-types";
 
-import { api } from "@/lib/api";
+import { getPurchaseBillStats } from "@/lib/purchase";
 
 export type KpiFormat = "currency" | "count";
 export type KpiStatus = "live" | "error" | "unwired";
@@ -36,7 +36,7 @@ export function formatValue(value: number | null, format: KpiFormat): string {
 export async function buildKpis(): Promise<Kpi[]> {
   let purchase: PurchaseBillStats | null = null;
   try {
-    purchase = await api.request<PurchaseBillStats>("/api/v1/purchase/bills/stats/");
+    purchase = await getPurchaseBillStats();
   } catch {
     purchase = null;
   }

@@ -51,7 +51,8 @@
         {
           "photosPermission": "WWE OS needs photo access to attach a receipt or enroll a face for check-in."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false,

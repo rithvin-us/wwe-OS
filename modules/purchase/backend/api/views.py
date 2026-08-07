@@ -8,6 +8,7 @@ Two distinct audiences, two distinct authentication schemes:
 
 from __future__ import annotations
 
+import base64
 import mimetypes
 
 from django.db import IntegrityError
@@ -16,6 +17,7 @@ from django.http import Http404, HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -89,6 +91,7 @@ class PurchaseBillViewSet(BaseModelViewSet):
         "mark_paid": "purchase.bill.review",
         "unmark_paid": "purchase.bill.review",
         "destroy": "purchase.bill.review",
+        "upload": "purchase.bill.upload",
     }
 
     def perform_destroy(self, instance):
@@ -135,6 +138,23 @@ class PurchaseBillViewSet(BaseModelViewSet):
         """Latest digitized purchases."""
         qs = self.get_queryset().order_by("-created_at")[:8]
         return Response(PurchaseBillSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=["post"])
+    def upload(self, request: Request) -> Response:
+        """Operator-facing bill upload — the JWT-authenticated counterpart to
+        `IngestBillView`. Same ingest pipeline (storage, OCR, auto-classify)
+        as Telegram/email, just reachable by a signed-in user directly
+        instead of requiring a service token no client app can safely hold.
+        """
+        file = request.FILES.get("file")
+        if not file:
+            raise ValidationError({"file": ["This field is required."]})
+        document_base64 = base64.b64encode(file.read()).decode("ascii")
+        bill = PurchaseBillService().ingest(
+            data={"document_base64": document_base64, "caption": file.name},
+            source_channel="upload",
+        )
+        return Response(PurchaseBillSerializer(bill).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["patch"], url_path="update-bill")
     def update_bill(self, request: Request, pk=None) -> Response:

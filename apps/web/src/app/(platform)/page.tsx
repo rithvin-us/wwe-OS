@@ -1,19 +1,12 @@
-import { Activity, CircleDollarSign, ShoppingCart, Sparkles, TriangleAlert } from "@bop/icons";
+import { Activity, CircleDollarSign, ShoppingCart, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
-import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { AlertRow } from "@/components/dashboard/alert-row";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Greeting } from "@/components/dashboard/greeting";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
-import {
-  PanelEmpty,
-  SectionCard,
-  SectionCardSkeleton,
-  SummaryRows,
-} from "@/components/dashboard/section-card";
+import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/section-card";
 import {
   buildKpis,
   FINANCIAL_SUMMARY,
@@ -22,7 +15,6 @@ import {
   recentActivity,
   type LivePurchaseStats,
 } from "@/config/dashboard";
-import { getBusinessSummary } from "@/lib/ai";
 import { activityLabel, getTodayActivity } from "@/lib/audit";
 import { getActiveRules } from "@/lib/automation";
 import { getContracts } from "@/lib/contracts";
@@ -84,31 +76,6 @@ async function loadContractsExpiringCount(): Promise<number> {
   }
 }
 
-function buildStatsText(args: {
-  purchase: LivePurchaseStats | null;
-  activityCount: number;
-  automationDueCount: number;
-  contractsExpiringCount: number;
-}): string {
-  const lines: string[] = [];
-  if (args.purchase) {
-    lines.push(
-      `Purchases: ${args.purchase.processed} processed, ${args.purchase.needsAttention} need ` +
-        `attention, ${args.purchase.unpaid} unpaid.`,
-    );
-  }
-  lines.push(
-    `${args.activityCount} activity event${args.activityCount === 1 ? "" : "s"} recorded today.`,
-  );
-  if (args.contractsExpiringCount > 0) {
-    lines.push(`${args.contractsExpiringCount} contract(s) expiring within 30 days.`);
-  }
-  if (args.automationDueCount > 0) {
-    lines.push(`${args.automationDueCount} automation rule(s) due to run.`);
-  }
-  return lines.join("\n");
-}
-
 export default async function DashboardPage() {
   const [
     purchaseStats,
@@ -129,23 +96,6 @@ export default async function DashboardPage() {
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
   const hasUrgentAlert = alerts.some((item) => item.severity !== "info");
   const activity = recentActivity(activityEntries, activityLabel);
-
-  // Skip the AI call entirely on a quiet/fresh install — nothing real to
-  // summarize, and no reason to spend a call describing emptiness.
-  const hasSignal = purchaseStats !== null || activityEntries.length > 0;
-  // Deliberately not awaited — the AI round-trip (slow on a cold cache) is
-  // isolated behind its own <Suspense> boundary below so it never blocks
-  // the rest of the dashboard's first paint.
-  const summaryPromise = hasSignal
-    ? getBusinessSummary(
-        buildStatsText({
-          purchase: purchaseStats,
-          activityCount: activityEntries.length,
-          automationDueCount,
-          contractsExpiringCount,
-        }),
-      )
-    : Promise.resolve(null);
 
   return (
     <div className="space-y-4 md:space-y-6 pb-6">
@@ -295,10 +245,6 @@ export default async function DashboardPage() {
               </ul>
             )}
           </SectionCard>
-
-          <Suspense fallback={<SectionCardSkeleton title="AI insights" icon={Sparkles} rows={2} />}>
-            <AiInsightsPanel summaryPromise={summaryPromise} />
-          </Suspense>
         </div>
       </div>
     </div>

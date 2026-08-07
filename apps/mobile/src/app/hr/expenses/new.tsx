@@ -17,7 +17,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { createExpenseClaim, getEmployees, type LocalFile } from "@/lib/hr";
+import { createExpenseClaim, getEmployees } from "@/lib/hr";
+import type { LocalFile } from "@/lib/local-file";
 
 const CATEGORIES = ["Travel", "Materials", "Food", "Fuel", "Repairs", "Other"];
 
