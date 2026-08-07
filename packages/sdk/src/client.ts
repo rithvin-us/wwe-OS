@@ -25,6 +25,12 @@ export interface ApiClient {
   me(): Promise<MeResponse>;
   /** Authenticated request. Retries once after a silent refresh on 401. */
   request<T>(path: string, init?: RequestInit): Promise<T>;
+  /**
+   * Same auth + refresh-retry as `request`, but returns the raw `Response`
+   * instead of unwrapping an envelope — for endpoints that don't return
+   * `{success, data}` JSON (binary file downloads: register .xlsx exports).
+   */
+  requestRaw(path: string, init?: RequestInit): Promise<Response>;
 }
 
 async function parseEnvelope<T>(response: Response): Promise<T> {
@@ -56,9 +62,29 @@ export function createApiClient({ baseUrl, storage }: ApiClientOptions): ApiClie
     token: string | null,
   ): Promise<Response> {
     const headers = new Headers(init.headers);
-    headers.set("Content-Type", "application/json");
+    // FormData (multipart uploads: check-in selfie, face enrollment, expense
+    // receipts) must set its own boundary-bearing Content-Type — forcing
+    // application/json here would silently corrupt the request body.
+    if (!(init.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
     if (token) headers.set("Authorization", `Bearer ${token}`);
     return fetch(`${base}${path}`, { ...init, headers });
+  }
+
+  async function requestWithAuth(path: string, init: RequestInit = {}): Promise<Response> {
+    let token = await storage.getAccessToken();
+    let response = await rawFetch(path, init, token);
+
+    if (response.status === 401) {
+      refreshing ??= doRefresh().finally(() => {
+        refreshing = null;
+      });
+      token = await refreshing;
+      response = await rawFetch(path, init, token);
+    }
+
+    return response;
   }
 
   async function doRefresh(): Promise<string> {
@@ -90,17 +116,7 @@ export function createApiClient({ baseUrl, storage }: ApiClientOptions): ApiClie
   }
 
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    let token = await storage.getAccessToken();
-    let response = await rawFetch(path, init, token);
-
-    if (response.status === 401) {
-      refreshing ??= doRefresh().finally(() => {
-        refreshing = null;
-      });
-      token = await refreshing;
-      response = await rawFetch(path, init, token);
-    }
-
+    const response = await requestWithAuth(path, init);
     return parseEnvelope<T>(response);
   }
 
@@ -137,5 +153,6 @@ export function createApiClient({ baseUrl, storage }: ApiClientOptions): ApiClie
     },
 
     request,
+    requestRaw: requestWithAuth,
   };
 }

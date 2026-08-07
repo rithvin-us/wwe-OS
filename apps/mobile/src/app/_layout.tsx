@@ -20,6 +20,9 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={user !== null}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="hr/checkin" options={{ presentation: "fullScreenModal" }} />
+        <Stack.Screen name="hr/employees/index" />
+        <Stack.Screen name="hr/employees/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={user === null}>
         <Stack.Screen name="login" />

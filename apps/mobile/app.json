@@ -33,10 +33,28 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "WWE OS uses the camera for photo check-in and to scan purchase bills."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "WWE OS uses your location to confirm on-site check-in."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "WWE OS needs photo access to attach a receipt or enroll a face for check-in."
+        }
+      ]
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }

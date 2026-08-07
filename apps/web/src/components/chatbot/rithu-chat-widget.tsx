@@ -14,12 +14,12 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "init_1",
     sender: "rithu",
-    text: "Hello Lakshmanan! I am **Rithu AI Helpdesk Assistant**, powered by Gemini API. I have full indexed access to all files and documents named **Rithu**, as well as company invoices, HR registers, and automated email drafting capabilities.\n\nHow can I assist you today?",
+    text: "Hey Lakshmanan! 👋 I'm **Rithu**.\n\nI can help you look up documents, write emails to vendors, or check how the company is doing today. What's on your mind?",
     timestamp: "Just now",
     suggestedPrompts: [
-      "Find all files named Rithu",
-      "Draft an email to Sri Laxmi Electricals",
-      "Show financial performance summary",
+      "Show Rithu documents",
+      "Write an email to vendor",
+      "How is the business doing?",
     ],
   },
 ];
@@ -90,10 +90,10 @@ export function RithuChatWidget() {
           </div>
           <div className="hidden text-left sm:block">
             <p className="font-display text-xs font-bold leading-none tracking-tight text-foreground">
-              Rithu AI Copilot
+              Rithu AI
             </p>
             <p className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">
-              HELPDESK_ACTIVE
+              Here to help
             </p>
           </div>
         </button>
@@ -110,11 +110,9 @@ export function RithuChatWidget() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-bold tracking-tight text-foreground">
-                  Rithu AI Helpdesk
+                  Rithu
                 </h3>
-                <p className="text-[10px] text-muted-foreground font-mono">
-                  Gemini API · Files & Email Drafter
-                </p>
+                <p className="text-[10px] text-muted-foreground font-mono">Your AI Assistant</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -266,7 +264,7 @@ export function RithuChatWidget() {
             {busy && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Bot className="size-4 animate-spin text-emerald-600" />
-                <span>Rithu AI is thinking & retrieving documents…</span>
+                <span>Rithu is thinking…</span>
               </div>
             )}
           </div>
@@ -283,7 +281,7 @@ export function RithuChatWidget() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Rithu AI, search files, draft emails…"
+                placeholder="Ask Rithu anything, find files, write emails…"
                 className="flex-1 text-xs"
                 disabled={busy}
               />

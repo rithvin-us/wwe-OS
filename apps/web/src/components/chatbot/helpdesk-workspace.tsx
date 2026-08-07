@@ -47,12 +47,12 @@ export function HelpdeskWorkspace() {
     {
       id: "workspace_init",
       sender: "rithu",
-      text: "Welcome to **Rithu AI Helpdesk Workspace**! I am ready to answer any questions about company operations, search documents named **Rithu**, or draft business emails to vendors and team members.",
+      text: "Hey Lakshmanan! 👋 I'm **Rithu**.\n\nWhat can I help you with today? You can ask me to find Rithu documents, draft emails to vendors, or check how the company is performing.",
       timestamp: "Just now",
       suggestedPrompts: [
-        "Search all documents named Rithu",
-        "Draft email to Sri Laxmi Electricals regarding bill #PB-8832",
-        "Show current financial performance and cash position",
+        "Show Rithu documents",
+        "Write an email to vendor",
+        "How is the business doing?",
       ],
     },
   ]);
@@ -85,7 +85,7 @@ export function HelpdeskWorkspace() {
       const data: ChatMessage = await res.json();
       setMessages((prev) => [...prev, data]);
     } catch {
-      toast.error("Could not process helpdesk query.");
+      toast.error("Could not process request.");
     } finally {
       setBusy(false);
     }
@@ -114,14 +114,14 @@ export function HelpdeskWorkspace() {
             </div>
             <div>
               <h2 className="font-display text-base font-bold tracking-tight text-foreground">
-                Rithu AI Copilot Thread
+                Chat with Rithu
               </h2>
               <p className="text-xs text-muted-foreground font-mono">
-                Ask questions, draft emails, query business figures
+                Ask questions, draft emails, look up documents
               </p>
             </div>
           </div>
-          <Badge variant="success">Active</Badge>
+          <Badge variant="success">Online</Badge>
         </div>
 
         {/* Thread Messages */}

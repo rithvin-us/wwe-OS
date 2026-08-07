@@ -59,7 +59,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "CORE MODULES",
     items: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
-      { name: "Rithu AI Helpdesk", href: "/chatbot", icon: Bot },
+      { name: "Rithu Assistant", href: "/chatbot", icon: Bot },
       ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
     ],
   },

@@ -40,3 +40,5 @@ export interface PurchaseBillStats {
   total: number;
   unpaid: number;
 }
+
+export * from "./hr";

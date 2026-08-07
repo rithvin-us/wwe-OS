@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 
 import { KpiTile } from "@/components/kpi-tile";
 import { ThemedText } from "@/components/themed-text";
@@ -75,6 +76,28 @@ export default function HomeScreen() {
               ))}
             </View>
           )}
+
+          <ThemedText type="smallBold" themeColor="mutedForeground" style={styles.sectionLabel}>
+            QUICK ACTIONS
+          </ThemedText>
+          <Pressable
+            onPress={() => router.push("/hr/checkin")}
+            style={[styles.quickAction, { borderColor: theme.border, backgroundColor: theme.card }]}
+          >
+            <ThemedText type="smallBold">Photo check-in</ThemedText>
+            <ThemedText type="small" themeColor="mutedForeground">
+              Face match attendance
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/hr/employees")}
+            style={[styles.quickAction, { borderColor: theme.border, backgroundColor: theme.card }]}
+          >
+            <ThemedText type="smallBold">Employees</ThemedText>
+            <ThemedText type="small" themeColor="mutedForeground">
+              Directory & face enrollment
+            </ThemedText>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -122,5 +145,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.three,
+  },
+  quickAction: {
+    padding: Spacing.three,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 2,
   },
 });

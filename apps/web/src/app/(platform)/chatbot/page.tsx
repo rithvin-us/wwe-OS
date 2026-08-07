@@ -5,15 +5,15 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { HelpdeskWorkspace } from "@/components/chatbot/helpdesk-workspace";
 
 export const metadata: Metadata = {
-  title: "Rithu AI Helpdesk",
+  title: "Rithu Assistant",
 };
 
 export default function ChatbotPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rithu AI Helpdesk & Knowledge Hub"
-        description="Gemini API powered enterprise copilot with indexed access to Rithu files, contracts, corporate registers, and automated business email drafting."
+        title="Rithu Assistant"
+        description="Your AI assistant for finding files, drafting emails, and checking business performance."
       />
 
       <div className="grid gap-4 md:grid-cols-4">
