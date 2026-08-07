@@ -2,16 +2,9 @@ import { ApiRequestError } from "@bop/sdk";
 import type { PurchaseBill } from "@bop/shared-types";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -133,7 +126,7 @@ export default function BillDetailScreen() {
 
   if (error && !bill) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ThemedText themeColor="destructive">{error}</ThemedText>
         </SafeAreaView>
@@ -143,7 +136,7 @@ export default function BillDetailScreen() {
 
   if (!bill) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ActivityIndicator color={theme.primary} />
         </SafeAreaView>
@@ -152,7 +145,7 @@ export default function BillDetailScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.headerRow}>
@@ -210,7 +203,7 @@ export default function BillDetailScreen() {
               autoCapitalize="characters"
               style={[styles.input, { color: theme.foreground, borderColor: theme.border }]}
             />
-            <Pressable
+            <AnimatedPressable
               onPress={handleSave}
               disabled={saving}
               style={[
@@ -225,7 +218,7 @@ export default function BillDetailScreen() {
                   Save & mark processed
                 </ThemedText>
               )}
-            </Pressable>
+            </AnimatedPressable>
           </View>
 
           {error ? (
@@ -235,7 +228,7 @@ export default function BillDetailScreen() {
           ) : null}
 
           <View style={styles.actionRow}>
-            <Pressable
+            <AnimatedPressable
               onPress={togglePaid}
               disabled={paymentBusy}
               style={[styles.secondaryButton, { borderColor: theme.border }]}
@@ -247,8 +240,8 @@ export default function BillDetailScreen() {
                   {bill.payment_status === "paid" ? "Mark unpaid" : "Mark paid"}
                 </ThemedText>
               )}
-            </Pressable>
-            <Pressable
+            </AnimatedPressable>
+            <AnimatedPressable
               onPress={handleViewFile}
               disabled={opening}
               style={[styles.secondaryButton, { borderColor: theme.border }]}
@@ -258,11 +251,11 @@ export default function BillDetailScreen() {
               ) : (
                 <ThemedText>View document</ThemedText>
               )}
-            </Pressable>
+            </AnimatedPressable>
           </View>
-          <Pressable onPress={confirmDelete} style={styles.deleteButton}>
+          <AnimatedPressable onPress={confirmDelete} style={styles.deleteButton}>
             <ThemedText themeColor="destructive">Delete bill</ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

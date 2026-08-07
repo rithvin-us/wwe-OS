@@ -2,8 +2,9 @@ import { ApiRequestError } from "@bop/sdk";
 import type { ExpenseClaim } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -54,7 +55,7 @@ function ExpenseRow({
 
       {onDecide ? (
         <View style={styles.actions}>
-          <Pressable
+          <AnimatedPressable
             onPress={() => handle("approved")}
             disabled={deciding !== null}
             style={[styles.actionButton, { backgroundColor: `${theme.success}22` }]}
@@ -66,8 +67,8 @@ function ExpenseRow({
                 Approve
               </ThemedText>
             )}
-          </Pressable>
-          <Pressable
+          </AnimatedPressable>
+          <AnimatedPressable
             onPress={() => handle("rejected")}
             disabled={deciding !== null}
             style={[styles.actionButton, { backgroundColor: `${theme.destructive}22` }]}
@@ -79,7 +80,7 @@ function ExpenseRow({
                 Reject
               </ThemedText>
             )}
-          </Pressable>
+          </AnimatedPressable>
         </View>
       ) : null}
     </View>
@@ -117,20 +118,20 @@ export default function ExpensesScreen() {
   const decided = claims?.filter((c) => c.status !== "pending") ?? [];
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
             Expenses
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={() => router.push("/hr/expenses/new")}
             style={[styles.newButton, { backgroundColor: theme.primary }]}
           >
             <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
               New claim
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </View>
 
         {error ? (

@@ -2,15 +2,9 @@ import { ApiRequestError } from "@bop/sdk";
 import type { Employee, LeaveType } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -29,7 +23,7 @@ function Chip({
 }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       style={[
         styles.chip,
@@ -45,7 +39,7 @@ function Chip({
       >
         {label}
       </ThemedText>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -93,7 +87,7 @@ export default function NewLeaveRequestScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedText type="title" style={styles.title}>
@@ -178,7 +172,7 @@ export default function NewLeaveRequestScreen() {
             </ThemedText>
           ) : null}
 
-          <Pressable
+          <AnimatedPressable
             onPress={handleSubmit}
             disabled={!canSubmit}
             style={[
@@ -193,7 +187,7 @@ export default function NewLeaveRequestScreen() {
                 Submit request
               </ThemedText>
             )}
-          </Pressable>
+          </AnimatedPressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

@@ -3,8 +3,9 @@ import type { CheckInResponse } from "@bop/shared-types";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
 import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -84,7 +85,7 @@ export default function CheckInScreen() {
 
   if (!permission) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ActivityIndicator color={theme.primary} />
         </SafeAreaView>
@@ -94,7 +95,7 @@ export default function CheckInScreen() {
 
   if (!permission.granted) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ThemedText type="subtitle" style={styles.permissionTitle}>
             Camera access needed
@@ -102,21 +103,21 @@ export default function CheckInScreen() {
           <ThemedText themeColor="mutedForeground" style={styles.permissionBody}>
             Photo check-in matches your face against enrolled employees to log attendance.
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={requestPermission}
             style={[styles.primaryButton, { backgroundColor: theme.primary }]}
           >
             <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
               Grant camera access
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </SafeAreaView>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         {phase === "result" ? (
           <View style={styles.center}>
@@ -150,7 +151,7 @@ export default function CheckInScreen() {
                 </ThemedText>
               </>
             ) : null}
-            <Pressable
+            <AnimatedPressable
               onPress={reset}
               style={[
                 styles.primaryButton,
@@ -160,13 +161,13 @@ export default function CheckInScreen() {
               <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
                 Check in another
               </ThemedText>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         ) : (
           <>
             <CameraView ref={cameraRef} style={styles.camera} facing="front" />
             <View style={styles.captureRow}>
-              <Pressable
+              <AnimatedPressable
                 onPress={capture}
                 disabled={phase === "submitting"}
                 style={[styles.captureButton, { borderColor: theme.card }]}
@@ -176,7 +177,7 @@ export default function CheckInScreen() {
                 ) : (
                   <View style={[styles.captureButtonInner, { backgroundColor: theme.card }]} />
                 )}
-              </Pressable>
+              </AnimatedPressable>
             </View>
           </>
         )}

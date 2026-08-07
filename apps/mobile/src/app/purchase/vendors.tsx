@@ -1,13 +1,16 @@
 import { ApiRequestError } from "@bop/sdk";
 import type { Vendor } from "@bop/shared-types";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
+import Animated from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { listItemEntrance } from "@/lib/motion";
 import { createVendor, getVendors, updateVendor } from "@/lib/purchase";
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -32,7 +35,7 @@ function VendorRow({ vendor, onToggle }: { vendor: Vendor; onToggle: (v: Vendor)
           {vendor.gst_number || "No GSTIN on file"}
         </ThemedText>
       </View>
-      <Pressable onPress={handleToggle} disabled={busy} style={styles.toggle}>
+      <AnimatedPressable onPress={handleToggle} disabled={busy} style={styles.toggle}>
         {busy ? (
           <ActivityIndicator size="small" color={theme.mutedForeground} />
         ) : (
@@ -40,7 +43,7 @@ function VendorRow({ vendor, onToggle }: { vendor: Vendor; onToggle: (v: Vendor)
             {vendor.is_active ? "Active" : "Inactive"}
           </ThemedText>
         )}
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -92,7 +95,7 @@ export default function VendorsScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
@@ -122,7 +125,7 @@ export default function VendorsScreen() {
               { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.card },
             ]}
           />
-          <Pressable
+          <AnimatedPressable
             onPress={handleCreate}
             disabled={!name.trim() || creating}
             style={[
@@ -137,7 +140,7 @@ export default function VendorsScreen() {
                 Add vendor
               </ThemedText>
             )}
-          </Pressable>
+          </AnimatedPressable>
         </View>
 
         {error ? (
@@ -153,7 +156,11 @@ export default function VendorsScreen() {
             data={vendors}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => <VendorRow vendor={item} onToggle={handleToggle} />}
+            renderItem={({ item, index }) => (
+              <Animated.View entering={listItemEntrance(index)}>
+                <VendorRow vendor={item} onToggle={handleToggle} />
+              </Animated.View>
+            )}
           />
         )}
       </SafeAreaView>

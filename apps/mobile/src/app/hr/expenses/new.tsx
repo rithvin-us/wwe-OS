@@ -3,15 +3,9 @@ import type { Employee } from "@bop/shared-types";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -33,7 +27,7 @@ function Chip({
 }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       style={[
         styles.chip,
@@ -49,7 +43,7 @@ function Chip({
       >
         {label}
       </ThemedText>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -108,7 +102,7 @@ export default function NewExpenseClaimScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedText type="title" style={styles.title}>
@@ -186,7 +180,7 @@ export default function NewExpenseClaimScreen() {
           <ThemedText type="smallBold" themeColor="mutedForeground" style={styles.label}>
             RECEIPT (OPTIONAL)
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={attachReceipt}
             style={[
               styles.receiptButton,
@@ -196,7 +190,7 @@ export default function NewExpenseClaimScreen() {
             <ThemedText type="small">
               {receipt ? "Receipt attached — tap to change" : "Attach a photo"}
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
 
           {error ? (
             <ThemedText themeColor="destructive" style={styles.error}>
@@ -204,7 +198,7 @@ export default function NewExpenseClaimScreen() {
             </ThemedText>
           ) : null}
 
-          <Pressable
+          <AnimatedPressable
             onPress={handleSubmit}
             disabled={!canSubmit}
             style={[
@@ -219,7 +213,7 @@ export default function NewExpenseClaimScreen() {
                 Submit claim
               </ThemedText>
             )}
-          </Pressable>
+          </AnimatedPressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

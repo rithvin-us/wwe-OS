@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { api } from "@/lib/api";
+import { DEV_AUTO_LOGIN, DEV_EMAIL, DEV_PASSWORD } from "@/lib/dev-auth";
 import { secureTokenStorage } from "@/lib/token-storage";
 
 interface AuthState {

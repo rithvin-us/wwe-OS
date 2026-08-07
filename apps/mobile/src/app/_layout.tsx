@@ -33,6 +33,23 @@ function RootNavigator() {
         <Stack.Screen name="purchase/index" />
         <Stack.Screen name="purchase/scan" options={{ presentation: "fullScreenModal" }} />
         <Stack.Screen name="purchase/vendors" />
+        <Stack.Screen name="invoices/index" />
+        <Stack.Screen name="invoices/new" options={{ presentation: "modal" }} />
+        <Stack.Screen name="invoices/[id]/index" />
+        <Stack.Screen name="invoices/[id]/edit" options={{ presentation: "modal" }} />
+        <Stack.Screen name="customers" />
+        <Stack.Screen name="dms/index" />
+        <Stack.Screen name="dms/upload" options={{ presentation: "modal" }} />
+        <Stack.Screen name="dms/[id]" />
+        <Stack.Screen name="assets/index" />
+        <Stack.Screen name="assets/new" options={{ presentation: "modal" }} />
+        <Stack.Screen name="reports" />
+        <Stack.Screen name="assistant" />
+        <Stack.Screen name="timeline" />
+        <Stack.Screen name="automation/index" />
+        <Stack.Screen name="automation/new" options={{ presentation: "modal" }} />
+        <Stack.Screen name="automation/[id]/edit" options={{ presentation: "modal" }} />
+        <Stack.Screen name="automation/runs/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={user === null}>
         <Stack.Screen name="login" />

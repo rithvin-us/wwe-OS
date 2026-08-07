@@ -4,17 +4,19 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   TextInput,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AnimatedPressable } from "@/components/animated-pressable";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
+import { heroEntrance } from "@/lib/motion";
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -35,70 +37,71 @@ export default function LoginScreen() {
   const canSubmit = email.trim().length > 0 && password.length > 0 && !isSigningIn;
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.form}
-        >
-          <ThemedView style={[styles.mark, { backgroundColor: theme.primary }]}>
-            <ThemedText style={[styles.markText, { color: theme.primaryForeground }]}>W</ThemedText>
-          </ThemedView>
-          <ThemedText type="title" style={styles.title}>
-            WWE OS
-          </ThemedText>
-          <ThemedText type="small" themeColor="mutedForeground" style={styles.subtitle}>
-            Sign in to run the company.
-          </ThemedText>
-
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor={theme.mutedForeground}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            style={[
-              styles.input,
-              { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.card },
-            ]}
-          />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={theme.mutedForeground}
-            secureTextEntry
-            autoComplete="password"
-            style={[
-              styles.input,
-              { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.card },
-            ]}
-          />
-
-          {error ? (
-            <ThemedText themeColor="destructive" type="small">
-              {error}
-            </ThemedText>
-          ) : null}
-
-          <Pressable
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            style={[
-              styles.button,
-              { backgroundColor: theme.primary, opacity: canSubmit ? 1 : 0.5 },
-            ]}
-          >
-            {isSigningIn ? (
-              <ActivityIndicator color={theme.primaryForeground} />
-            ) : (
-              <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
-                Sign in
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <Animated.View entering={heroEntrance()} style={styles.form}>
+            <ThemedView style={[styles.mark, { backgroundColor: theme.primary }]}>
+              <ThemedText style={[styles.markText, { color: theme.primaryForeground }]}>
+                W
               </ThemedText>
-            )}
-          </Pressable>
+            </ThemedView>
+            <ThemedText type="title" style={styles.title}>
+              WWE OS
+            </ThemedText>
+            <ThemedText type="small" themeColor="mutedForeground" style={styles.subtitle}>
+              Sign in to run the company.
+            </ThemedText>
+
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor={theme.mutedForeground}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              style={[
+                styles.input,
+                { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            />
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={theme.mutedForeground}
+              secureTextEntry
+              autoComplete="password"
+              style={[
+                styles.input,
+                { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            />
+
+            {error ? (
+              <ThemedText themeColor="destructive" type="small">
+                {error}
+              </ThemedText>
+            ) : null}
+
+            <AnimatedPressable
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              style={[
+                styles.button,
+                { backgroundColor: theme.primary, opacity: canSubmit ? 1 : 0.5 },
+              ]}
+            >
+              {isSigningIn ? (
+                <ActivityIndicator color={theme.primaryForeground} />
+              ) : (
+                <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
+                  Sign in
+                </ThemedText>
+              )}
+            </AnimatedPressable>
+          </Animated.View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>

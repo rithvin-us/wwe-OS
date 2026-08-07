@@ -3,8 +3,9 @@ import type { WorkforceSummary } from "@bop/shared-types";
 import { currentPeriod } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -48,7 +49,7 @@ export default function HrOverviewScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedText type="title" style={styles.title}>
@@ -73,7 +74,7 @@ export default function HrOverviewScreen() {
           </ThemedText>
           <View style={styles.navList}>
             {NAV_ITEMS.map((item) => (
-              <Pressable
+              <AnimatedPressable
                 key={item.href}
                 onPress={() => router.push(item.href)}
                 style={[styles.navRow, { borderColor: theme.border, backgroundColor: theme.card }]}
@@ -85,7 +86,7 @@ export default function HrOverviewScreen() {
                   </ThemedText>
                 </View>
                 <ThemedText themeColor="mutedForeground">›</ThemedText>
-              </Pressable>
+              </AnimatedPressable>
             ))}
           </View>
         </ScrollView>

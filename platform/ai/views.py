@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.permissions import HasPlatformPermission
+from tenancy.services import TenancyService
 
 from ai import prompts
 from ai.models import AIUsage
@@ -45,6 +46,11 @@ class GenerateView(APIView):
         data = GenerateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
+        # A superuser created without a tenant (e.g. the bootstrap operator
+        # account) has no `.tenant` to hand the gateway — single-operator
+        # mode has exactly one company, so resolve it the same way
+        # purchase ingestion does rather than failing every AI call.
+        tenant = request.user.tenant or TenancyService().resolve_existing_default_tenant()
         result = AIService().generate(
             module="api",
             prompt_key=v["prompt_key"] or None,
@@ -53,7 +59,7 @@ class GenerateView(APIView):
             user=v["user"],
             model=v["model"] or None,
             use_case=v["use_case"],
-            tenant=request.user.tenant,
+            tenant=tenant,
             requested_by=request.user,
             max_tokens=v["max_tokens"],
             cache_ttl=v["cache_ttl"],
