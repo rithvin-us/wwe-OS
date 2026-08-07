@@ -20,7 +20,7 @@ export interface ChatMessage {
   suggestedPrompts?: string[];
 }
 
-const RITHU_DOCUMENTS = [
+const RITHU_DOCUMENTS_INDEX = [
   {
     title: "Rithu_SLA_Agreement_2026.pdf",
     path: "/dms/doc_rithu_sla_2026",
@@ -56,29 +56,129 @@ export async function POST(request: Request) {
     const body = await request.json();
     const prompt: string = (body.prompt || "").trim();
     const lowerPrompt = prompt.toLowerCase();
+    const apiKey = process.env.GEMINI_API_KEY;
 
+    // SaaS Production Path 1: Call Google Gemini API (gemini-2.5-flash) if GEMINI_API_KEY is present
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI assistant for Water Works Engineering (WWE OS).
+Answer the user naturally, concisely, and warmly. Never use cold or robotic AI jargon.
+
+Indexed Knowledge Documents (Rithu Files):
+${JSON.stringify(RITHU_DOCUMENTS_INDEX, null, 2)}
+
+Current Live Company Figures:
+- Revenue: ₹21,50,000 (+14.2% ↑)
+- Expenses: ₹9,45,000 (-3.8% ↓)
+- Cash Position: ₹48,20,000
+- Purchases: 28 Bills Processed (2 Pending Review)
+- Active Workforce: 28 Employees (96% Attendance)
+- Equipment: 42 Active Units
+
+User Question: "${prompt}"
+
+Return your response strictly as a JSON object matching this schema:
+{
+  "replyText": "Your friendly, conversational markdown response text",
+  "emailDraft": null or {"to": "string", "subject": "string", "body": "string"},
+  "relatedDocs": null or [{"title": "string", "path": "string", "category": "string", "date": "string"}],
+  "suggestedPrompts": ["3 short, natural follow-up prompt suggestions"]
+}`;
+
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: systemPrompt }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1024,
+                responseMimeType: "application/json",
+              },
+            }),
+          },
+        );
+
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            return NextResponse.json({
+              id: `msg_${Date.now()}`,
+              sender: "rithu",
+              text: parsed.replyText || "Hey! How can I help you today?",
+              timestamp: new Date().toISOString(),
+              emailDraft: parsed.emailDraft || undefined,
+              relatedDocs: parsed.relatedDocs || undefined,
+              suggestedPrompts: parsed.suggestedPrompts || [
+                "Show Rithu documents",
+                "Write an email to vendor",
+                "How is the business doing?",
+              ],
+            });
+          }
+        }
+      } catch (geminiErr) {
+        console.warn("Gemini API call warning, continuing to backend gateway:", geminiErr);
+      }
+    }
+
+    // SaaS Production Path 2: Django Backend AI Gateway
+    try {
+      const djangoResult = await djangoFetch<{ text: string }>("/api/v1/ai/generate/", {
+        method: "POST",
+        body: JSON.stringify({
+          prompt_key: "general-helpdesk",
+          variables: { user_query: prompt },
+          use_case: "helpdesk",
+        }),
+      });
+
+      if (djangoResult.text) {
+        return NextResponse.json({
+          id: `msg_${Date.now()}`,
+          sender: "rithu",
+          text: djangoResult.text.trim(),
+          timestamp: new Date().toISOString(),
+          suggestedPrompts: [
+            "Show Rithu documents",
+            "Write an email to vendor",
+            "How is the business doing?",
+          ],
+        });
+      }
+    } catch {
+      // Backend offline fallback
+    }
+
+    // SaaS Production Path 3: Smart Dynamic Context Provider
     let replyText = "";
-    let emailDraft: ChatMessage["emailDraft"] | undefined = undefined;
-    let relatedDocs: ChatMessage["relatedDocs"] | undefined = undefined;
+    let emailDraft: ChatMessage["emailDraft"] = undefined;
+    let relatedDocs: ChatMessage["relatedDocs"] = undefined;
     let suggestedPrompts: string[] = [];
 
-    // 1. Check if user asks about "Rithu" files or documents
     if (
       lowerPrompt.includes("rithu") ||
       lowerPrompt.includes("file") ||
       lowerPrompt.includes("doc")
     ) {
-      relatedDocs = RITHU_DOCUMENTS;
+      relatedDocs = RITHU_DOCUMENTS_INDEX;
       replyText =
-        "Here are the files and documents related to **Rithu**! You can tap on any of them to view:";
+        "Here are all the documents and files related to **Rithu**! You can tap on any of them to view:";
       suggestedPrompts = [
         "Write an email about the SLA",
         "How is the company doing financially?",
         "Show vendor invoices",
       ];
-    }
-    // 2. Check if user wants an email draft
-    else if (
+    } else if (
       lowerPrompt.includes("email") ||
       lowerPrompt.includes("draft") ||
       lowerPrompt.includes("mail") ||
@@ -97,26 +197,26 @@ export async function POST(request: Request) {
           ? `Hi there,\n\nHope you're doing well!\n\nWe're reviewing our purchase bills for August 2026. Could you please send over the updated tax invoice and delivery challan for Purchase Order #PB-8832 when you get a chance?\n\nThanks,\nLakshmanan\nWater Works Engineering`
           : `Hi Rithu,\n\nHere is a quick update on our operational summary for Q3 2026. All payroll calculations, HR registers, and purchase receipts are up to date.\n\nLet me know whenever you'd like to catch up or review!\n\nBest,\nLakshmanan\nWater Works Engineering`,
       };
-
       replyText = `Here's a draft for you! You can copy it or send it directly below:`;
       suggestedPrompts = ["Show Rithu documents", "How are sales doing?", "Check pending bills"];
-    }
-    // 3. Stats / Financial / General Queries
-    else if (
+    } else if (
       lowerPrompt.includes("finance") ||
       lowerPrompt.includes("stat") ||
       lowerPrompt.includes("revenue") ||
       lowerPrompt.includes("expense") ||
       lowerPrompt.includes("bill") ||
       lowerPrompt.includes("doing") ||
-      lowerPrompt.includes("how")
+      lowerPrompt.includes("how") ||
+      lowerPrompt.includes("invoice") ||
+      lowerPrompt.includes("received") ||
+      lowerPrompt.includes("recieved")
     ) {
       replyText =
         "Here's a quick look at how the business is doing today! 😊\n\n" +
         "• **Revenue**: ₹21,50,000 (+14.2% ↑)\n" +
         "• **Expenses**: ₹9,45,000 (-3.8% ↓)\n" +
         "• **Cash Position**: ₹48,20,000\n" +
-        "• **Purchases**: 28 bills processed (2 pending review)\n" +
+        "• **Purchases / Invoices Received**: 28 bills processed (2 pending review, 5 unpaid)\n" +
         "• **Team**: 28 active team members (96% attendance)\n" +
         "• **Equipment**: 42 active units in service";
       suggestedPrompts = [
@@ -124,24 +224,8 @@ export async function POST(request: Request) {
         "Show Rithu documents",
         "Check employee attendance",
       ];
-    }
-    // 4. Fallback Gemini AI Generation
-    else {
-      try {
-        const aiResult = await djangoFetch<{ text: string }>("/api/v1/ai/generate/", {
-          method: "POST",
-          body: JSON.stringify({
-            prompt_key: "general-helpdesk",
-            variables: { user_query: prompt },
-            use_case: "helpdesk",
-          }),
-        });
-        replyText =
-          aiResult.text?.trim() ||
-          `Hey! What would you like help with today? I can find files, write emails, or check business stats for you!`;
-      } catch {
-        replyText = `Hey! I can help you find files, draft emails, or check company figures. What's on your mind?`;
-      }
+    } else {
+      replyText = `Hey! What would you like help with today? I can find files, write emails, or check business stats for you!`;
       suggestedPrompts = [
         "Show Rithu documents",
         "Write an email to vendor",
@@ -149,17 +233,15 @@ export async function POST(request: Request) {
       ];
     }
 
-    const responsePayload: ChatMessage = {
+    return NextResponse.json({
       id: `msg_${Date.now()}`,
       sender: "rithu",
       text: replyText,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toISOString(),
       emailDraft,
       relatedDocs,
       suggestedPrompts,
-    };
-
-    return NextResponse.json(responsePayload);
+    });
   } catch (error) {
     console.error("Rithu AI Chatbot API error:", error);
     return NextResponse.json(
@@ -167,7 +249,7 @@ export async function POST(request: Request) {
         id: `msg_${Date.now()}`,
         sender: "rithu",
         text: "Hey! What would you like help with? I can look up documents, write emails, or check stats.",
-        timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toISOString(),
         suggestedPrompts: [
           "Show Rithu documents",
           "Write an email to vendor",
