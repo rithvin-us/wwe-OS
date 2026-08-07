@@ -60,18 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.login(email, password, rememberMe);
       const me = await api.me();
       setUser(me.user);
-    } catch {
-      // Seamless dev fallback when local backend Django is offline
-      setUser({
-        id: "user_operator",
-        email: email || "admin@wwe.local",
-        first_name: "Lakshmanan",
-        last_name: "Owner",
-        full_name: "Lakshmanan (Operator)",
-        is_active: true,
-        roles: ["owner", "admin"],
-        permissions: ["*"],
-      });
     } finally {
       setIsSigningIn(false);
     }

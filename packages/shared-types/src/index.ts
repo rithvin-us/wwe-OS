@@ -32,3 +32,11 @@ export interface TokenPair {
   access: string;
   refresh: string;
 }
+
+/** Mirrors `modules/purchase/backend/api/views.py`'s `stats` action. */
+export interface PurchaseBillStats {
+  processed: number;
+  needs_attention: number;
+  total: number;
+  unpaid: number;
+}

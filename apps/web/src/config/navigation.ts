@@ -1,4 +1,4 @@
-import { Layers, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
+import { Bot, Layers, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
@@ -59,6 +59,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "CORE MODULES",
     items: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
+      { name: "Rithu AI Helpdesk", href: "/chatbot", icon: Bot },
       ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
     ],
   },

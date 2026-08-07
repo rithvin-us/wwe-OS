@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
+import { RithuChatWidget } from "@/components/chatbot/rithu-chat-widget";
 import { CommandPalette } from "@/components/command-palette";
 import { SessionRefresh } from "@/components/session-refresh";
 
@@ -87,6 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sheet>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <RithuChatWidget />
       <SessionRefresh />
     </div>
   );
