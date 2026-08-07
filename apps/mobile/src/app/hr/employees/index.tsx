@@ -2,13 +2,16 @@ import { ApiRequestError } from "@bop/sdk";
 import type { Employee } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
+import Animated from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { listItemEntrance } from "@/lib/motion";
 import { getEmployees } from "@/lib/hr";
 
 const STATUS_TONE: Record<Employee["status"], "success" | "mutedForeground" | "warning"> = {
@@ -20,7 +23,7 @@ const STATUS_TONE: Record<Employee["status"], "success" | "mutedForeground" | "w
 function EmployeeRow({ employee }: { employee: Employee }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={() => router.push(`/hr/employees/${employee.id}` as never)}
       style={[styles.row, { borderColor: theme.border, backgroundColor: theme.card }]}
     >
@@ -33,7 +36,7 @@ function EmployeeRow({ employee }: { employee: Employee }) {
       <ThemedText type="small" themeColor={STATUS_TONE[employee.status]}>
         {employee.status}
       </ThemedText>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -59,7 +62,7 @@ export default function EmployeesScreen() {
   }, [search, load]);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
@@ -92,7 +95,11 @@ export default function EmployeesScreen() {
             data={employees}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => <EmployeeRow employee={item} />}
+            renderItem={({ item, index }) => (
+              <Animated.View entering={listItemEntrance(index)}>
+                <EmployeeRow employee={item} />
+              </Animated.View>
+            )}
           />
         )}
       </SafeAreaView>

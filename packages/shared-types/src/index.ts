@@ -43,3 +43,11 @@ export interface PurchaseBillStats {
 
 export * from "./hr";
 export * from "./purchase";
+export * from "./finance";
+export * from "./tags";
+export * from "./dms";
+export * from "./assets";
+export * from "./reports";
+export * from "./ai";
+export * from "./audit";
+export * from "./automation";

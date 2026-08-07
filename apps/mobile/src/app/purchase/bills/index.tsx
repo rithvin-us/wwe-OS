@@ -2,14 +2,17 @@ import { ApiRequestError } from "@bop/sdk";
 import type { BillStatus, PurchaseBill } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
+import Animated from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { formatValue } from "@/config/dashboard";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { listItemEntrance } from "@/lib/motion";
 import { getPurchaseBills } from "@/lib/purchase";
 
 const FILTERS: { label: string; value: BillStatus | undefined }[] = [
@@ -21,7 +24,7 @@ const FILTERS: { label: string; value: BillStatus | undefined }[] = [
 function BillRow({ bill }: { bill: PurchaseBill }) {
   const theme = useTheme();
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={() => router.push(`/purchase/bills/${bill.id}` as never)}
       style={[styles.row, { borderColor: theme.border, backgroundColor: theme.card }]}
     >
@@ -37,7 +40,7 @@ function BillRow({ bill }: { bill: PurchaseBill }) {
           {bill.status === "processed" ? "Processed" : "Needs attention"}
         </ThemedText>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -62,25 +65,25 @@ export default function BillsScreen() {
   }, [filter, load]);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
             Bills
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={() => router.push("/purchase/scan")}
             style={[styles.scanButton, { backgroundColor: theme.primary }]}
           >
             <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
               Scan a bill
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </View>
 
         <View style={styles.filterRow}>
           {FILTERS.map((f) => (
-            <Pressable
+            <AnimatedPressable
               key={f.label}
               onPress={() => setFilter(f.value)}
               style={[
@@ -97,7 +100,7 @@ export default function BillsScreen() {
               >
                 {f.label}
               </ThemedText>
-            </Pressable>
+            </AnimatedPressable>
           ))}
         </View>
 
@@ -116,7 +119,11 @@ export default function BillsScreen() {
             data={bills}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => <BillRow bill={item} />}
+            renderItem={({ item, index }) => (
+              <Animated.View entering={listItemEntrance(index)}>
+                <BillRow bill={item} />
+              </Animated.View>
+            )}
           />
         )}
       </SafeAreaView>

@@ -4,8 +4,9 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -71,7 +72,7 @@ export default function ScanBillScreen() {
 
   if (!permission) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ActivityIndicator color={theme.primary} />
         </SafeAreaView>
@@ -81,7 +82,7 @@ export default function ScanBillScreen() {
 
   if (!permission.granted) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ThemedText type="subtitle" style={styles.centerTitle}>
             Camera access needed
@@ -90,26 +91,26 @@ export default function ScanBillScreen() {
             Scan a paper bill to digitize it automatically — vendor, GSTIN, and totals extracted by
             AI.
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={requestPermission}
             style={[styles.primaryButton, { backgroundColor: theme.primary }]}
           >
             <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
               Grant camera access
             </ThemedText>
-          </Pressable>
-          <Pressable onPress={pickFromLibrary} style={styles.linkButton}>
+          </AnimatedPressable>
+          <AnimatedPressable onPress={pickFromLibrary} style={styles.linkButton}>
             <ThemedText type="small" themeColor="mutedForeground">
               Or choose a photo instead
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </SafeAreaView>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         {phase === "result" ? (
           <View style={styles.center}>
@@ -141,7 +142,7 @@ export default function ScanBillScreen() {
                 <ThemedText type="small" themeColor="mutedForeground" style={styles.confidence}>
                   {Math.round(Number(result.confidence_score) * 100)}% OCR confidence
                 </ThemedText>
-                <Pressable
+                <AnimatedPressable
                   onPress={() => router.replace(`/purchase/bills/${result.id}` as never)}
                   style={[
                     styles.primaryButton,
@@ -151,28 +152,28 @@ export default function ScanBillScreen() {
                   <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
                     Review & correct
                   </ThemedText>
-                </Pressable>
+                </AnimatedPressable>
               </>
             ) : null}
-            <Pressable onPress={reset} style={styles.linkButton}>
+            <AnimatedPressable onPress={reset} style={styles.linkButton}>
               <ThemedText type="small" themeColor="mutedForeground">
                 Scan another
               </ThemedText>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         ) : (
           <>
             <CameraView ref={cameraRef} style={styles.camera} facing="back" />
             <View style={styles.controlsRow}>
-              <Pressable
+              <AnimatedPressable
                 onPress={pickFromLibrary}
                 style={[styles.libraryButton, { borderColor: theme.card }]}
               >
                 <ThemedText type="small" style={{ color: theme.card }}>
                   Library
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </AnimatedPressable>
+              <AnimatedPressable
                 onPress={capture}
                 disabled={phase === "submitting"}
                 style={[styles.captureButton, { borderColor: theme.card }]}
@@ -182,7 +183,7 @@ export default function ScanBillScreen() {
                 ) : (
                   <View style={[styles.captureButtonInner, { backgroundColor: theme.card }]} />
                 )}
-              </Pressable>
+              </AnimatedPressable>
               <View style={styles.libraryButtonSpacer} />
             </View>
           </>

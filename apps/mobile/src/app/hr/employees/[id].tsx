@@ -3,8 +3,9 @@ import type { Employee } from "@bop/shared-types";
 import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -80,7 +81,7 @@ export default function EmployeeDetailScreen() {
 
   if (error) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ThemedText themeColor="destructive">{error}</ThemedText>
         </SafeAreaView>
@@ -90,7 +91,7 @@ export default function EmployeeDetailScreen() {
 
   if (!employee) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.container} animated>
         <SafeAreaView style={styles.center}>
           <ActivityIndicator color={theme.primary} />
         </SafeAreaView>
@@ -99,7 +100,7 @@ export default function EmployeeDetailScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedText type="title" style={styles.title}>
@@ -146,7 +147,7 @@ export default function EmployeeDetailScreen() {
                 ? `Enrolled ${new Date(employee.enrolled_at).toLocaleDateString()}`
                 : "Not enrolled yet"}
             </ThemedText>
-            <Pressable
+            <AnimatedPressable
               onPress={handleEnroll}
               disabled={enrolling}
               style={[
@@ -161,7 +162,7 @@ export default function EmployeeDetailScreen() {
                   {employee.enrolled_at ? "Re-enroll face" : "Enroll face"}
                 </ThemedText>
               )}
-            </Pressable>
+            </AnimatedPressable>
             {enrollMessage ? (
               <ThemedText type="small" themeColor="mutedForeground" style={styles.enrollMessage}>
                 {enrollMessage}

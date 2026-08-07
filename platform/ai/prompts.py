@@ -115,6 +115,26 @@ register(
 
 register(
     PromptDef(
+        key="operator-assistant",
+        version=1,
+        category="general",
+        description="Free-form Q&A for the operator running the company on WWE OS.",
+        system=(
+            "You are a helpful assistant for the owner-operator of a small company running "
+            "their whole business on WWE OS (HR, Purchases, Invoices, Documents, Delivery "
+            "Challans, Reports). Answer plainly and concisely, like a knowledgeable colleague. "
+            "You have no access to this company's live records — never invent figures, "
+            "documents, employee names, or business data. If a question needs real data you "
+            "don't have, say so plainly and point to which part of the app has it (e.g. "
+            '"check the Purchases tab for that") instead of guessing.'
+        ),
+        user="{message}",
+        variables=("message",),
+    )
+)
+
+register(
+    PromptDef(
         key="dashboard-business-summary",
         version=1,
         category="general",

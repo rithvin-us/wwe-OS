@@ -2,8 +2,9 @@ import { ApiRequestError } from "@bop/sdk";
 import type { LeaveRequest } from "@bop/shared-types";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -51,7 +52,7 @@ function LeaveRow({
 
       {onDecide ? (
         <View style={styles.actions}>
-          <Pressable
+          <AnimatedPressable
             onPress={() => handle("approved")}
             disabled={deciding !== null}
             style={[styles.actionButton, { backgroundColor: `${theme.success}22` }]}
@@ -63,8 +64,8 @@ function LeaveRow({
                 Approve
               </ThemedText>
             )}
-          </Pressable>
-          <Pressable
+          </AnimatedPressable>
+          <AnimatedPressable
             onPress={() => handle("rejected")}
             disabled={deciding !== null}
             style={[styles.actionButton, { backgroundColor: `${theme.destructive}22` }]}
@@ -76,7 +77,7 @@ function LeaveRow({
                 Reject
               </ThemedText>
             )}
-          </Pressable>
+          </AnimatedPressable>
         </View>
       ) : null}
     </View>
@@ -116,20 +117,20 @@ export default function LeaveScreen() {
   const decided = requests?.filter((r) => r.status !== "pending") ?? [];
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
             Leave
           </ThemedText>
-          <Pressable
+          <AnimatedPressable
             onPress={() => router.push("/hr/leave/new")}
             style={[styles.newButton, { backgroundColor: theme.primary }]}
           >
             <ThemedText style={{ color: theme.primaryForeground, fontWeight: "600" }}>
               New request
             </ThemedText>
-          </Pressable>
+          </AnimatedPressable>
         </View>
 
         {error ? (

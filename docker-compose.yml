@@ -58,6 +58,8 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       INGESTION_SERVICE_TOKENS: ${INGESTION_SERVICE_TOKENS:?Set INGESTION_SERVICE_TOKENS in your .env (see .env.example)}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-}
+      AI_FALLBACK_MODEL: ${AI_FALLBACK_MODEL:-}
     volumes:
       - ./platform:/app
       - ./modules:/modules

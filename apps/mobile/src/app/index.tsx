@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "@/components/animated-pressable";
 import { router } from "expo-router";
 
 import { KpiTile } from "@/components/kpi-tile";
@@ -17,6 +12,7 @@ import { buildKpis, type Kpi } from "@/config/dashboard";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
+import { listItemEntrance } from "@/lib/motion";
 
 /**
  * Executive Overview — mobile counterpart to apps/web's "/". Same four KPIs,
@@ -45,7 +41,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.container} animated>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -58,9 +54,12 @@ export default function HomeScreen() {
               </ThemedText>
               <ThemedText themeColor="mutedForeground">{user?.email}</ThemedText>
             </View>
-            <Pressable onPress={signOut} style={[styles.signOut, { borderColor: theme.border }]}>
+            <AnimatedPressable
+              onPress={signOut}
+              style={[styles.signOut, { borderColor: theme.border }]}
+            >
               <ThemedText type="small">Sign out</ThemedText>
-            </Pressable>
+            </AnimatedPressable>
           </View>
 
           <ThemedText type="smallBold" themeColor="mutedForeground" style={styles.sectionLabel}>
@@ -71,8 +70,10 @@ export default function HomeScreen() {
             <ActivityIndicator color={theme.primary} style={styles.loader} />
           ) : (
             <View style={styles.kpiGrid}>
-              {kpis.map((kpi) => (
-                <KpiTile key={kpi.key} kpi={kpi} />
+              {kpis.map((kpi, index) => (
+                <Animated.View key={kpi.key} entering={listItemEntrance(index)}>
+                  <KpiTile kpi={kpi} />
+                </Animated.View>
               ))}
             </View>
           )}
@@ -81,7 +82,7 @@ export default function HomeScreen() {
             QUICK ACTIONS
           </ThemedText>
           <View style={styles.kpiGrid}>
-            <Pressable
+            <AnimatedPressable
               onPress={() => router.push("/hr/checkin")}
               style={[
                 styles.quickAction,
@@ -92,8 +93,8 @@ export default function HomeScreen() {
               <ThemedText type="small" themeColor="mutedForeground">
                 Face match attendance
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AnimatedPressable>
+            <AnimatedPressable
               onPress={() => router.push("/hr")}
               style={[
                 styles.quickAction,
@@ -104,8 +105,8 @@ export default function HomeScreen() {
               <ThemedText type="small" themeColor="mutedForeground">
                 Employees, leave, expenses
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AnimatedPressable>
+            <AnimatedPressable
               onPress={() => router.push("/purchase/scan")}
               style={[
                 styles.quickAction,
@@ -116,8 +117,8 @@ export default function HomeScreen() {
               <ThemedText type="small" themeColor="mutedForeground">
                 Camera OCR digitization
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AnimatedPressable>
+            <AnimatedPressable
               onPress={() => router.push("/purchase")}
               style={[
                 styles.quickAction,
@@ -128,7 +129,91 @@ export default function HomeScreen() {
               <ThemedText type="small" themeColor="mutedForeground">
                 Bills & vendors
               </ThemedText>
-            </Pressable>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/invoices")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Invoices</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Generate & track billing
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/dms")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Documents</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Contracts & incoming files
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/assets")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Delivery Challans</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Generate & track DCs
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/reports")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Reports</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Ready-made reports, on demand
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/assistant")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Assistant</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Ask a question
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/timeline")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Timeline</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Everything that happened
+              </ThemedText>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/automation")}
+              style={[
+                styles.quickAction,
+                { borderColor: theme.border, backgroundColor: theme.card },
+              ]}
+            >
+              <ThemedText type="smallBold">Automation</ThemedText>
+              <ThemedText type="small" themeColor="mutedForeground">
+                Collect tagged records
+              </ThemedText>
+            </AnimatedPressable>
           </View>
         </ScrollView>
       </SafeAreaView>
