@@ -7,7 +7,6 @@ const config: CapacitorConfig = {
   server: {
     url: "https://web-vert-six-63.vercel.app",
     cleartext: true,
-    reloadAnimationStyle: "minimal",
   },
   android: {
     allowMixedContent: true,
