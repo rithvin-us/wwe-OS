@@ -60,8 +60,12 @@ export function AppSidebar({
       <Link
         href="/"
         onClick={onNavigate}
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          height: "calc(var(--layout-header-height) + env(safe-area-inset-top))",
+        }}
         className={cn(
-          "flex h-(--layout-header-height) shrink-0 items-center gap-2.5 border-b border-sidebar-border focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
+          "flex shrink-0 items-center gap-2.5 border-b border-sidebar-border focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
           collapsed ? "justify-center px-2" : "px-4",
         )}
       >
