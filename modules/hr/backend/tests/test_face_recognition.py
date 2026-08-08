@@ -10,6 +10,7 @@ importable (skipped otherwise).
 
 import pytest
 
+from hr.backend.services.face_config import get_settings
 from hr.backend.services.face_recognition import (
     BlurryFaceError,
     FaceError,
@@ -115,7 +116,8 @@ class TestSerialization:
 
 
 class TestFactory:
-    def test_default_engine_is_stub(self):
+    def test_default_engine_is_stub(self, monkeypatch):
+        monkeypatch.setattr(get_settings(), "FACE_ENGINE", "stub")
         get_face_service.cache_clear()
         assert isinstance(get_face_service(), StubFaceService)
 
