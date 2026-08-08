@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WWE OS Web</string>
+    <string name="title_activity_main">WWE OS Web</string>
+    <string name="package_name">com.wweos.web</string>
+    <string name="custom_url_scheme">com.wweos.web</string>
+</resources>
