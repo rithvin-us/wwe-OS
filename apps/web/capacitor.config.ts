@@ -13,6 +13,15 @@ const config: CapacitorConfig = {
     captureInput: true,
     webContentsDebuggingEnabled: true,
   },
+  plugins: {
+    SplashScreen: {
+      // Held open until the app shell explicitly hides it (see app-shell.tsx)
+      // so the fade never happens over a blank WebView mid-load.
+      launchAutoHide: false,
+      launchFadeOutDuration: 300,
+      androidScaleType: "CENTER_CROP",
+    },
+  },
 };
 
 export default config;

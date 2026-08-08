@@ -2,6 +2,7 @@
 
 import { FileSearch, Layers, LayoutDashboard, Loader2, Moon, Sun, SunMoon } from "@bop/icons";
 import { useTheme } from "@bop/theme";
+import { Badge } from "@bop/ui/components/badge";
 import {
   CommandDialog,
   CommandEmpty,
@@ -56,6 +57,22 @@ function saveRecentSearch(entry: RecentSearch) {
     // or a private-browsing tab should never break the palette.
   }
 }
+
+function humanize(value: unknown): string | null {
+  if (typeof value !== "string" || !value) return null;
+  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// The one extra field per index worth surfacing as a secondary label next
+// to status — picked from what each module's search adapter
+// (modules/*/backend/search/adapter.py) actually populates, never guessed.
+const SECONDARY_FIELD: Record<string, string> = {
+  assets: "category",
+  inventory: "category",
+  contracts: "category",
+  documents: "document_type",
+  purchase: "vendor",
+};
 
 function groupByIndex(results: SearchResultRow[]): [string, SearchResultRow[]][] {
   const groups = new Map<string, SearchResultRow[]>();
@@ -193,21 +210,38 @@ export function CommandPalette({
             ) : (
               groups.map(([index, rows]) => (
                 <CommandGroup key={index} heading={indexLabel(index)}>
-                  {rows.map((row) => (
-                    <CommandItem
-                      key={`${row.index}-${row.doc_id}`}
-                      value={`${row.index}-${row.doc_id}`}
-                      onSelect={() => goToResult(row)}
-                    >
-                      <FileSearch aria-hidden />
-                      <div className="min-w-0">
-                        <p className="truncate">{row.title}</p>
-                        {row.excerpt ? (
-                          <p className="truncate text-xs text-muted-foreground">{row.excerpt}</p>
-                        ) : null}
-                      </div>
-                    </CommandItem>
-                  ))}
+                  {rows.map((row) => {
+                    const status = humanize(row.extra?.status);
+                    const secondaryField = SECONDARY_FIELD[row.index];
+                    const secondary = secondaryField ? humanize(row.extra?.[secondaryField]) : null;
+                    return (
+                      <CommandItem
+                        key={`${row.index}-${row.doc_id}`}
+                        value={`${row.index}-${row.doc_id}`}
+                        onSelect={() => goToResult(row)}
+                      >
+                        <FileSearch aria-hidden />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate">{row.title}</p>
+                          {row.excerpt ? (
+                            <p className="truncate text-xs text-muted-foreground">{row.excerpt}</p>
+                          ) : null}
+                        </div>
+                        {(status || secondary) && (
+                          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                            {secondary && (
+                              <span className="text-[11px] text-muted-foreground">{secondary}</span>
+                            )}
+                            {status && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {status}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               ))
             )}

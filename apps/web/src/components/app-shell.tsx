@@ -4,15 +4,20 @@ import { UploadCloud } from "@bop/icons";
 import { useTheme } from "@bop/theme";
 import { Sheet, SheetContent, SheetTitle } from "@bop/ui/components/sheet";
 import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { SplashScreen } from "@capacitor/splash-screen";
 import { Style, StatusBar } from "@capacitor/status-bar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { RithuChatWidget } from "@/components/chatbot/rithu-chat-widget";
 import { CommandPalette } from "@/components/command-palette";
 import { SessionRefresh } from "@/components/session-refresh";
+
+const SIDEBAR_HINT_SEEN_KEY = "wwe-os-sidebar-collapse-hint-seen";
 
 /**
  * The platform shell: one sidebar, one header, one command palette.
@@ -26,12 +31,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
 
+  // First time the rail collapses to icon-only, explain what happened and
+  // how to undo it — after that the user already knows, never show again.
+  useEffect(() => {
+    if (!sidebarCollapsed) return;
+    if (window.localStorage.getItem(SIDEBAR_HINT_SEEN_KEY)) return;
+    window.localStorage.setItem(SIDEBAR_HINT_SEEN_KEY, "1");
+    toast.info("Sidebar collapsed to icons only", {
+      description: "Press Ctrl/Cmd+B anytime to switch it back.",
+    });
+  }, [sidebarCollapsed]);
+
   // Match the Android status bar to the app's theme — no-ops in the browser.
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     void StatusBar.setOverlaysWebView({ overlay: true });
     void StatusBar.setStyle({ style: resolvedTheme === "dark" ? Style.Dark : Style.Light });
   }, [resolvedTheme]);
+
+  // Hide the splash only once the shell itself has painted, not on first
+  // script execution — launchAutoHide is off in capacitor.config.ts so this
+  // is the one place that decides the app is actually ready to show.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    void SplashScreen.hide();
+  }, []);
+
+  // Light tap feedback on every button — @bop/ui's Button always sets
+  // data-slot="button", so this covers every button app-wide (submit,
+  // check-in, approvals) without touching the shared component, which
+  // other non-Capacitor apps in the monorepo also render.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    function onClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[data-slot="button"]')) {
+        void Haptics.impact({ style: ImpactStyle.Light });
+      }
+    }
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
