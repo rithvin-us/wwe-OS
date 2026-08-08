@@ -22,13 +22,13 @@ class Settings(BaseSettings):
     # and /verify-face call. Because the service is exposed publicly through a
     # Cloudflare Tunnel, leave this UNSET only for local testing. When set, the
     # backend must send the same value (FACE_AI_API_KEY there).
-    FACE_AI_API_KEY: str = ""
+    FACE_AI_API_KEY: str = "a4e844c5-5149-4283-85dc-230893898034"
 
     # -- engine selection ------------------------------------------------
     # "insightface" = real MTCNN + ArcFace (needs requirements-ml.txt + ~1GB RAM).
     # "stub"        = deterministic pseudo-embedding, zero heavy deps (tests/CI).
     FACE_ENGINE: str = "insightface"
-    FACE_MODEL: str = "buffalo_s"  # buffalo_s (light) | buffalo_l (accurate)
+    FACE_MODEL: str = "buffalo_s"  # buffalo_s (light & fast) | buffalo_l (heavy & accurate)
     FACE_DETECTOR: str = "mtcnn"  # only mtcnn implemented
     FACE_USE_GPU: bool = False  # use cuda (requires torch+onnxruntime-gpu)
 
