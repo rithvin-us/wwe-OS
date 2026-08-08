@@ -19,6 +19,11 @@ import { ADMIN_PAGES } from "@/config/navigation";
 import { indexLabel } from "@/config/search";
 import type { SearchResponse, SearchResultRow } from "@/lib/search";
 
+interface NavBadges {
+  purchase: number;
+  automation: number;
+}
+
 const RECENT_SEARCHES_KEY = "wwe-os-recent-searches";
 const RECENT_SEARCHES_LIMIT = 5;
 const MIN_QUERY_LENGTH = 2;
@@ -81,10 +86,28 @@ export function CommandPalette({
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<RecentSearch[]>([]);
+  const [badges, setBadges] = useState<NavBadges | null>(null);
 
   useEffect(() => {
     if (open) setRecent(loadRecentSearches());
   }, [open]);
+
+  useEffect(() => {
+    if (!open || badges) return;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/nav-badges", { cache: "no-store" });
+        const data = (await res.json()) as NavBadges;
+        if (active) setBadges(data);
+      } catch {
+        // Palette works fine without badges.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [open, badges]);
 
   useEffect(() => {
     if (!open) {
@@ -221,16 +244,24 @@ export function CommandPalette({
               </>
             ) : null}
             <CommandGroup heading="Apps">
-              {APPS.map((app) => (
-                <CommandItem
-                  key={app.slug}
-                  value={`app-${app.slug}`}
-                  onSelect={() => go(`/${app.slug}`)}
-                >
-                  <app.icon aria-hidden />
-                  {app.name}
-                </CommandItem>
-              ))}
+              {APPS.map((app) => {
+                const count = badges?.[app.slug as keyof NavBadges] ?? 0;
+                return (
+                  <CommandItem
+                    key={app.slug}
+                    value={`app-${app.slug}`}
+                    onSelect={() => go(`/${app.slug}`)}
+                  >
+                    <app.icon aria-hidden />
+                    <span className="flex-1">{app.name}</span>
+                    {count > 0 && (
+                      <span className="ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[10px] font-bold tabular-nums text-white">
+                        {count > 99 ? "99+" : count}
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="Platform">

@@ -15,6 +15,7 @@
     "@bop/theme": "workspace:*",
     "@bop/ui": "workspace:*",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/status-bar": "^8.0.3",
     "@hookform/resolvers": "^4.1.0",
     "@tanstack/react-query": "^5.66.0",
     "@tanstack/react-table": "^8.20.6",

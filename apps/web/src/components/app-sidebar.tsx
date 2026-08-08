@@ -4,9 +4,22 @@ import { ScrollArea } from "@bop/ui/components/scroll-area";
 import { cn } from "@bop/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { COMPANY } from "@/config/company";
 import { NAVIGATION } from "@/config/navigation";
+
+interface NavBadges {
+  purchase: number;
+  automation: number;
+}
+
+/** Nav item name -> badge count key. Only areas with a real wired count get
+ * one — no guessed numbers for modules without a backend source yet. */
+const BADGE_BY_NAME: Record<string, keyof NavBadges> = {
+  Purchases: "purchase",
+  Automation: "automation",
+};
 
 /**
  * The one sidebar. Rendered once in the desktop rail and once inside the
@@ -21,6 +34,23 @@ export function AppSidebar({
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
+  const [badges, setBadges] = useState<NavBadges | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/nav-badges", { cache: "no-store" });
+        const data = (await response.json()) as NavBadges;
+        if (active) setBadges(data);
+      } catch {
+        // Sidebar renders fine without badges; never block navigation on this.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div
@@ -67,6 +97,8 @@ export function AppSidebar({
                   item.href === "/"
                     ? pathname === "/"
                     : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const badgeKey = BADGE_BY_NAME[item.name];
+                const badgeCount = badgeKey ? (badges?.[badgeKey] ?? 0) : 0;
                 return (
                   <Link
                     key={item.href}
@@ -75,7 +107,7 @@ export function AppSidebar({
                     title={collapsed ? item.name : undefined}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex items-center rounded-lg text-[13px] font-medium transition-all",
+                      "relative flex items-center rounded-lg text-[13px] font-medium transition-all",
                       "focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
                       collapsed ? "justify-center px-0 py-2" : "gap-2.5 px-2.5 py-1.5",
                       active
@@ -94,7 +126,20 @@ export function AppSidebar({
                         active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
                       )}
                     />
-                    {!collapsed && item.name}
+                    {collapsed ? (
+                      badgeCount > 0 && (
+                        <span className="absolute top-1 right-1 size-1.5 rounded-full bg-emerald-500" />
+                      )
+                    ) : (
+                      <>
+                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                        {badgeCount > 0 && (
+                          <span className="ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[10px] font-bold tabular-nums text-white">
+                            {badgeCount > 99 ? "99+" : badgeCount}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </Link>
                 );
               })}

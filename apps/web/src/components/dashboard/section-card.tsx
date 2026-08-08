@@ -20,6 +20,7 @@ export function SectionCard({
   children,
   className,
   tone = "default",
+  glass = false,
 }: {
   title: string;
   icon: LucideIcon;
@@ -27,11 +28,17 @@ export function SectionCard({
   children: ReactNode;
   className?: string;
   tone?: "default" | "warning";
+  /** Opt-in — the Executive Dashboard's overview panels only. Every other
+   * SectionCard (Purchase, AI insights) keeps the plain card. */
+  glass?: boolean;
 }) {
   return (
     <section
       className={cn(
-        "flex flex-col rounded-lg border bg-card transition-shadow duration-(--duration-base)",
+        "flex flex-col rounded-lg border transition-shadow duration-(--duration-base)",
+        glass
+          ? "bg-card/70 backdrop-blur-md max-md:bg-card max-md:backdrop-blur-none dark:border-white/10 dark:bg-card/50"
+          : "bg-card",
         tone === "warning" ? "border-warning/40 bg-warning/5" : "border-border",
         href && "hover:shadow-sm",
         className,

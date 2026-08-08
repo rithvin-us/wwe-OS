@@ -38,7 +38,7 @@ function KpiSparkline({ deltaPct }: { deltaPct: number }) {
   );
 }
 
-export function KpiTile({ kpi }: { kpi: Kpi }) {
+export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
   const display = formatValue(kpi.value, kpi.format);
   const hasValue = kpi.value !== null;
   const isError = kpi.status === "error";
@@ -97,10 +97,13 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
 
       <span
         className={cn(
-          "text-[11px] font-medium",
+          "flex items-center gap-1.5 text-[11px] font-medium",
           isError ? "text-warning" : "text-muted-foreground",
         )}
       >
+        {kpi.status === "live" && (
+          <span className="size-1.5 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+        )}
         {hasValue
           ? kpi.source
           : isError
@@ -111,7 +114,8 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
   );
 
   const containerClasses =
-    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs";
+    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs max-md:backdrop-blur-none animate-in fade-in slide-in-from-bottom-2 fill-mode-both";
+  const containerStyle = { animationDelay: `${index * 60}ms`, animationDuration: "300ms" };
 
   if (kpi.href) {
     return (
@@ -121,11 +125,16 @@ export function KpiTile({ kpi }: { kpi: Kpi }) {
           containerClasses,
           "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
         )}
+        style={containerStyle}
       >
         {content}
       </Link>
     );
   }
 
-  return <div className={containerClasses}>{content}</div>;
+  return (
+    <div className={containerClasses} style={containerStyle}>
+      {content}
+    </div>
+  );
 }

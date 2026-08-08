@@ -1,7 +1,10 @@
 "use client";
 
 import { UploadCloud } from "@bop/icons";
+import { useTheme } from "@bop/theme";
 import { Sheet, SheetContent, SheetTitle } from "@bop/ui/components/sheet";
+import { Capacitor } from "@capacitor/core";
+import { Style, StatusBar } from "@capacitor/status-bar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -21,6 +24,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const pathname = usePathname();
+  const { resolvedTheme } = useTheme();
+
+  // Match the Android status bar to the app's theme — no-ops in the browser.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    void StatusBar.setOverlaysWebView({ overlay: true });
+    void StatusBar.setStyle({ style: resolvedTheme === "dark" ? Style.Dark : Style.Light });
+  }, [resolvedTheme]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

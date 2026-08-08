@@ -269,11 +269,17 @@ export function RithuChatWidget() {
 
       {/* Floating Action Trigger Button */}
       <div className="fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40">
+        {/* Persistent glow ring — a genuine floating overlay, the one place
+            the design bible's "quiet depth" rule allows an escalated glow. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-emerald-500/40 blur-xl animate-pulse max-md:hidden"
+        />
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className={cn(
-            "group flex size-13 items-center justify-center rounded-full border border-emerald-500/40 bg-card text-foreground shadow-xl backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-emerald-500 hover:shadow-emerald-500/25 focus-visible:ring-[3px] focus-visible:ring-emerald-500/50 focus-visible:outline-none sm:size-auto sm:px-4 sm:py-3",
+            "group flex size-13 items-center justify-center rounded-full border border-emerald-500/40 bg-card text-foreground shadow-xl backdrop-blur-md max-md:backdrop-blur-none transition-all duration-200 hover:scale-105 hover:border-emerald-500 hover:shadow-emerald-500/25 focus-visible:ring-[3px] focus-visible:ring-emerald-500/50 focus-visible:outline-none sm:size-auto sm:px-4 sm:py-3",
             open && "ring-2 ring-emerald-500 border-emerald-500",
           )}
           title="Open Rithu AI Assistant"
@@ -295,7 +301,7 @@ export function RithuChatWidget() {
 
       {/* Floating Chat Window Drawer - Sleek Circular Rounded Design */}
       {open && (
-        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[520px] max-h-[calc(100svh-7rem)] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-emerald-500/30 bg-card/95 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
+        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[520px] max-h-[calc(100svh-7rem)] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-emerald-500/30 bg-card/95 shadow-2xl backdrop-blur-xl max-md:bg-card max-md:backdrop-blur-none animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/40 backdrop-blur-md">
             <div className="flex items-center gap-2.5">

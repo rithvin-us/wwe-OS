@@ -125,15 +125,15 @@ export default async function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-12">
         {/* Primary column */}
         <div className="space-y-4 lg:col-span-8">
-          <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports">
+          <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports" glass>
             <SummaryRows rows={FINANCIAL_SUMMARY} />
           </SectionCard>
 
-          <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase">
+          <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase" glass>
             <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
           </SectionCard>
 
-          <SectionCard title="Recent activity" icon={Activity} href="/timeline">
+          <SectionCard title="Recent activity" icon={Activity} href="/timeline" glass>
             {activity.length === 0 ? (
               <PanelEmpty>
                 Activity from across the company will appear here as your team gets to work.

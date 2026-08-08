@@ -51,7 +51,7 @@ export function AppHeader({
 
   return (
     <header
-      className="sticky top-0 z-20 flex h-(--layout-header-height) shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6"
+      className="sticky top-0 z-20 flex h-(--layout-header-height) shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 max-md:backdrop-blur-none max-md:bg-background md:px-6"
       style={{
         height: "calc(var(--layout-header-height) + env(safe-area-inset-top))",
         paddingTop: "env(safe-area-inset-top)",
