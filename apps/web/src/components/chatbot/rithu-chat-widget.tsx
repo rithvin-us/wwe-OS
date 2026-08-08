@@ -268,7 +268,7 @@ export function RithuChatWidget() {
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileInputChange} />
 
       {/* Floating Action Trigger Button */}
-      <div className="fixed bottom-5 right-5 z-40">
+      <div className="fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40">
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
@@ -295,7 +295,7 @@ export function RithuChatWidget() {
 
       {/* Floating Chat Window Drawer - Sleek Circular Rounded Design */}
       {open && (
-        <div className="fixed bottom-20 right-5 z-50 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-emerald-500/30 bg-card/95 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
+        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[520px] max-h-[calc(100svh-7rem)] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-emerald-500/30 bg-card/95 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/40 backdrop-blur-md">
             <div className="flex items-center gap-2.5">

@@ -76,7 +76,7 @@ export default async function MaintenancePage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
             <div className="rounded-lg border p-3">
               <p className="text-xs font-medium text-muted-foreground">Total API Calls</p>
               <p className="text-2xl font-bold">{aiUsage.totals?.calls || 0}</p>

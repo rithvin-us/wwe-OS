@@ -100,7 +100,7 @@ export function AddEmployeeDialog() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="code" className="text-xs">
                 Employee Code *
@@ -127,7 +127,7 @@ export function AddEmployeeDialog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dept" className="text-xs">
                 Department
@@ -146,7 +146,7 @@ export function AddEmployeeDialog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="basic" className="text-xs">
                 Basic Wage Rate (₹)
@@ -166,7 +166,7 @@ export function AddEmployeeDialog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border">
+          <div className="grid grid-cols-1 gap-2 pt-2 border-t border-border sm:grid-cols-3">
             <div className="space-y-1">
               <Label htmlFor="pf" className="text-[11px]">
                 PF No.
