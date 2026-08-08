@@ -1,5 +1,6 @@
 "use client";
 
+import { UploadCloud } from "@bop/icons";
 import { Sheet, SheetContent, SheetTitle } from "@bop/ui/components/sheet";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -37,14 +39,100 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         setSidebarCollapsed((c) => !c);
       }
     }
+
+    let dragCounter = 0;
+
+    function onDragEnter(e: DragEvent) {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        dragCounter++;
+        setIsDraggingOver(true);
+      }
+    }
+
+    function onDragOver(e: DragEvent) {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+      }
+    }
+
+    function onDragLeave(e: DragEvent) {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          setIsDraggingOver(false);
+        }
+      }
+    }
+
+    function onDrop(e: DragEvent) {
+      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        e.preventDefault();
+        dragCounter = 0;
+        setIsDraggingOver(false);
+
+        const file = e.dataTransfer.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (ev) => {
+          const dataUrl = ev.target?.result as string;
+          window.dispatchEvent(
+            new CustomEvent("rithu:attach-file", {
+              detail: {
+                name: file.name,
+                type: file.type || "application/octet-stream",
+                size: file.size,
+                dataUrl,
+                autoSubmit: true,
+              },
+            }),
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("drop", onDrop);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("drop", onDrop);
+    };
   }, []);
 
   const sidebarWidth = sidebarCollapsed ? "4rem" : "var(--layout-sidebar-width)";
 
   return (
-    <div className="min-h-svh">
+    <div className="relative min-h-svh">
+      {/* Global Drag & Drop Overlay Zone */}
+      {isDraggingOver && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center border-4 border-dashed border-emerald-500 bg-background/90 backdrop-blur-xl animate-in fade-in duration-150">
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-500/40 bg-card p-10 shadow-2xl text-center max-w-md mx-4">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg animate-bounce">
+              <UploadCloud className="size-8" />
+            </div>
+            <div>
+              <h2 className="font-display text-xl font-bold text-foreground">Drop File Anywhere</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Rithu AI will immediately inspect, analyze, and explain this document for you.
+              </p>
+            </div>
+            <span className="font-mono text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
+              Agent Ready
+            </span>
+          </div>
+        </div>
+      )}
+
       <aside
         className="fixed inset-y-0 left-0 z-(--z-sticky) hidden border-r border-sidebar-border lg:block overflow-hidden transition-[width] duration-200 ease-out"
         style={{ width: sidebarWidth }}
