@@ -223,7 +223,7 @@ class HttpFaceService(FaceRecognitionService):
             detail = resp.text
         if resp.status_code == 401:
             logger.error("face-ai rejected API key (401): %s", detail)
-            raise FaceError(
+            raise FaceServiceUnavailableError(
                 "Face-AI authentication failed (401): FACE_AI_API_KEY on your "
                 "local desktop service does not match HR_FACE_AI_API_KEY on web platform. "
                 "Leave FACE_AI_API_KEY blank in services/face-ai/.env for local dev."
