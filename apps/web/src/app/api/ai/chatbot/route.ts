@@ -125,8 +125,9 @@ Return your response strictly as a JSON object matching this schema:
 
         contentsParts.push({ text: systemPrompt });
 
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+        let geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -146,17 +147,52 @@ Return your response strictly as a JSON object matching this schema:
           },
         );
 
+        if (!geminiResponse.ok) {
+          console.warn(
+            `Gemini API ${modelName} returned status ${geminiResponse.status}, retrying with gemini-1.5-flash...`,
+          );
+          geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: "user",
+                    parts: contentsParts,
+                  },
+                ],
+                generationConfig: {
+                  temperature: 0.7,
+                  maxOutputTokens: 1024,
+                  responseMimeType: "application/json",
+                },
+              }),
+            },
+          );
+        }
+
         if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
-          const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          let jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
           if (jsonText) {
-            const parsed = JSON.parse(jsonText);
+            // Clean up any markdown code block wrapper if present
+            jsonText = jsonText.trim();
+            if (jsonText.startsWith("```json")) {
+              jsonText = jsonText.slice(7);
+            } else if (jsonText.startsWith("```")) {
+              jsonText = jsonText.slice(3);
+            }
+            if (jsonText.endsWith("```")) {
+              jsonText = jsonText.slice(0, -3);
+            }
+            const parsed = JSON.parse(jsonText.trim());
             return NextResponse.json({
               id: `msg_${Date.now()}`,
               sender: "rithu",
               text:
-                parsed.replyText ||
-                "I've analyzed your file! Let me know if you need anything else.",
+                parsed.replyText || parsed.text || "I've processed your request using Gemini AI!",
               timestamp: new Date().toISOString(),
               emailDraft: parsed.emailDraft || undefined,
               relatedDocs: parsed.relatedDocs || undefined,
@@ -167,9 +203,12 @@ Return your response strictly as a JSON object matching this schema:
               ],
             });
           }
+        } else {
+          const errBody = await geminiResponse.text();
+          console.error("Gemini API call failed with status:", geminiResponse.status, errBody);
         }
       } catch (geminiErr) {
-        console.warn("Gemini API call warning, continuing to fallback handler:", geminiErr);
+        console.error("Gemini API call error:", geminiErr);
       }
     }
 
