@@ -15,6 +15,7 @@ export function SessionRefresh() {
   const router = useRouter();
 
   useEffect(() => {
+    // 1. Keep session token alive silently
     const id = setInterval(async () => {
       const response = await fetch("/api/auth/refresh", { method: "POST" });
       if (!response.ok) {
@@ -22,7 +23,22 @@ export function SessionRefresh() {
       }
     }, REFRESH_INTERVAL_MS);
 
-    return () => clearInterval(id);
+    // 2. Auto-refresh live data when mobile app resumes or regains window focus
+    function onFocusOrResume() {
+      router.refresh();
+    }
+
+    window.addEventListener("focus", onFocusOrResume);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        onFocusOrResume();
+      }
+    });
+
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocusOrResume);
+    };
   }, [router]);
 
   return null;

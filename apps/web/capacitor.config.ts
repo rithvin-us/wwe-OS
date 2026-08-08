@@ -6,6 +6,13 @@ const config: CapacitorConfig = {
   webDir: "public",
   server: {
     url: "https://web-vert-six-63.vercel.app",
+    cleartext: true,
+    reloadAnimationStyle: "minimal",
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true,
   },
 };
 
