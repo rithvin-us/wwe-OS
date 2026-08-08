@@ -59,13 +59,13 @@ export const NAVIGATION: NavGroup[] = [
     label: "CORE MODULES",
     items: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
-      { name: "Rithu Assistant", href: "/chatbot", icon: Bot },
       ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
     ],
   },
   {
     label: "SYSTEM",
     items: [
+      { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
       { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
       { name: "Services", href: "/services", icon: Layers, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
