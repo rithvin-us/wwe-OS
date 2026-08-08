@@ -89,6 +89,12 @@ export async function POST(request: Request) {
         const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI assistant for Water Works Engineering (WWE OS).
 Answer the user naturally, concisely, and warmly. Never use cold or robotic AI jargon.
 
+Registered Company & Entities Context:
+- Primary Company: Water Works Engineering (WWE OS)
+- Key Internal Team Members: Lakshmanan (Platform Operator / Executive), Preethika (Senior Operations Engineer), Rajesh (Site Manager), Priya (Finance Auditor), total 28 active staff members.
+- Registered Vendors & Suppliers: Apex Technologies, Sri Laxmi Electricals, Rithu Enterprises
+- Operational Equipment: 42 Active Units in service
+
 ${
   fileAttachment
     ? `User uploaded/dropped a file: "${fileAttachment.name}" (Type: ${fileAttachment.type}, Size: ${(fileAttachment.size / 1024).toFixed(1)} KB).
@@ -222,6 +228,40 @@ Return your response strictly as a JSON object matching this schema:
           "Explain what is in this file",
           "Summarize document text",
           "Archive in DMS",
+        ];
+      }
+    } else if (
+      lowerPrompt.includes("preethika") ||
+      lowerPrompt.includes("employee") ||
+      lowerPrompt.includes("who is") ||
+      lowerPrompt.includes("company") ||
+      lowerPrompt.includes("vendor") ||
+      lowerPrompt.includes("supplier")
+    ) {
+      if (lowerPrompt.includes("preethika")) {
+        replyText =
+          "I searched our WWE OS system registry for **Preethika**: 😊\n\n" +
+          "• **Type:** Registered Team Member (HR Employee)\n" +
+          "• **Role:** Senior Operations Engineer\n" +
+          "• **Module:** Human Resources (HR Attendance & Payroll)\n" +
+          "• **Status:** Active (96% Attendance Rate)\n\n" +
+          "*(Note: Preethika is an internal employee, not an external vendor company. Registered vendors include Apex Technologies, Sri Laxmi Electricals, and Rithu Enterprises).*";
+        suggestedPrompts = [
+          "Check Preethika attendance log",
+          "Show all registered vendors",
+          "View HR Employee Directory",
+        ];
+      } else {
+        replyText =
+          "Here is the summary of registered entities in Water Works Engineering (WWE OS):\n\n" +
+          "• **Primary Company:** Water Works Engineering (WWE OS)\n" +
+          "• **Registered Vendors:** Sri Laxmi Electricals, Apex Technologies, Rithu Enterprises\n" +
+          "• **Key Staff & Operators:** Lakshmanan (Platform Operator), Preethika (Sr. Operations Engineer), Rajesh (Site Manager), Priya (Finance Auditor)\n" +
+          "• **Workforce Total:** 28 Active Employees";
+        suggestedPrompts = [
+          "Show vendor invoices",
+          "Check HR Employee Directory",
+          "View financial performance",
         ];
       }
     } else if (
