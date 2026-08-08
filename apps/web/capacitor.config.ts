@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: "WWE OS Web",
   webDir: "public",
   server: {
-    url: "http://10.10.193.180:3000",
-    cleartext: true,
+    url: "https://web-vert-six-63.vercel.app",
   },
 };
 

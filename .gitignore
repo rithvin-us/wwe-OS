@@ -50,3 +50,6 @@ logs/
 # (docs/specs/hr-migration.md § 8). Business data, not source — never commit it.
 .hr-migration-data/
 
+
+.vercel
+.env*
