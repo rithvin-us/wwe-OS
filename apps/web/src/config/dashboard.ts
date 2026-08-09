@@ -225,6 +225,7 @@ const MODULE_LABEL: Record<string, string> = {
   contracts: "Contracts",
   documents: "Documents",
   purchase: "Purchases",
+  notes: "Notes",
 };
 
 /** Today's cross-module activity, straight from the audit trail (the same

@@ -29,6 +29,7 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     # Audit
     PermissionDef("audit.view", "View audit log", "Audit"),
     PermissionDef("audit.archive", "Archive audit records", "Audit"),
+    PermissionDef("audit.write", "Log a manual note to the timeline", "Audit"),
     # Notifications
     PermissionDef("notifications.read", "View notifications", "Notifications"),
     PermissionDef("notifications.send", "Send notifications", "Notifications"),
@@ -56,6 +57,9 @@ PLATFORM_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("automation.view", "View automation rules and history", "Automation"),
     PermissionDef("automation.manage", "Create and edit automation rules", "Automation"),
     PermissionDef("automation.run", "Manually run an automation rule", "Automation"),
+    # Alerts (operator threshold/schedule notifications)
+    PermissionDef("alerts.view", "View alert rules", "Alerts"),
+    PermissionDef("alerts.manage", "Create, edit, and delete alert rules", "Alerts"),
     # Workflow (pipeline execution engine)
     PermissionDef("workflow.view", "View pipeline runs", "Workflow"),
     PermissionDef("workflow.control", "Pause, resume, cancel, or retry a pipeline run", "Workflow"),
