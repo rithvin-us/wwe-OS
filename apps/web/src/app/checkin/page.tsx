@@ -146,6 +146,7 @@ export default function PublicMobileCheckInPage() {
             playsInline
             muted
             className={`w-full h-full object-cover rounded-2xl ${cameraActive ? "block" : "hidden"}`}
+            style={{ transform: "none" }}
           />
 
           {!cameraActive ? (

@@ -176,6 +176,7 @@ export function FaceKioskDialog() {
               playsInline
               muted
               className={`w-full h-64 object-cover rounded-lg border border-emerald-500/40 ${cameraActive ? "block" : "hidden"}`}
+              style={{ transform: "none" }}
             />
 
             {!cameraActive ? (
