@@ -272,6 +272,18 @@ export async function revokeEnrollment(id: string): Promise<ActionResult> {
   }
 }
 
+export async function resetAllBiometrics(): Promise<ActionResult> {
+  try {
+    await djangoFetch("/api/v1/hr/employees/reset-all-biometrics/", {
+      method: "POST",
+    });
+    revalidatePath("/hr/employees");
+    return { ok: true };
+  } catch (err) {
+    return failed(err);
+  }
+}
+
 export type CheckInResult =
   | {
       ok: true;

@@ -168,6 +168,17 @@ class EmployeeViewSet(BaseModelViewSet):
         employee = EnrollmentService().revoke(employee=self.get_object())
         return Response(EmployeeSerializer(employee).data)
 
+    @action(detail=False, methods=["post"], url_path="reset-all-biometrics")
+    def reset_all_biometrics(self, request: Request) -> Response:
+        """Clear all face templates to allow fresh model re-enrollment."""
+        count = Employee.objects.all().update(face_embedding="", enrolled_at=None)
+        return Response(
+            {
+                "cleared_count": count,
+                "message": f"Successfully reset face biometrics for {count} employees.",
+            }
+        )
+
     @extend_schema(responses={200: SalaryRuleSerializer})
     @action(detail=True, methods=["get"], url_path="effective-salary-rule")
     def effective_salary_rule(self, request: Request, pk=None) -> Response:
