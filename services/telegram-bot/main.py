@@ -552,7 +552,15 @@ def main() -> None:
         application.add_handler(MessageHandler(msg_filter, handle_document))
 
         if webhook_url:
-            secret_token = os.getenv("WEBHOOK_SECRET", "wwe-telegram-secret")
+            secret_token = os.getenv("WEBHOOK_SECRET")
+            if not secret_token:
+                logger.error(
+                    "WEBHOOK_SECRET is not set. Refusing to start the webhook listener "
+                    "without a secret token — Telegram's X-Telegram-Bot-Api-Secret-Token "
+                    "check is the only thing that stops spoofed updates. Set WEBHOOK_SECRET "
+                    "(and register it via setWebhook) and re-run."
+                )
+                raise RuntimeError("WEBHOOK_SECRET must be set when WEBHOOK_URL is configured.")
             logger.info(
                 f"Starting Telegram bot Webhook listener on 0.0.0.0:{port} -> {webhook_url}"
             )

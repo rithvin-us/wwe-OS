@@ -27,7 +27,7 @@ app.water-works.in  api.water-works.in  bot.water-works.in   ai.water-works.in
 These are real issues in the current tree. Nothing else matters until they are done.
 
 - [ ] **Rotate & un-hardcode the Face-AI key.** `services/face-ai/app/config.py:25`
-      ships a real key (`a4e844c5-5149-4283-85dc-230893898034`). Treat it as
+      ships a real key (`a4e844c5-…（redacted, rotate it）`). Treat it as
       compromised. Generate a new one, set it via env only, and remove the default:
   ```python
   # services/face-ai/app/config.py

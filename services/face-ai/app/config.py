@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     # Shared secret required in the `X-API-Key` header on every /enroll-face
     # and /verify-face call. Because the service is exposed publicly through a
     # Cloudflare Tunnel, leave this UNSET only for local testing. When set, the
-    # backend must send the same value (FACE_AI_API_KEY there).
-    FACE_AI_API_KEY: str = "a4e844c5-5149-4283-85dc-230893898034"
+    # backend must send the same value (HR_FACE_AI_API_KEY / FACE_AI_API_KEY
+    # there). Provided via env only — never hardcode a real key here (a leaked
+    # default in the repo is a public credential).
+    FACE_AI_API_KEY: str = ""
 
     # -- engine selection ------------------------------------------------
     # "insightface" = real MTCNN + ArcFace (needs requirements-ml.txt + ~1GB RAM).
