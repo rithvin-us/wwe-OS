@@ -2,21 +2,27 @@
 # Runs Face-AI (Port 9000), Telegram Bot (Port 9001), and Cloudflare Tunnel (wwe-tunnel) in the background.
 
 $ErrorActionPreference = "SilentlyContinue"
-$RootDir = "E:\w\wwe OS"
+$RootDir = if ($PSScriptRoot) { Split-Path -Path $PSScriptRoot -Parent } else { "E:\w\wwe OS" }
 
 # Resolve full Python executable path to ensure boot reliability
 $PythonExe = if (Test-Path "C:\Python314\python.exe") { "C:\Python314\python.exe" } else { (Get-Command python -ErrorAction SilentlyContinue).Source }
 if (-not $PythonExe) { $PythonExe = "python" }
 
-# Ensure log directory exists
+# Ensure log directory and log files exist
 $LogDir = Join-Path $RootDir "logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
+$FaceAiLog = Join-Path $LogDir "face-ai.log"
+$TelegramLog = Join-Path $LogDir "telegram-bot.log"
+$TunnelLog = Join-Path $LogDir "cloudflare-tunnel.log"
+
+foreach ($f in @($FaceAiLog, $TelegramLog, $TunnelLog)) {
+    if (-not (Test-Path $f)) { New-Item -ItemType File -Path $f -Force | Out-Null }
+}
 
 # 1. Start Face-AI Microservice on Port 9000 if not already running
 $net9000 = Get-NetTCPConnection -LocalPort 9000 -State Listen -ErrorAction SilentlyContinue
 if (-not $net9000) {
     $FaceAiDir = Join-Path $RootDir "services\face-ai"
-    $FaceAiLog = Join-Path $LogDir "face-ai.log"
     Start-Process -FilePath $PythonExe -ArgumentList "-m uvicorn app.main:app --host 0.0.0.0 --port 9000" -WorkingDirectory $FaceAiDir -RedirectStandardOutput $FaceAiLog -RedirectStandardError $FaceAiLog -WindowStyle Hidden
 }
 
