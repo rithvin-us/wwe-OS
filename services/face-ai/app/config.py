@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # -- preprocessing / detection gates (mirror the backend defaults) ---
     MAX_FACE_IMAGE_SIZE: int = 1024
     FACE_MIN_SIZE_PX: int = 60
-    FACE_DETECT_MIN_CONFIDENCE: float = 0.90
+    FACE_DETECT_MIN_CONFIDENCE: float = 0.50
     FACE_BLUR_MIN_VAR: float = 40.0
     FACE_SIDE_PROFILE_MAX_RATIO: float = 0.35
 

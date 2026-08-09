@@ -241,7 +241,7 @@ class InsightFaceEngine(FaceEngine):
         try:
             if getattr(self, "_app", None) is None:
                 self.load()
-            rgb = self._preprocess(image_bytes, normalize=True)
+            rgb = self._preprocess(image_bytes, normalize=False)
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             faces = self._app.get(bgr)
 

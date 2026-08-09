@@ -113,7 +113,7 @@ class FaceSettings:
     MAX_FACE_IMAGE_SIZE: int = field(default_factory=lambda: _int("HR_MAX_FACE_IMAGE_SIZE", 1024))
     FACE_MIN_SIZE_PX: int = field(default_factory=lambda: _int("HR_FACE_MIN_SIZE_PX", 60))
     FACE_DETECT_MIN_CONFIDENCE: float = field(
-        default_factory=lambda: _float("HR_FACE_DETECT_MIN_CONFIDENCE", 0.90)
+        default_factory=lambda: _float("HR_FACE_DETECT_MIN_CONFIDENCE", 0.50)
     )
     FACE_BLUR_MIN_VAR: float = field(default_factory=lambda: _float("HR_FACE_BLUR_MIN_VAR", 40.0))
     FACE_SIDE_PROFILE_MAX_RATIO: float = field(
