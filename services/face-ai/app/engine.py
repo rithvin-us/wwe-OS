@@ -241,14 +241,21 @@ class InsightFaceEngine(FaceEngine):
         try:
             if getattr(self, "_app", None) is None:
                 self.load()
-            rgb = self._preprocess(image_bytes, normalize=False)
+            rgb = self._preprocess(image_bytes, normalize=True)
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             faces = self._app.get(bgr)
 
             if not faces:
                 raise NoFaceDetectedError()
             if len(faces) > 1:
-                raise MultipleFacesError()
+                if enroll:
+                    raise MultipleFacesError()
+                # Sort detected faces by bounding box area (width * height) and pick the primary/largest face in frame
+                faces = sorted(
+                    faces,
+                    key=lambda f: float((f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])),
+                    reverse=True,
+                )
 
             face = faces[0]
             det_conf = float(face.det_score) if hasattr(face, "det_score") else 1.0
