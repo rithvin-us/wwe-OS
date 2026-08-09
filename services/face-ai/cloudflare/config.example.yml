@@ -9,8 +9,8 @@
 # opening any inbound port or exposing your IP — cloudflared makes an outbound
 # connection to Cloudflare's edge and traffic is proxied back down it.
 
-tunnel: REPLACE_WITH_TUNNEL_ID
-credentials-file: REPLACE_WITH_PATH_TO/<TUNNEL_ID>.json
+tunnel: 6463b7de-f1e3-4a1b-9eac-16385913fa39
+credentials-file: C:\Users\<you>\.cloudflared\6463b7de-f1e3-4a1b-9eac-16385913fa39.json
 
 # Optional niceties
 originRequest:

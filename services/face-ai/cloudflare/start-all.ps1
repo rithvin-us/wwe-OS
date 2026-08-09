@@ -2,7 +2,7 @@
 # separate windows, then waits for the local /health to go green.
 param(
     [int]$Port = 9000,
-    [string]$TunnelName = "face-ai",
+    [string]$TunnelName = "wwe-tunnel",
     [switch]$Silent,
     [switch]$NoTunnel
 )

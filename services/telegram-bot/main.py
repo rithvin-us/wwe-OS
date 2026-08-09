@@ -522,41 +522,59 @@ def _start_health_server(port: int) -> None:
 
 def main() -> None:
     """Start the bot."""
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    port = int(os.getenv("PORT", os.getenv("TELEGRAM_BOT_PORT", "9001")))
+    _start_health_server(port)
 
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        logger.error("No TELEGRAM_BOT_TOKEN provided. Please set it in the .env file.")
+        logger.error(
+            "No TELEGRAM_BOT_TOKEN provided. Keeping health server running on port %d...",
+            port,
+        )
+        import time
+
+        while True:
+            time.sleep(3600)
         return
 
-    port = int(os.getenv("PORT", os.getenv("TELEGRAM_BOT_PORT", "9001")))
     webhook_url = os.getenv("WEBHOOK_URL")
+    try:
+        application = Application.builder().token(token).build()
 
-    application = Application.builder().token(token).build()
+        application.add_handler(CommandHandler("start", start_command))
+        application.add_handler(CommandHandler("help", help_command))
+        application.add_handler(CommandHandler("purchase", purchase_command))
+        application.add_handler(CommandHandler("status", status_command))
+        application.add_handler(CommandHandler("history", history_command))
+        application.add_handler(CommandHandler("cancel", cancel_command))
 
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("purchase", purchase_command))
-    application.add_handler(CommandHandler("status", status_command))
-    application.add_handler(CommandHandler("history", history_command))
-    application.add_handler(CommandHandler("cancel", cancel_command))
+        msg_filter = filters.Document.ALL | filters.PHOTO
+        application.add_handler(MessageHandler(msg_filter, handle_document))
 
-    application.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_document))
-
-    if webhook_url:
-        secret_token = os.getenv("WEBHOOK_SECRET", "wwe-telegram-secret")
-        logger.info(f"Starting Telegram bot Webhook listener on 0.0.0.0:{port} -> {webhook_url}")
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            url_path="telegram",
-            webhook_url=f"{webhook_url}/telegram",
-            secret_token=secret_token,
-            allowed_updates=Update.ALL_TYPES,
+        if webhook_url:
+            secret_token = os.getenv("WEBHOOK_SECRET", "wwe-telegram-secret")
+            logger.info(
+                f"Starting Telegram bot Webhook listener on 0.0.0.0:{port} -> {webhook_url}"
+            )
+            application.run_webhook(
+                listen="0.0.0.0",
+                port=port,
+                url_path="telegram",
+                webhook_url=f"{webhook_url}/telegram",
+                secret_token=secret_token,
+                allowed_updates=Update.ALL_TYPES,
+            )
+        else:
+            logger.info(f"Starting Telegram bot in long-polling mode on port {port}...")
+            application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Exception as exc:
+        logger.warning(
+            f"Telegram bot network error: {exc}. Health server listening on port {port}."
         )
-    else:
-        _start_health_server(port)
-        logger.info(f"Starting Telegram bot in long-polling mode on port {port}...")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        import time
+
+        while True:
+            time.sleep(3600)
 
 
 if __name__ == "__main__":

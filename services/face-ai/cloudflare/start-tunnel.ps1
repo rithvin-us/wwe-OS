@@ -1,7 +1,7 @@
 # Runs the cloudflared tunnel that publishes localhost:9000 as public HTTPS.
 # Requires the one-time setup in install-cloudflared.ps1 (login/create/route/config).
 param(
-    [string]$TunnelName = "face-ai"
+    [string]$TunnelName = "wwe-tunnel"
 )
 $ErrorActionPreference = "Stop"
 
