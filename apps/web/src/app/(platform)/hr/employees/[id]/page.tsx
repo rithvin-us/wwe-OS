@@ -1,14 +1,21 @@
 import Link from "next/link";
 
-import { ArrowLeft, ScanFace } from "@bop/icons";
+import { ArrowLeft, CheckCircle2, ScanFace } from "@bop/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@bop/ui/components/avatar";
 import { Badge } from "@bop/ui/components/badge";
-import { PageHeader } from "@bop/ui/components/page-header";
 
 import { getEmployee, getEmployeeTasks, SHIFT_NAMES } from "@/lib/hr";
 
 import { ChecklistPanel } from "./checklist-panel";
-
 import { EnrollFaceDialog } from "./enroll-face-dialog";
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
 
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,17 +37,80 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
         All employees
       </Link>
 
-      <PageHeader
-        title={employee.employee_name}
-        description={`${employee.employee_code} · ${employee.designation || "No designation"}`}
-        actions={
-          employee.is_active ? (
-            <Badge variant="success">On the rolls</Badge>
-          ) : (
-            <Badge variant="outline">Left {employee.date_of_leaving}</Badge>
-          )
-        }
-      />
+      {/* Employee Profile Hero Card with Photo Avatar */}
+      <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card via-card to-muted/20 p-6 shadow-xs">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-5">
+            {/* Photo Avatar */}
+            <div className="relative group shrink-0">
+              <Avatar className="size-20 border-2 border-border shadow-md ring-4 ring-background">
+                {employee.photo_url ? (
+                  <AvatarImage
+                    src={employee.photo_url}
+                    alt={employee.employee_name}
+                    className="object-cover"
+                  />
+                ) : null}
+                <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold font-mono">
+                  {getInitials(employee.employee_name)}
+                </AvatarFallback>
+              </Avatar>
+              {employee.enrolled_at ? (
+                <div
+                  className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white shadow-md ring-2 ring-background"
+                  title="AI Face Biometrics Enrolled"
+                >
+                  <CheckCircle2 className="size-4" />
+                </div>
+              ) : null}
+            </div>
+
+            {/* Employee Meta Info */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {employee.employee_name}
+                </h1>
+                <Badge variant="outline" className="font-mono text-xs font-semibold">
+                  {employee.employee_code}
+                </Badge>
+                {employee.is_active ? (
+                  <Badge variant="success">On the rolls</Badge>
+                ) : (
+                  <Badge variant="outline">Left {employee.date_of_leaving}</Badge>
+                )}
+              </div>
+
+              <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-foreground">
+                  {employee.designation || "Operator"}
+                </span>
+                <span>·</span>
+                <span>{employee.department || "General"}</span>
+                <span>·</span>
+                <span>{employee.location}</span>
+              </p>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-0.5">
+                <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-foreground font-mono font-medium">
+                  Shift: {SHIFT_NAMES[employee.shift] ?? employee.shift}
+                </span>
+                <span>·</span>
+                <span>Joined {employee.date_of_joining}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Face Enrolment Button */}
+          <div className="shrink-0 self-start sm:self-center">
+            <EnrollFaceDialog
+              employeeId={employee.id}
+              employeeName={employee.employee_name}
+              isEnrolled={Boolean(employee.enrolled_at)}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-lg border border-border bg-card p-4 shadow-xs">

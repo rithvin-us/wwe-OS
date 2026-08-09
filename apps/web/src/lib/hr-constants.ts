@@ -33,6 +33,7 @@ export interface Employee {
   location: string;
   shift: ShiftCode;
   enrolled_at: string | null;
+  photo_url?: string | null;
   is_active: boolean;
   age: number | null;
   age_gender_display: string;
