@@ -13,7 +13,7 @@ import {
 } from "@bop/ui/components/dialog";
 import { toast } from "sonner";
 
-import { enrollFace } from "../../actions";
+import { enrollFace, revokeEnrollment } from "../../actions";
 
 const CANVAS_SIZE = 300;
 
@@ -30,6 +30,18 @@ export function EnrollFaceDialog({
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
+
+  async function handleClearEnrollment() {
+    setLoading(true);
+    const res = await revokeEnrollment(employeeId);
+    setLoading(false);
+    if (res.ok) {
+      toast.success(`Cleared face biometrics for ${employeeName}. Upload a fresh photo.`);
+      setOpen(false);
+    } else {
+      toast.error(res.error || "Failed to clear face biometrics.");
+    }
+  }
 
   // Transform states
   const [zoom, setZoom] = useState(1.0);
@@ -272,18 +284,33 @@ export function EnrollFaceDialog({
             </label>
           )}
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-border/60">
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleUpload}
-              disabled={loading || !imageObj}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-            >
-              {loading ? "Processing AI Embedding..." : "Enroll Face Photo"}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+            {isEnrolled ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleClearEnrollment}
+                disabled={loading}
+                className="text-xs cursor-pointer"
+              >
+                Clear Old Biometrics
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleUpload}
+                disabled={loading || !imageObj}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              >
+                {loading ? "Processing AI Embedding..." : "Enroll Face Photo"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

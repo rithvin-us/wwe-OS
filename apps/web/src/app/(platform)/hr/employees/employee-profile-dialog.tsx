@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, User, Briefcase, CreditCard, ScanFace } from "@bop/icons";
+import { Eye, Briefcase, CreditCard, ScanFace, CheckCircle2 } from "@bop/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@bop/ui/components/avatar";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import {
@@ -14,6 +15,14 @@ import {
 } from "@bop/ui/components/dialog";
 import { SHIFT_NAMES, type Employee } from "@/lib/hr-constants";
 import { EnrollFaceDialog } from "./[id]/enroll-face-dialog";
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
 
 export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
   const [open, setOpen] = useState(false);
@@ -28,16 +37,42 @@ export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between gap-3 pr-6">
-            <div>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <User className="size-5 text-emerald-600 dark:text-emerald-400" />
-                {employee.employee_name}
-              </DialogTitle>
-              <DialogDescription className="text-xs font-mono mt-0.5">
-                {employee.employee_code} · {employee.designation || "Operator"}
-              </DialogDescription>
+          <div className="flex items-center justify-between gap-4 pr-6">
+            <div className="flex items-center gap-3.5">
+              {/* Photo Avatar */}
+              <div className="relative group shrink-0">
+                <Avatar className="size-14 border-2 border-border shadow-xs">
+                  {employee.photo_url ? (
+                    <AvatarImage
+                      src={employee.photo_url}
+                      alt={employee.employee_name}
+                      className="object-cover"
+                    />
+                  ) : null}
+                  <AvatarFallback className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-base font-bold font-mono">
+                    {getInitials(employee.employee_name)}
+                  </AvatarFallback>
+                </Avatar>
+                {employee.enrolled_at ? (
+                  <div
+                    className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-0.5 text-white shadow-xs ring-2 ring-background"
+                    title="AI Face Biometrics Enrolled"
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                  {employee.employee_name}
+                </DialogTitle>
+                <DialogDescription className="text-xs font-mono mt-0.5">
+                  {employee.employee_code} · {employee.designation || "Operator"}
+                </DialogDescription>
+              </div>
             </div>
+
             {employee.is_active ? (
               <Badge variant="success">On the rolls</Badge>
             ) : (

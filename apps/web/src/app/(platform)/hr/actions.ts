@@ -259,6 +259,19 @@ export async function enrollFace(id: string, formData: FormData): Promise<Action
   }
 }
 
+export async function revokeEnrollment(id: string): Promise<ActionResult> {
+  try {
+    await djangoFetch(`/api/v1/hr/employees/${id}/revoke-enrollment/`, {
+      method: "POST",
+    });
+    revalidatePath(`/hr/employees/${id}`);
+    revalidatePath("/hr/employees");
+    return { ok: true };
+  } catch (err) {
+    return failed(err);
+  }
+}
+
 export type CheckInResult =
   | {
       ok: true;
