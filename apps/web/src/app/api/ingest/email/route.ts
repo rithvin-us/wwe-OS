@@ -3,9 +3,10 @@ import { internalApiUrl } from "@/lib/api/server";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const serviceToken =
-    process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0]?.split(":")?.[1] ||
-    "default-service-token";
+  const firstEntry = process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0] || "";
+  const serviceToken = firstEntry.includes(":")
+    ? firstEntry.substring(firstEntry.indexOf(":") + 1)
+    : firstEntry || "default-service-token";
 
   try {
     const upstream = await fetch(`${internalApiUrl()}/api/v1/documents/ingest/email/`, {

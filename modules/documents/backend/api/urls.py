@@ -9,6 +9,6 @@ router = DefaultRouter()
 router.register("documents", DocumentViewSet, basename="document")
 
 urlpatterns = [
-    path("documents/ingest/email/", EmailIngestView.as_view(), name="email-ingest"),
+    path("ingest/email/", EmailIngestView.as_view(), name="email-ingest"),
     path("", include(router.urls)),
 ]
