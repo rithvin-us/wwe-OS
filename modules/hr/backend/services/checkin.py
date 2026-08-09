@@ -108,9 +108,23 @@ class CheckInService:
             raise ValidationError(detail={"file": [exc.message]}) from exc
 
         candidates = list(self.employees.enrolled_employees())
+        candidate_embeddings = [(emp, face.deserialize(emp.face_embedding)) for emp in candidates]
+        scored_pairs = [
+            (emp, face.compare(probe, emb)) for emp, emb in candidate_embeddings if emb is not None
+        ]
+        scored_pairs.sort(key=lambda pair: pair[1], reverse=True)
+        top_scores_summary = [f"{emp.employee_code}:{score:.3f}" for emp, score in scored_pairs[:3]]
+        logger.info(
+            "checkin face match eval: candidates=%d valid=%d top=%s req=%.2f",
+            len(candidates),
+            len(scored_pairs),
+            top_scores_summary,
+            settings.FACE_MATCH_THRESHOLD,
+        )
+
         match = identify_employee(
             probe,
-            [(emp, face.deserialize(emp.face_embedding)) for emp in candidates],
+            candidate_embeddings,
             face.compare,
             settings.FACE_MATCH_THRESHOLD,
             settings.FACE_IDENTIFY_MARGIN,
@@ -119,6 +133,12 @@ class CheckInService:
         now = dt.datetime.now(PUNCH_TIMEZONE)
 
         if match is None:
+            req_thresh = settings.FACE_MATCH_THRESHOLD
+            best_score_msg = (
+                f" (best: {scored_pairs[0][1]:.2f}, req: {req_thresh:.2f})"
+                if scored_pairs
+                else " (no enrolled employee templates found in DB)"
+            )
             # Log the attempt with no employee, then tell them to get enrolled.
             PunchLog.objects.create(
                 tenant=self.tenant,
@@ -128,12 +148,12 @@ class CheckInService:
                 longitude=lon,
                 geo_accuracy_m=accuracy,
                 within_geofence=within,
-                face_match_score=None,
+                face_match_score=scored_pairs[0][1] if scored_pairs else None,
                 direction="",
                 decision=PunchDecision.FLAGGED,
             )
             raise FaceNotRecognised(
-                detail={"face": ["Face not recognised. Ask HR to enrol you for photo check-in."]}
+                detail={"face": [f"Face not recognized{best_score_msg}. Stand facing camera."]}
             )
 
         employee, score = match

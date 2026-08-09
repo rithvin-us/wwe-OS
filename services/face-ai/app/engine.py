@@ -17,7 +17,6 @@ so the module (and the stub engine) load fine when they are not installed.
 
 from __future__ import annotations
 
-import glob
 import hashlib
 import io
 import logging
@@ -159,54 +158,27 @@ class InsightFaceEngine(FaceEngine):
     # -- model loading (once) --------------------------------------------
     def load(self) -> None:
         t0 = time.perf_counter()
-        self._load_detector()
-        self._load_recognizer()
-        self.ready = True
-        logger.info(
-            "Face models loaded: detector=%s recognition=%s (%.0f ms)",
-            self._detector,
-            self._model_name,
-            (time.perf_counter() - t0) * 1000,
-        )
+        from insightface.app import FaceAnalysis  # lazy, heavy
 
-    def _load_detector(self) -> None:
-        if self._detector != "mtcnn":
-            raise ValueError(
-                f"Unsupported FACE_DETECTOR={self._detector!r}; only 'mtcnn' is implemented"
-            )
-        from facenet_pytorch import MTCNN  # lazy, heavy
-
-        # keep_all=True so extra faces are seen and the frame rejected;
-        # post_process=False keeps raw pixels (we do our own alignment).
-        # We force MTCNN onto CPU because PyTorch CUDA wheels are not yet available for Python 3.14
-        self._mtcnn = MTCNN(keep_all=True, post_process=False, device="cpu")
-
-    def _load_recognizer(self) -> None:
-        """Load ONLY the ArcFace recognition ONNX from the pack (MTCNN detects)."""
-        from insightface.model_zoo import get_model  # lazy, heavy
-        from insightface.utils import storage  # lazy
-
-        model_dir = storage.ensure_available("models", self._model_name)
-        onnx_files = sorted(
-            glob.glob(osp.join(model_dir, "*.onnx")),
-            key=lambda p: (0 if "w600k" in osp.basename(p) else 1, p),
-        )
-        rec = None
         providers = (
             ["CUDAExecutionProvider", "CPUExecutionProvider"]
             if self._use_gpu
             else ["CPUExecutionProvider"]
         )
-        for onnx_path in onnx_files:
-            model = get_model(onnx_path, providers=providers)
-            if model is not None and getattr(model, "taskname", None) == "recognition":
-                rec = model
-                break
-        if rec is None:
-            raise RuntimeError(f"InsightFace pack {self._model_name!r} has no recognition model")
+        app = FaceAnalysis(
+            name=self._model_name,
+            allowed_modules=["detection", "recognition"],
+            providers=providers,
+        )
         ctx_id = 0 if self._use_gpu else -1
-        rec.prepare(ctx_id=ctx_id)  # 0 = GPU 0, -1 = CPU
-        self._rec = rec
+        app.prepare(ctx_id=ctx_id, det_size=(640, 640))
+        self._app = app
+        self.ready = True
+        logger.info(
+            "Face models loaded: native InsightFace FaceAnalysis pack=%s (%.0f ms)",
+            self._model_name,
+            (time.perf_counter() - t0) * 1000,
+        )
 
     # -- preprocessing ----------------------------------------------------
     def _preprocess(self, image_bytes: bytes, normalize: bool = True):
@@ -241,42 +213,18 @@ class InsightFaceEngine(FaceEngine):
         l = clahe.apply(l)
         return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2RGB)
 
-    # -- detection --------------------------------------------------------
-    def _detect(self, rgb):
-        import numpy as np  # lazy
-        from PIL import Image  # lazy
-
-        pil = Image.fromarray(rgb)
-        boxes, probs, points = self._mtcnn.detect(pil, landmarks=True)
-        if boxes is None or probs is None:
-            raise NoFaceDetectedError()
-
-        keep = [i for i, p in enumerate(probs) if p is not None and p >= self._det_min_conf]
-        if not keep:
-            raise NoFaceDetectedError()
-        if len(keep) > 1:
-            raise MultipleFacesError()
-
-        i = keep[0]
-        box = boxes[i]
-        conf = float(probs[i])
-        kps = np.asarray(points[i], dtype=np.float32)  # (5, 2)
-
-        side = min(float(box[2] - box[0]), float(box[3] - box[1]))
-        if side < self._min_face_px:
-            raise FaceTooSmallError()
-        return box, kps, conf
-
     # -- enrolment quality gates -----------------------------------------
-    def _check_blur(self, aligned_bgr) -> None:
+    def _check_blur(self, bgr) -> None:
         import cv2  # lazy
 
-        gray = cv2.cvtColor(aligned_bgr, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
         variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         if variance < self._blur_min_var:
             raise BlurryFaceError()
 
     def _check_side_profile(self, kps) -> None:
+        if kps is None or len(kps) < 3:
+            return
         left_eye, right_eye, nose = kps[0], kps[1], kps[2]
         eye_center_x = (float(left_eye[0]) + float(right_eye[0])) / 2.0
         eye_dist = abs(float(right_eye[0]) - float(left_eye[0])) or 1.0
@@ -288,35 +236,48 @@ class InsightFaceEngine(FaceEngine):
     def embed(self, image_bytes: bytes, enroll: bool = False) -> list[float]:
         import numpy as np  # lazy
         import cv2  # lazy
-        from insightface.utils import face_align  # lazy
 
         t0 = time.perf_counter()
         try:
+            if getattr(self, "_app", None) is None:
+                self.load()
             rgb = self._preprocess(image_bytes, normalize=True)
-            box, kps, det_conf = self._detect(rgb)
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-            aligned = face_align.norm_crop(bgr, landmark=kps, image_size=112)
+            faces = self._app.get(bgr)
+
+            if not faces:
+                raise NoFaceDetectedError()
+            if len(faces) > 1:
+                raise MultipleFacesError()
+
+            face = faces[0]
+            det_conf = float(face.det_score) if hasattr(face, "det_score") else 1.0
+            if det_conf < self._det_min_conf:
+                raise NoFaceDetectedError()
+
+            box = face.bbox  # [x1, y1, x2, y2]
+            side = min(float(box[2] - box[0]), float(box[3] - box[1]))
+            if side < self._min_face_px:
+                raise FaceTooSmallError()
 
             if enroll:
-                self._check_blur(aligned)
-                self._check_side_profile(kps)
+                self._check_blur(bgr)
+                if hasattr(face, "kps"):
+                    self._check_side_profile(face.kps)
 
-            feat = np.asarray(self._rec.get_feat(aligned)).flatten()
+            feat = np.asarray(face.embedding).flatten()
             norm = float(np.linalg.norm(feat))
             vec = (feat / norm) if norm else feat  # L2-normalise -> cosine == dot
             self._dim = int(vec.shape[0])
 
-            face_px = int(min(float(box[2] - box[0]), float(box[3] - box[1])))
             logger.info(
                 "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms",
                 enroll,
                 det_conf,
-                face_px,
+                int(side),
                 vec.shape[0],
                 (time.perf_counter() - t0) * 1000,
             )
-            if enroll and self._save_debug:
-                self._save_debug_crop(aligned)
             return [float(x) for x in vec]
         except FaceError as exc:
             logger.warning(
