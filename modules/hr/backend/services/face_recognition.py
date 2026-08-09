@@ -29,7 +29,7 @@ VERIFICATION FLOW (requirement 5) — app.api.attendance /checkin:
     score, confidence and match/no-match to the caller.
 
 CONFIGURABLE THRESHOLDS (requirement 6) — all in app.config.Settings / .env:
-    FACE_MATCH_THRESHOLD  cosine at/above which a face is accepted (0.45)
+    FACE_MATCH_THRESHOLD  cosine at/above which a face is accepted (0.36)
     FACE_MODEL            InsightFace pack: buffalo_s (small) / buffalo_l
     FACE_DETECTOR         detector backend (mtcnn)
     MAX_FACE_IMAGE_SIZE   longest side images are downscaled to (1024)

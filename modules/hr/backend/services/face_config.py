@@ -60,7 +60,7 @@ class FaceSettings:
 
     # ---- Match thresholds ------------------------------------------------- #
     FACE_MATCH_THRESHOLD: float = field(
-        default_factory=lambda: _float("HR_FACE_MATCH_THRESHOLD", 0.45)
+        default_factory=lambda: _float("HR_FACE_MATCH_THRESHOLD", 0.36)
     )
     # A 1:N identification only counts if the best match beats the runner-up by
     # this margin — without it, two similar faces could resolve arbitrarily.
