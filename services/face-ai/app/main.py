@@ -23,9 +23,12 @@ import hmac
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.config import get_settings
 from app.engine import FaceError, build_engine
@@ -43,6 +46,21 @@ logging.basicConfig(
 logger = logging.getLogger("face-ai")
 
 settings = get_settings()
+
+
+# ── rate limiting ────────────────────────────────────────────────────────────
+def _client_ip(request: Request) -> str:
+    """Real client IP for rate-limit keying.
+
+    Behind a Cloudflare Tunnel the socket peer is always Cloudflare, so the
+    genuine caller is in CF-Connecting-IP. Fall back to the socket peer for
+    local/direct calls (dev, tests).
+    """
+    return request.headers.get("cf-connecting-ip") or get_remote_address(request)
+
+
+limiter = Limiter(key_func=_client_ip)
+
 
 # ── engine lifecycle ─────────────────────────────────────────────────────────
 _engine = build_engine(settings)
@@ -68,11 +86,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Register the rate limiter + its 429 handler (slowapi reads app.state.limiter).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Server-to-server only: the Django backend calls this service (CORS-exempt),
+# never the browser. Default is an empty allow-list (no browser origin). Set
+# FACE_AI_CORS_ORIGINS only if you deliberately need a browser to call it.
+_cors_origins = [o.strip() for o in settings.FACE_AI_CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_methods=["POST", "GET"],
-    allow_headers=["*"],
+    allow_headers=["X-API-Key", "Content-Type"],
+    allow_credentials=False,
 )
 
 
@@ -140,7 +167,11 @@ def version() -> VersionResponse:
 
 
 @app.post("/enroll-face", response_model=EmbedResponse, dependencies=[Depends(_require_api_key)])
-async def enroll_face(file: UploadFile = File(..., description="Reference face photo")):
+@limiter.limit(settings.FACE_AI_RATE_ENROLL)
+async def enroll_face(
+    request: Request,
+    file: UploadFile = File(..., description="Reference face photo"),
+):
     """Strict-gate embedding for enrolment (rejects blurry/side/multiple/small)."""
     image_bytes = await file.read()
     if not image_bytes:
@@ -161,7 +192,9 @@ async def enroll_face(file: UploadFile = File(..., description="Reference face p
 
 
 @app.post("/verify-face", response_model=VerifyResponse, dependencies=[Depends(_require_api_key)])
+@limiter.limit(settings.FACE_AI_RATE_VERIFY)
 async def verify_face(
+    request: Request,
     file: UploadFile = File(..., description="Live-captured selfie"),
     frames: list[UploadFile] | None = File(
         None, description="Optional liveness burst: extra frames ~400 ms apart"

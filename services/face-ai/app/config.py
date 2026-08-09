@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     # default in the repo is a public credential).
     FACE_AI_API_KEY: str = ""
 
+    # CORS: comma-separated browser origins allowed to call the service. Empty
+    # (the default) means NO browser origin — the service is called
+    # server-to-server from the Django backend, which is CORS-exempt. The
+    # browser at app.water-works.in must never hit this service directly.
+    FACE_AI_CORS_ORIGINS: str = ""
+
+    # Per-client rate limits (slowapi syntax, e.g. "30/minute"). Keyed on the
+    # real client IP (CF-Connecting-IP when fronted by Cloudflare). Each request
+    # runs face matching, so keep these low.
+    FACE_AI_RATE_VERIFY: str = "30/minute"
+    FACE_AI_RATE_ENROLL: str = "10/minute"
+
     # -- engine selection ------------------------------------------------
     # "insightface" = real MTCNN + ArcFace (needs requirements-ml.txt + ~1GB RAM).
     # "stub"        = deterministic pseudo-embedding, zero heavy deps (tests/CI).
