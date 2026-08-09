@@ -106,7 +106,7 @@ class FaceSettings:
     )
 
     # ---- InsightFace (FACE_ENGINE=insightface only) ----------------------- #
-    FACE_MODEL: str = field(default_factory=lambda: _str("HR_FACE_MODEL", "buffalo_s"))
+    FACE_MODEL: str = field(default_factory=lambda: _str("HR_FACE_MODEL", "buffalo_l"))
     FACE_DETECTOR: str = field(default_factory=lambda: _str("HR_FACE_DETECTOR", "mtcnn"))
 
     # ---- Face-quality gates ----------------------------------------------- #

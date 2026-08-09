@@ -105,6 +105,18 @@ def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
 
 
 # ── routes ───────────────────────────────────────────────────────────────────
+@app.get("/")
+def root():
+    """Root endpoint welcoming user and pointing to documentation/health probes."""
+    return {
+        "service": settings.SERVICE_NAME,
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "version": "/version",
+    }
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(
