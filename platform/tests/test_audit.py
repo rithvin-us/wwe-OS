@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pytest
 from audit.models import AuditLog
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from tests.conftest import PASSWORD
@@ -99,3 +100,43 @@ def test_api_filters_by_module_in(tenant, make_user, owner_role, grant, auth_cli
     response = auth_client(user).get("/api/v1/audit/?module__in=purchase,assets")
     ids = {row["id"] for row in response.data["data"]}
     assert ids == {str(purchase_entry.id)}
+
+
+def test_voice_note_creates_audit_entry_and_stores_file(
+    tenant, make_user, owner_role, grant, auth_client
+):
+    user = make_user(email="voice@acme.test", username="voice", tenant=tenant)
+    grant(user, owner_role)
+    audio = SimpleUploadedFile("note.webm", b"fake-audio-bytes", content_type="audio/webm")
+
+    response = auth_client(user).post(
+        "/api/v1/audit/voice-notes/",
+        {"audio": audio, "duration_ms": "42000"},
+        format="multipart",
+    )
+
+    assert response.status_code == 201
+    assert response.data["action"] == "note.voice_logged"
+    assert response.data["module"] == "notes"
+    assert response.data["object_type"] == "VoiceNote"
+    assert response.data["changes"]["title"] == "Voice note (0:42)"
+    assert response.data["audio_url"]
+
+    entry = AuditLog.objects.get(object_type="VoiceNote")
+    assert entry.actor_id == user.id
+    assert entry.tenant_id == tenant.id
+
+
+def test_voice_note_requires_audio_file(tenant, make_user, owner_role, grant, auth_client):
+    user = make_user(email="voice2@acme.test", username="voice2", tenant=tenant)
+    grant(user, owner_role)
+
+    response = auth_client(user).post("/api/v1/audit/voice-notes/", {}, format="multipart")
+
+    assert response.status_code == 422
+
+
+def test_voice_note_requires_authentication(api):
+    audio = SimpleUploadedFile("note.webm", b"fake-audio-bytes", content_type="audio/webm")
+    response = api.post("/api/v1/audit/voice-notes/", {"audio": audio}, format="multipart")
+    assert response.status_code == 401

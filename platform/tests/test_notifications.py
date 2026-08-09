@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
+import httpx
 import pytest
+from notifications.models import Channel
 from notifications.services import NotificationService
 
 pytestmark = pytest.mark.django_db
@@ -70,3 +74,45 @@ def test_sending_requires_permission(
         auth_client(sender).post("/api/v1/notifications/", payload, format="json").status_code
         == 201
     )
+
+
+def test_telegram_not_configured_skips_silently(make_user, tenant, settings):
+    settings.TELEGRAM_BOT_TOKEN = ""
+    settings.TELEGRAM_ALERT_CHAT_ID = ""
+    user = make_user(tenant=tenant)
+
+    with patch("notifications.services.httpx.post") as mock_post:
+        NotificationService().create(recipient=user, title="Ping", channel=Channel.TELEGRAM)
+
+    mock_post.assert_not_called()
+
+
+def test_telegram_configured_sends_message(make_user, tenant, settings):
+    settings.TELEGRAM_BOT_TOKEN = "test-token"
+    settings.TELEGRAM_ALERT_CHAT_ID = "12345"
+    user = make_user(tenant=tenant)
+
+    with patch("notifications.services.httpx.post") as mock_post:
+        mock_post.return_value.raise_for_status.return_value = None
+        NotificationService().create(
+            recipient=user,
+            title="Pending bills",
+            body="₹1,200 pending",
+            channel=Channel.TELEGRAM,
+        )
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    assert mock_post.call_args[0][0] == "https://api.telegram.org/bottest-token/sendMessage"
+    assert kwargs["json"]["chat_id"] == "12345"
+    assert "Pending bills" in kwargs["json"]["text"]
+
+
+def test_telegram_delivery_failure_does_not_raise(make_user, tenant, settings):
+    settings.TELEGRAM_BOT_TOKEN = "test-token"
+    settings.TELEGRAM_ALERT_CHAT_ID = "12345"
+    user = make_user(tenant=tenant)
+
+    with patch("notifications.services.httpx.post", side_effect=httpx.ConnectError("network down")):
+        # Must not raise — a delivery failure never breaks the caller.
+        NotificationService().create(recipient=user, title="Ping", channel=Channel.TELEGRAM)

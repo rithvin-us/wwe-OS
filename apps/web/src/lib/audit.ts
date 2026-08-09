@@ -9,6 +9,7 @@ export const TIMELINE_MODULES = [
   "contracts",
   "documents",
   "purchase",
+  "notes",
 ] as const;
 
 export type TimelineModule = (typeof TIMELINE_MODULES)[number];
@@ -128,6 +129,7 @@ const MODULE_LIST_HREF: Record<TimelineModule, string> = {
   contracts: "/contracts",
   documents: "/dms",
   purchase: "/purchase",
+  notes: "/timeline",
 };
 
 /** Best available link for a timeline entry: the record's own detail page

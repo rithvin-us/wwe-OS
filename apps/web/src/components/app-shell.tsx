@@ -15,6 +15,7 @@ import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { RithuChatWidget } from "@/components/chatbot/rithu-chat-widget";
 import { CommandPalette } from "@/components/command-palette";
+import { MobileFabDock } from "@/components/mobile-fab-dock";
 import { SessionRefresh } from "@/components/session-refresh";
 
 const SIDEBAR_HINT_SEEN_KEY = "wwe-os-sidebar-collapse-hint-seen";
@@ -228,6 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <RithuChatWidget />
+      <MobileFabDock />
       <SessionRefresh />
     </div>
   );

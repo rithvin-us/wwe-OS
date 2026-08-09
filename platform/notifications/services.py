@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import httpx
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -42,8 +43,8 @@ class NotificationService(BaseService):
         return notification
 
     def _dispatch(self, notification: Notification) -> None:
-        """In-app is stored (nothing more to do). Email sends now; Telegram and
-        webhooks are wired by their services later."""
+        """In-app is stored (nothing more to do). Email and Telegram send now;
+        webhooks are wired by their service later."""
         if notification.channel == Channel.EMAIL and notification.recipient.email:
             send_mail(
                 subject=notification.title,
@@ -52,12 +53,45 @@ class NotificationService(BaseService):
                 recipient_list=[notification.recipient.email],
                 fail_silently=True,
             )
-        elif notification.channel in (Channel.TELEGRAM, Channel.WEBHOOK):
+        elif notification.channel == Channel.TELEGRAM:
+            self._send_telegram(notification)
+        elif notification.channel == Channel.WEBHOOK:
             logger.info(
                 "Notification %s queued for %s channel (delivery service pending).",
                 notification.id,
                 notification.channel,
             )
+
+    def _send_telegram(self, notification: Notification) -> None:
+        """Best-effort outbound send — mirrors email's `fail_silently=True`,
+        a delivery failure never breaks the caller that created the
+        notification. Single fixed chat id (see settings.py) — the
+        single-operator model has exactly one Telegram destination, not a
+        per-recipient mapping."""
+        token = settings.TELEGRAM_BOT_TOKEN
+        chat_id = settings.TELEGRAM_ALERT_CHAT_ID
+        if not token or not chat_id:
+            logger.info(
+                "Notification %s not sent — Telegram isn't configured "
+                "(TELEGRAM_BOT_TOKEN/TELEGRAM_ALERT_CHAT_ID).",
+                notification.id,
+            )
+            return
+
+        text = (
+            f"*{notification.title}*\n{notification.body}"
+            if notification.body
+            else (notification.title)
+        )
+        try:
+            response = httpx.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                timeout=10,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError:
+            logger.exception("Failed to deliver Telegram notification %s.", notification.id)
 
     def mark_read(self, notification: Notification) -> Notification:
         notification.status = Status.READ

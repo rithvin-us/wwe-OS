@@ -6,11 +6,13 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import { BarChartComponent, ChartCard } from "@/components/charts";
 import { mockData } from "@/lib/mock-data";
+import { getAlertRules } from "@/lib/alerts";
 import { getRules, getRuleSources, getRunHistory } from "@/lib/automation";
 import { getBillingCustomers, getInvoices, getNextInvoiceNumber } from "@/lib/invoices";
 import { getReportCatalog } from "@/lib/reports";
 import { listTags } from "@/lib/tags";
 
+import { AlertRulesTable } from "@/app/(platform)/automation/alert-rules-table";
 import { InvoiceGeneration } from "@/app/(platform)/automation/invoice-generation";
 import { RulesTable } from "@/app/(platform)/automation/rules-table";
 
@@ -28,7 +30,7 @@ function formatDateTime(iso: string): string {
 }
 
 export default async function AutomationPage() {
-  const [rules, sources, history, reports, allTags, customers, invoices, nextNumber] =
+  const [rules, sources, history, reports, allTags, customers, invoices, nextNumber, alertRules] =
     await Promise.all([
       getRules().catch(() => []),
       getRuleSources().catch(() => []),
@@ -38,6 +40,7 @@ export default async function AutomationPage() {
       getBillingCustomers(),
       getInvoices(),
       getNextInvoiceNumber(),
+      getAlertRules(),
     ]);
 
   const automationRuns = mockData.other.MOCK_AUTOMATION_RUNS;
@@ -83,6 +86,13 @@ export default async function AutomationPage() {
           Rules
         </h2>
         <RulesTable rules={rules} sources={sources} reports={reports} allTags={allTags} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+          Alerts
+        </h2>
+        <AlertRulesTable rules={alertRules} />
       </section>
 
       <section className="space-y-3">

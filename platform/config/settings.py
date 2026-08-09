@@ -100,6 +100,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "tagging",
     "workflow",
     "automation",
+    "alerts",
 ]
 PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 
@@ -325,6 +326,17 @@ if env_str("SMTP_HOST"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env_str("SMTP_FROM", "noreply@wwe-os.local")
+
+# --------------------------------------------------------------------------- #
+# Telegram notifications (platform/notifications)
+# --------------------------------------------------------------------------- #
+# Single-operator model: one fixed destination chat, not a per-recipient
+# mapping — the same bot token services/telegram-bot uses for inbound bill
+# ingestion also sends outbound alerts. TELEGRAM_ALERT_CHAT_ID is the
+# operator's own chat id with that bot (visible via @userinfobot, or from the
+# chat id Telegram already attaches to any bill they've sent the bot).
+TELEGRAM_BOT_TOKEN = env_str("TELEGRAM_BOT_TOKEN", "") or ""
+TELEGRAM_ALERT_CHAT_ID = env_str("TELEGRAM_ALERT_CHAT_ID", "") or ""
 
 # --------------------------------------------------------------------------- #
 # CORS

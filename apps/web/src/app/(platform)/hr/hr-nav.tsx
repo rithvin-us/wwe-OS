@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarCheck,
-  CalendarDays,
   FileSpreadsheet,
   IndianRupee,
   LayoutDashboard,
@@ -21,7 +20,6 @@ const HR_TABS = [
   { name: "Payroll", href: "/hr/payroll", icon: IndianRupee },
   { name: "Deductions", href: "/hr/deductions", icon: MinusCircle },
   { name: "Expenses", href: "/hr/expenses", icon: Receipt },
-  { name: "Leave & Holidays", href: "/hr/leave", icon: CalendarDays },
   { name: "Statutory Registers", href: "/hr/registers", icon: FileSpreadsheet },
 ];
 
