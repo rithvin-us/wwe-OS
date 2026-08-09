@@ -1,0 +1,7 @@
+# Vercel Environment Variables — Production Configured for Render Backend
+# Import to Vercel:
+#   npx vercel env import vercel_env production
+
+INTERNAL_API_URL=https://wwe-os-backend.onrender.com
+NEXT_PUBLIC_APP_URL=https://web-vert-six-63.vercel.app
+GEMINI_API_KEY=

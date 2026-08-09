@@ -92,21 +92,26 @@ Security → WAF → **Custom rules**. Order matters (top = evaluated first).
 **Rule 1 — Lock the bot endpoint to Telegram only (Block).**
 Telegram does not publish a formal IP allowlist for outbound webhooks, so rely
 on the secret header (validated at the origin, §2) and shape the edge:
+
 ```
 (http.host eq "bot.water-works.in" and http.request.method ne "POST")
 or
 (http.host eq "bot.water-works.in" and not starts_with(http.request.uri.path, "/telegram"))
 ```
+
 Action: **Block**. This drops everything that is not `POST /telegram`.
 Optionally also require the header shape exists:
+
 ```
 http.host eq "bot.water-works.in" and not any(http.request.headers.names[*] eq "x-telegram-bot-api-secret-token")
 ```
+
 Action: **Block**. (Header names are lowercased by Cloudflare.)
 
 **Rule 2 — AI endpoint: only server-to-server, block browsers/tools (Managed Challenge/Block).**
 The AI service is only ever called by Render (Django). Block anything that looks
 like a browser or is missing the API key header:
+
 ```
 http.host eq "ai.water-works.in" and (
   not any(http.request.headers.names[*] eq "x-api-key")
@@ -114,6 +119,7 @@ http.host eq "ai.water-works.in" and (
   and not starts_with(http.request.uri.path, "/health")
 )
 ```
+
 Action: **Block**. (Allow `GET /health` for probes.) The real auth is the
 `X-API-Key` check in FastAPI (§3) + Cloudflare Access (§7) — this rule just
 sheds noise at the edge.
@@ -121,6 +127,7 @@ sheds noise at the edge.
 **Rule 3 — Block admin/doc surfaces from the public (Block).**
 Your OpenAPI docs (`/api/v1/docs/`, `/redoc/`, `/schema/`) and `/metrics` should
 not be world-readable:
+
 ```
 http.host eq "api.water-works.in" and (
   starts_with(http.request.uri.path, "/api/v1/docs")
@@ -129,17 +136,21 @@ http.host eq "api.water-works.in" and (
   or http.request.uri.path eq "/metrics"
 )
 ```
+
 Action: **Managed Challenge** (or Block, or put behind Access §7).
 
 **Rule 4 — Method allowlist for the API (Block).**
+
 ```
 http.host eq "api.water-works.in" and not (
   http.request.method in {"GET" "POST" "PUT" "PATCH" "DELETE" "OPTIONS"}
 )
 ```
+
 Action: **Block**.
 
 **Rule 5 — Drop obvious junk / known-bad paths (Block).**
+
 ```
 (http.request.uri.path contains "/wp-admin")
 or (http.request.uri.path contains "/.env")
@@ -148,6 +159,7 @@ or (http.request.uri.path contains "phpmyadmin")
 or (lower(http.request.uri.query) contains "union select")
 or (lower(http.request.uri.query) contains "<script")
 ```
+
 Action: **Block**.
 
 ### 1.4 Bot protection
@@ -291,6 +303,7 @@ def _from_telegram(ip: str) -> bool:
     return any(addr in net for net in TELEGRAM_NETS)
 # in the handler: client_ip = request.headers.get("cf-connecting-ip", request.client.host)
 ```
+
 Treat the secret token as primary; IP ranges can change, so log-and-alert on
 mismatch rather than hard-blocking if you're unsure.
 
@@ -334,9 +347,9 @@ The service already does a **constant-time `X-API-Key` check** (`main.py:96-104`
 - [ ] **Restrict to your app's traffic path.** The browser at `app.water-works.in`
       must **never** call `ai.water-works.in` directly — it goes
       browser → Django (`api`) → face-ai (`ai`). Keep it that way:
-  the face embedding/gallery match logic already runs in the backend; the browser
-  only ever talks to `api.water-works.in`. Enforce via Cloudflare Access (§7) so
-  only the Render service token can reach `ai`.
+      the face embedding/gallery match logic already runs in the backend; the browser
+      only ever talks to `api.water-works.in`. Enforce via Cloudflare Access (§7) so
+      only the Render service token can reach `ai`.
 - [ ] **Request validation & limits.** Cap upload size and frame count (frames are
       already capped to 4 at `main.py:168`). Add a body-size guard:
   ```python
@@ -398,6 +411,7 @@ Change it to your real frontend origin(s):
 - key: DJANGO_ALLOWED_HOSTS
   value: api.water-works.in
 ```
+
 - [ ] Never use `CORS_ALLOW_ALL_ORIGINS`. `CORS_ALLOW_CREDENTIALS = True` is
       already set (`settings.py:347`) — that requires an explicit origin list, so
       wildcard would be a bug anyway.
@@ -407,6 +421,7 @@ Change it to your real frontend origin(s):
 ### 4.2 Startup guard — refuse to boot insecure in prod
 
 Add to the bottom of `settings.py`:
+
 ```python
 # --- Production safety net -------------------------------------------------
 if APP_ENV == "production":
@@ -465,6 +480,7 @@ if APP_ENV == "production":
 
 `DEFAULT_THROTTLE_RATES` already defines `login`, `password_reset`, `ingestion`,
 `hr_checkin`, `user`, `anon`. Confirm each sensitive view sets its scope:
+
 - login/refresh → `throttle_scope = "login"`
 - password reset → `"password_reset"`
 - bill ingest (`/api/v1/purchase/bills/ingest/`) → `"ingestion"`
@@ -495,13 +511,13 @@ tunnel so nothing bypasses Cloudflare.
   credentials-file: /path/<tunnel-id>.json
   originRequest:
     connectTimeout: 10s
-    noTLSVerify: true          # local hop is plain HTTP; edge is still HTTPS
+    noTLSVerify: true # local hop is plain HTTP; edge is still HTTPS
     httpHostHeader: ai.water-works.in
   ingress:
     - hostname: ai.water-works.in
       path: ^/(health|version|enroll-face|verify-face)$
       service: http://127.0.0.1:9000
-    - service: http_status:404   # required catch-all — everything else dies here
+    - service: http_status:404 # required catch-all — everything else dies here
   ```
   Same pattern for `bot.water-works.in` → `http://127.0.0.1:9001`, path `^/telegram$`.
 - [ ] **Prevent origin-IP bypass.** Because there's no public IP / port-forward,
@@ -535,14 +551,14 @@ Permissions-Policy via middleware if you want it from the origin too. Good as is
 Rules → **Transform Rules → Modify Response Header** → Add these (When incoming
 requests match `hostname in {"app.water-works.in" "api.water-works.in"}`):
 
-| Header | Value |
-| --- | --- |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` |
-| `X-Content-Type-Options` | `nosniff` |
-| `X-Frame-Options` | `DENY` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(self), microphone=(), geolocation=(), payment=()` |
-| `Cross-Origin-Opener-Policy` | `same-origin` |
+| Header                       | Value                                                      |
+| ---------------------------- | ---------------------------------------------------------- |
+| `Strict-Transport-Security`  | `max-age=31536000; includeSubDomains; preload`             |
+| `X-Content-Type-Options`     | `nosniff`                                                  |
+| `X-Frame-Options`            | `DENY`                                                     |
+| `Referrer-Policy`            | `strict-origin-when-cross-origin`                          |
+| `Permissions-Policy`         | `camera=(self), microphone=(), geolocation=(), payment=()` |
+| `Cross-Origin-Opener-Policy` | `same-origin`                                              |
 
 > `camera=(self)` is needed because the HR face check-in uses the webcam on
 > `app.water-works.in`. Keep everything else off.
@@ -565,6 +581,7 @@ Content-Security-Policy:
   object-src 'none';
   upgrade-insecure-requests;
 ```
+
 - [ ] `connect-src` must include `https://api.water-works.in` (the app's only
       backend) and **not** `ai.water-works.in` (browser never calls it directly).
 - [ ] `frame-ancestors 'none'` (belt-and-suspenders with `X-Frame-Options`).
@@ -576,17 +593,14 @@ Content-Security-Policy:
 ## 7. ZERO TRUST — Cloudflare Access (recommended for `ai` + internal tools)
 
 Put `ai.water-works.in` (and the API docs, `/metrics`, any internal tool) behind
-Cloudflare Access so requests must present a valid credential *at the edge*,
+Cloudflare Access so requests must present a valid credential _at the edge_,
 before they ever reach the tunnel.
 
 ### 7.1 AI service — Service-Token policy (machine-to-machine)
 
 - [ ] Zero Trust → Access → **Service Auth → Create Service Token**
       (`render-to-ai`). Save the `CF-Access-Client-Id` / `CF-Access-Client-Secret`.
-- [ ] Zero Trust → Access → **Applications → Add → Self-hosted**:
-      - Application domain: `ai.water-works.in`
-      - Path: leave broad, but add a **Bypass** policy for `/health` (probes).
-      - Policy: **Action = Service Auth**, Include = *the service token above*.
+- [ ] Zero Trust → Access → **Applications → Add → Self-hosted**: - Application domain: `ai.water-works.in` - Path: leave broad, but add a **Bypass** policy for `/health` (probes). - Policy: **Action = Service Auth**, Include = _the service token above_.
 - [ ] In Django, send the Access service-token headers on every face-ai call
       (in addition to `X-API-Key`):
   ```python
@@ -618,14 +632,14 @@ Two rings: **Cloudflare** (edge, IP-based, sheds volumetric abuse) and
 
 Security → WAF → Rate limiting rules.
 
-| Name | Expression (match) | Threshold | Period | Action |
-| --- | --- | --- | --- | --- |
-| api-login | `http.host eq "api.water-works.in" and http.request.uri.path contains "/auth/login"` | 10 | 1 min | Block 15 min |
-| api-general | `http.host eq "api.water-works.in"` | 600 | 1 min | Managed Challenge |
-| api-write | `http.host eq "api.water-works.in" and http.request.method in {"POST" "PUT" "PATCH" "DELETE"}` | 120 | 1 min | Block 10 min |
-| ai-verify | `http.host eq "ai.water-works.in"` | 40 | 1 min | Block 10 min |
-| bot-webhook | `http.host eq "bot.water-works.in"` | 60 | 1 min | Block 5 min |
-| hr-checkin | `http.host eq "api.water-works.in" and http.request.uri.path contains "/hr/attendance/checkin"` | 20 | 1 min | Managed Challenge |
+| Name        | Expression (match)                                                                              | Threshold | Period | Action            |
+| ----------- | ----------------------------------------------------------------------------------------------- | --------- | ------ | ----------------- |
+| api-login   | `http.host eq "api.water-works.in" and http.request.uri.path contains "/auth/login"`            | 10        | 1 min  | Block 15 min      |
+| api-general | `http.host eq "api.water-works.in"`                                                             | 600       | 1 min  | Managed Challenge |
+| api-write   | `http.host eq "api.water-works.in" and http.request.method in {"POST" "PUT" "PATCH" "DELETE"}`  | 120       | 1 min  | Block 10 min      |
+| ai-verify   | `http.host eq "ai.water-works.in"`                                                              | 40        | 1 min  | Block 10 min      |
+| bot-webhook | `http.host eq "bot.water-works.in"`                                                             | 60        | 1 min  | Block 5 min       |
+| hr-checkin  | `http.host eq "api.water-works.in" and http.request.uri.path contains "/hr/attendance/checkin"` | 20        | 1 min  | Managed Challenge |
 
 (Characterise by `cf.colo` / `ip.src` — the default. Raise once you see real
 traffic; start conservative.)
@@ -634,14 +648,14 @@ traffic; start conservative.)
 
 Already in `settings.py` `DEFAULT_THROTTLE_RATES`:
 
-| Scope | Rate | Applies to |
-| --- | --- | --- |
-| `login` | 10/min | login/refresh views |
-| `password_reset` | 5/hour | reset request |
-| `ingestion` | 60/min | bot bill ingest |
-| `hr_checkin` | 20/min | public face check-in |
-| `user` | 1000/hour | authenticated API |
-| `anon` | 100/hour | unauthenticated API |
+| Scope            | Rate      | Applies to           |
+| ---------------- | --------- | -------------------- |
+| `login`          | 10/min    | login/refresh views  |
+| `password_reset` | 5/hour    | reset request        |
+| `ingestion`      | 60/min    | bot bill ingest      |
+| `hr_checkin`     | 20/min    | public face check-in |
+| `user`           | 1000/hour | authenticated API    |
+| `anon`           | 100/hour  | unauthenticated API  |
 
 - face-ai: `verify-face` 30/min, `enroll-face` 10/min via slowapi (§3).
 - bot: Telegram enforces `max_connections`; add the chat-ID allowlist (§2) as the
