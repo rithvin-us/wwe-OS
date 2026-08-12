@@ -1,5 +1,5 @@
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
+from django.db.models.signals import post_delete, post_migrate, post_save
 
 
 def _sync_permissions(sender, **kwargs) -> None:
@@ -31,8 +31,15 @@ class FinanceConfig(AppConfig):
         # In-memory registrations (safe at import; no DB access).
         from finance.backend.demo_reset import register_demo_reset
         from finance.backend.document_types import register_document_types
+        from finance.backend.models.invoice import Customer
+        from finance.backend.search import customer as customer_search
         from finance.backend.search.adapter import register_search
 
         register_document_types()
         register_demo_reset()
         register_search()
+
+        # Customers have no service layer, so index them off model signals.
+        customer_search.register_search()
+        post_save.connect(customer_search.index_customer, sender=Customer)
+        post_delete.connect(customer_search.remove_customer, sender=Customer)

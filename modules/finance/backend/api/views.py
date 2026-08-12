@@ -16,6 +16,7 @@ from finance.backend.serializers.invoice import (
     GenerateInvoiceSerializer,
     InvoiceSerializer,
 )
+from finance.backend.services.customer_overview import CustomerOverviewService
 from finance.backend.services.invoice import InvoiceService
 from finance.backend.services.numbering import (
     InvoiceNumberingService,
@@ -48,6 +49,7 @@ class CustomerViewSet(BaseModelViewSet):
     required_permissions = {
         "list": "finance.invoice.read",
         "retrieve": "finance.invoice.read",
+        "overview": "finance.invoice.read",
         "create": "finance.customer.manage",
         "partial_update": "finance.customer.manage",
         "destroy": "finance.customer.manage",
@@ -60,6 +62,13 @@ class CustomerViewSet(BaseModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(tenant=getattr(self.request.user, "tenant", None))
+
+    @action(detail=True, methods=["get"])
+    def overview(self, request: Request, pk=None) -> Response:
+        """Customer 360 — profile, financials, derived sites, recent invoices,
+        AMC and activity, aggregated read-only from existing data."""
+        customer = self.get_object()
+        return Response(CustomerOverviewService().overview(customer=customer))
 
 
 class InvoiceViewSet(BaseModelViewSet):
