@@ -25,11 +25,14 @@ from finance.backend.services.numbering import (
 )
 from finance.backend.services.pdf import CONTENT_TYPE as PDF_CONTENT_TYPE
 from finance.backend.services.renderer import CONTENT_TYPE
-from rest_framework import status
+from finance.backend.services.site_directory import SiteDirectoryService
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from shared.exceptions import NotFoundError
+from shared.permissions import HasPlatformPermission
 from shared.views import BaseModelViewSet
 
 
@@ -69,6 +72,32 @@ class CustomerViewSet(BaseModelViewSet):
         AMC and activity, aggregated read-only from existing data."""
         customer = self.get_object()
         return Response(CustomerOverviewService().overview(customer=customer))
+
+
+class SiteViewSet(viewsets.ViewSet):
+    """Site 360 — a read-only, facility-centric view derived from the bill
+    register. Sites are not a model of their own (see SiteDirectoryService);
+    this surface just lists the facilities invoices were raised against and
+    assembles one site's picture on demand."""
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "finance.invoice.read"
+
+    def list(self, request: Request) -> Response:
+        tenant = _tenant_from(request.user)
+        return Response(SiteDirectoryService().list_sites(tenant=tenant))
+
+    @action(detail=False, methods=["get"])
+    def overview(self, request: Request) -> Response:
+        tenant = _tenant_from(request.user)
+        name = request.query_params.get("name", "")
+        return Response(SiteDirectoryService().site_overview(tenant=tenant, name=name))
+
+
+def _tenant_from(user):
+    """The tenant object to scope by, or None when untenanted (superuser / the
+    single-operator setup) — mirrors `_tenant_id`."""
+    return None if (user.is_superuser or user.tenant_id is None) else getattr(user, "tenant", None)
 
 
 class InvoiceViewSet(BaseModelViewSet):
