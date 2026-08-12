@@ -101,6 +101,7 @@ PLATFORM_APPS_BEFORE_MODULES = [
     "workflow",
     "automation",
     "alerts",
+    "deadlines",
 ]
 PLATFORM_APPS_AFTER_MODULES = ["roles", "audit", "notifications"]
 

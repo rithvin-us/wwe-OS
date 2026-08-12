@@ -35,9 +35,12 @@ class FinanceConfig(AppConfig):
         from finance.backend.search import customer as customer_search
         from finance.backend.search.adapter import register_search
 
+        from finance.backend.deadlines import register_deadlines
+
         register_document_types()
         register_demo_reset()
         register_search()
+        register_deadlines()
 
         # Customers have no service layer, so index them off model signals.
         customer_search.register_search()
