@@ -30,3 +30,8 @@ class HrConfig(AppConfig):
 
     def ready(self) -> None:
         post_migrate.connect(_sync_permissions, sender=self)
+
+        # In-memory registration (safe at import; no DB access).
+        from hr.backend.search.adapter import register_search
+
+        register_search()

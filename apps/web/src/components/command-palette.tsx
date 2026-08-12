@@ -72,6 +72,8 @@ const SECONDARY_FIELD: Record<string, string> = {
   contracts: "category",
   documents: "document_type",
   purchase: "vendor",
+  invoices: "invoice_type",
+  employees: "designation",
 };
 
 function groupByIndex(results: SearchResultRow[]): [string, SearchResultRow[]][] {

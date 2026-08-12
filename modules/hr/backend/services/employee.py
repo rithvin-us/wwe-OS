@@ -53,6 +53,17 @@ class EmployeeService:
         self.salary_rules = SalaryRuleRepository()
         self.audit = AuditService()
 
+    def _index(self, employee: Employee) -> None:
+        """Keep the platform search index in step with the employee master, so
+        a person is reachable from the command palette. Same service-layer
+        pattern the other modules use; an offboarded employee stays indexed
+        with its LEFT status rather than disappearing."""
+        from search.services import SearchService
+
+        from hr.backend.search.adapter import INDEX, to_document
+
+        SearchService().upsert(index=INDEX, tenant=employee.tenant, **to_document(employee))
+
     @transaction.atomic
     def create(self, data: dict) -> Employee:
         if self.employees.get_by_code(data["employee_code"]) is not None:
@@ -86,6 +97,7 @@ class EmployeeService:
             object_id=str(employee.pk),
             changes={"employee_code": employee.employee_code, "name": employee.employee_name},
         )
+        self._index(employee)
         return employee
 
     @transaction.atomic
@@ -101,6 +113,7 @@ class EmployeeService:
             object_id=str(employee.pk),
             changes=dict(data),
         )
+        self._index(employee)
         return employee
 
     @transaction.atomic
@@ -123,6 +136,7 @@ class EmployeeService:
             object_id=str(employee.pk),
             changes={"date_of_leaving": str(date_of_leaving)},
         )
+        self._index(employee)
         return employee
 
     # ----------------------------------------------------------------- helpers
