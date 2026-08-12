@@ -2,10 +2,37 @@
 
 from __future__ import annotations
 
-from documents.backend.models import Document, DocumentCategory
+from documents.backend.models import Document, DocumentCategory, DocumentVersion
 from rest_framework import serializers
 from tagging.serializers import TagSerializer
 from tagging.services import TagService
+
+
+class DocumentVersionSerializer(serializers.ModelSerializer):
+    file_name = serializers.CharField(source="file.filename", read_only=True)
+    file_size = serializers.IntegerField(source="file.size_bytes", read_only=True)
+    content_type = serializers.CharField(source="file.content_type", read_only=True)
+    checksum = serializers.CharField(source="file.sha256", read_only=True)
+    uploaded_by_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DocumentVersion
+        fields = (
+            "id",
+            "version",
+            "is_current",
+            "note",
+            "file_name",
+            "file_size",
+            "content_type",
+            "checksum",
+            "uploaded_by_email",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_uploaded_by_email(self, obj: DocumentVersion) -> str | None:
+        return obj.uploaded_by.email if obj.uploaded_by else None
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -62,6 +89,11 @@ class UploadDocumentSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=40), required=False, default=list
     )
     summarize = serializers.BooleanField(required=False, default=True)
+
+
+class UploadVersionSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    note = serializers.CharField(required=False, allow_blank=True, default="", max_length=300)
 
 
 class UpdateDocumentSerializer(serializers.Serializer):

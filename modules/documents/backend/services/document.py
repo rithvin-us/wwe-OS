@@ -19,13 +19,15 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from django.db import transaction
+from django.db.models import Max
 from documents.backend.events.registry import (
     DOCUMENT_ARCHIVED,
     DOCUMENT_CREATED,
     DOCUMENT_SUMMARIZED,
     DOCUMENT_UPDATED,
 )
-from documents.backend.models import Document, DocumentStatus, SummaryStatus
+from documents.backend.models import Document, DocumentStatus, DocumentVersion, SummaryStatus
 from documents.backend.search.adapter import INDEX, to_document
 from identity.models import IdentityChannel
 from identity.services import IdentityService
@@ -101,6 +103,7 @@ class DocumentService(BaseService):
             description=description.strip(),
             file=stored,
         )
+        self._record_version(document, stored, actor=owner, note="Initial upload")
         if tags:
             self.set_tags(document=document, tag_names=tags)
         publish(DOCUMENT_CREATED, instance=document, actor=owner)
@@ -245,6 +248,103 @@ class DocumentService(BaseService):
             ],
             rows=rows,
             filters=filters_summary(filters or {}),
+        )
+
+    # ------------------------------------------------------------------ #
+    # Versioning — append-only; a new upload never overwrites the old bytes.
+    # ------------------------------------------------------------------ #
+    def add_version(
+        self,
+        *,
+        document: Document,
+        data: bytes,
+        filename: str,
+        content_type: str,
+        actor=None,
+        note: str = "",
+    ) -> DocumentVersion:
+        """Store a new file as its own StoredFile and make it the current
+        version. The previous versions stay exactly as they were."""
+        stored = self._store_document_file(document, data, filename, content_type, actor)
+        with transaction.atomic():
+            document.versions.filter(is_current=True).update(is_current=False)
+            version = DocumentVersion.objects.create(
+                tenant=document.tenant,
+                document=document,
+                version=self._next_version(document),
+                file=stored,
+                is_current=True,
+                note=note.strip(),
+                uploaded_by=actor,
+            )
+            document.file = stored
+            document.save(update_fields=["file", "updated_at"])
+        publish(DOCUMENT_UPDATED, instance=document, actor=actor)
+        self._index(document)
+        return version
+
+    def restore_version(self, *, document: Document, version: int, actor=None) -> DocumentVersion:
+        """Make an older version current again by appending a *new* current
+        version that points at the old bytes — history is never rewritten."""
+        source = document.versions.get(version=version)
+        if source.is_current:
+            raise ConflictError("That version is already the current one.")
+        with transaction.atomic():
+            document.versions.filter(is_current=True).update(is_current=False)
+            restored = DocumentVersion.objects.create(
+                tenant=document.tenant,
+                document=document,
+                version=self._next_version(document),
+                file=source.file,
+                is_current=True,
+                note=f"Restored from v{version}",
+                uploaded_by=actor,
+            )
+            document.file = source.file
+            document.save(update_fields=["file", "updated_at"])
+        publish(DOCUMENT_UPDATED, instance=document, actor=actor)
+        self._index(document)
+        return restored
+
+    def _record_version(
+        self, document: Document, stored, *, actor=None, note: str = ""
+    ) -> DocumentVersion:
+        return DocumentVersion.objects.create(
+            tenant=document.tenant,
+            document=document,
+            version=self._next_version(document),
+            file=stored,
+            is_current=True,
+            note=note.strip(),
+            uploaded_by=actor,
+        )
+
+    @staticmethod
+    def _next_version(document: Document) -> int:
+        return (document.versions.aggregate(top=Max("version"))["top"] or 0) + 1
+
+    def _store_document_file(self, document: Document, data, filename, content_type, actor):
+        resolved = resolve_location(
+            DocumentContext(
+                document_type=document.category,
+                document_name=safe_filename(filename),
+                tenant_slug=document.tenant.slug,
+                business_date=date.today(),
+            )
+        )
+        return StorageService().store(
+            data=data,
+            filename=filename,
+            content_type=content_type,
+            module="documents",
+            category=document.category,
+            tenant=document.tenant,
+            uploaded_by=actor,
+            metadata={"title": document.title},
+            key=resolved.key,
+            period_year=resolved.period_year,
+            period_month=resolved.period_month,
+            is_library=resolved.is_library,
         )
 
     # ------------------------------------------------------------------ #

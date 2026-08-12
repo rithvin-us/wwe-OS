@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, Sparkles } from "@bop/icons";
+import { ArrowLeft, Download, Eye, Sparkles } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
@@ -9,8 +9,15 @@ import type { ReactNode } from "react";
 
 import { DocumentActions } from "@/app/(platform)/dms/[id]/document-actions";
 import { DocumentTags } from "@/app/(platform)/dms/[id]/document-tags";
+import { DocumentVersions } from "@/app/(platform)/dms/[id]/document-versions";
 import { ApiRequestError } from "@/lib/api/envelope";
-import { formatFileSize, getDocument, type DocumentRecord } from "@/lib/dms";
+import {
+  canPreviewInline,
+  formatFileSize,
+  getDocument,
+  getDocumentVersions,
+  type DocumentRecord,
+} from "@/lib/dms";
 import { listTags } from "@/lib/tags";
 
 function StatusBadge({ document }: { document: DocumentRecord }) {
@@ -37,7 +44,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;
   }
-  const allTags = await listTags();
+  const [allTags, versions] = await Promise.all([listTags(), getDocumentVersions(id)]);
 
   return (
     <div className="space-y-8">
@@ -105,17 +112,31 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
               <span className="text-sm text-muted-foreground">Tags</span>
               <DocumentTags documentId={document.id} tags={document.tags} allTags={allTags} />
             </div>
-            <div className="pt-3">
-              <Button variant="secondary" size="sm" asChild className="w-full">
+            <div className="flex gap-2 pt-3">
+              {canPreviewInline(document.content_type) ? (
+                <Button variant="secondary" size="sm" asChild className="flex-1">
+                  <a href={`/api/dms/${document.id}/preview`} target="_blank" rel="noreferrer">
+                    <Eye aria-hidden />
+                    Preview
+                  </a>
+                </Button>
+              ) : null}
+              <Button variant="secondary" size="sm" asChild className="flex-1">
                 <a href={`/api/dms/${document.id}/download`}>
                   <Download aria-hidden />
-                  Download file
+                  Download
                 </a>
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <DocumentVersions
+        documentId={document.id}
+        versions={versions}
+        canWrite={document.status !== "archived"}
+      />
     </div>
   );
 }
