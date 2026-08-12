@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from notifications.classification import bucket_for
 from notifications.models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    bucket = serializers.SerializerMethodField()
+
     class Meta:
         model = Notification
         fields = (
@@ -13,6 +16,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "recipient",
             "category",
             "priority",
+            "bucket",
             "channel",
             "status",
             "title",
@@ -22,6 +26,11 @@ class NotificationSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("id", "status", "read_at", "created_at")
+
+    def get_bucket(self, obj: Notification) -> str:
+        """The operator-facing category (critical / action required /
+        informational / completed) the Notification Center groups by."""
+        return bucket_for(priority=obj.priority, data=obj.data)
 
 
 class NotificationCreateSerializer(serializers.Serializer):
