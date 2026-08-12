@@ -31,6 +31,8 @@ class FinanceConfig(AppConfig):
         # In-memory registrations (safe at import; no DB access).
         from finance.backend.demo_reset import register_demo_reset
         from finance.backend.document_types import register_document_types
+        from finance.backend.search.adapter import register_search
 
         register_document_types()
         register_demo_reset()
+        register_search()

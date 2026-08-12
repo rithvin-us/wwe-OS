@@ -478,6 +478,9 @@ class InvoiceService(BaseService):
         self, *, invoice: Invoice, actor, action: str, event: str, extra: dict[str, Any]
     ) -> None:
         from audit.services import AuditService
+        from finance.backend.search.adapter import INDEX as SEARCH_INDEX
+        from finance.backend.search.adapter import to_document as search_document
+        from search.services import SearchService
 
         AuditService().record(
             action=action,
@@ -495,5 +498,11 @@ class InvoiceService(BaseService):
             },
             actor=actor,
             tenant=invoice.tenant,
+        )
+        # Keep the search index in step with the register (generate/correct/
+        # cancel all pass through here). A cancelled bill stays indexed with its
+        # new status rather than disappearing.
+        SearchService().upsert(
+            index=SEARCH_INDEX, tenant=invoice.tenant, **search_document(invoice)
         )
         publish(event, instance=invoice, actor=actor)
