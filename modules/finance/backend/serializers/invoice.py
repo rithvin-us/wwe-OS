@@ -33,6 +33,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
     download_url = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
     generated_by = serializers.SerializerMethodField()
+    lifecycle_stage = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -63,6 +65,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "total",
             "amount_in_words",
             "status",
+            "payment_status",
+            "lifecycle_stage",
+            "is_overdue",
+            "due_date",
+            "sent_at",
+            "paid_at",
             "cancelled_at",
             "cancellation_reason",
             "revision",
@@ -83,6 +91,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_generated_by(self, obj: Invoice) -> str | None:
         return obj.generated_by.email if obj.generated_by else None
+
+    def get_lifecycle_stage(self, obj: Invoice) -> str:
+        return obj.lifecycle_stage()
+
+    def get_is_overdue(self, obj: Invoice) -> bool:
+        return obj.is_overdue()
+
+
+class DueDateSerializer(serializers.Serializer):
+    due_date = serializers.DateField()
 
 
 class InvoiceLineInputSerializer(serializers.Serializer):

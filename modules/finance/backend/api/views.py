@@ -13,6 +13,7 @@ from finance.backend.repositories.invoice import CustomerRepository, InvoiceRepo
 from finance.backend.serializers.invoice import (
     CancelInvoiceSerializer,
     CustomerSerializer,
+    DueDateSerializer,
     GenerateInvoiceSerializer,
     InvoiceSerializer,
 )
@@ -123,6 +124,10 @@ class InvoiceViewSet(BaseModelViewSet):
         "preview_document": "finance.invoice.generate",
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
+        "mark_sent": "finance.invoice.generate",
+        "mark_paid": "finance.invoice.generate",
+        "unmark_paid": "finance.invoice.generate",
+        "set_due_date": "finance.invoice.generate",
     }
 
     def get_queryset(self):
@@ -157,6 +162,33 @@ class InvoiceViewSet(BaseModelViewSet):
         payload.is_valid(raise_exception=True)
         invoice = InvoiceService().cancel(
             invoice=self.get_object(), actor=request.user, reason=payload.validated_data["reason"]
+        )
+        return Response(InvoiceSerializer(invoice).data)
+
+    # -- Lifecycle -------------------------------------------------------- #
+    @action(detail=True, methods=["post"], url_path="mark-sent")
+    def mark_sent(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().mark_sent(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="mark-paid")
+    def mark_paid(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().mark_paid(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="unmark-paid")
+    def unmark_paid(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().unmark_paid(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="due-date")
+    def set_due_date(self, request: Request, pk=None) -> Response:
+        payload = DueDateSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        invoice = InvoiceService().set_due_date(
+            invoice=self.get_object(),
+            actor=request.user,
+            due_date=payload.validated_data["due_date"],
         )
         return Response(InvoiceSerializer(invoice).data)
 
