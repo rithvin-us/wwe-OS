@@ -1,4 +1,13 @@
-import { Bot, Layers, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
+import {
+  Bot,
+  CalendarClock,
+  Inbox,
+  Layers,
+  LayoutDashboard,
+  Newspaper,
+  Settings,
+  type LucideIcon,
+} from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
@@ -60,6 +69,16 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
       ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
+    ],
+  },
+  {
+    // Cross-cutting operator surfaces — the "task cockpit" the whole company is
+    // run from, aggregating across the apps above rather than being one of them.
+    label: "WORKSPACE",
+    items: [
+      { name: "Briefing", href: "/briefing", icon: Newspaper },
+      { name: "Approvals", href: "/approvals", icon: Inbox },
+      { name: "Deadlines", href: "/deadlines", icon: CalendarClock },
     ],
   },
   {
