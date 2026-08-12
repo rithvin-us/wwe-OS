@@ -29,13 +29,12 @@ class FinanceConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         # In-memory registrations (safe at import; no DB access).
+        from finance.backend.deadlines import register_deadlines
         from finance.backend.demo_reset import register_demo_reset
         from finance.backend.document_types import register_document_types
         from finance.backend.models.invoice import Customer
         from finance.backend.search import customer as customer_search
         from finance.backend.search.adapter import register_search
-
-        from finance.backend.deadlines import register_deadlines
 
         register_document_types()
         register_demo_reset()

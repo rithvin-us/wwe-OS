@@ -2,7 +2,6 @@ import { Activity, ArrowLeft, Building2, MapPin, Receipt } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
-import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
