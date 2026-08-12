@@ -1,6 +1,7 @@
 import {
   Bot,
   CalendarClock,
+  DatabaseBackup,
   Inbox,
   Layers,
   LayoutDashboard,
@@ -85,6 +86,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "SYSTEM",
     items: [
       { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
+      { name: "Backups", href: "/backups", icon: DatabaseBackup, subtle: true },
       { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
       { name: "Services", href: "/services", icon: Layers, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
