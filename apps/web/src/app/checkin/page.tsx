@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, CheckCircle2, AlertCircle, RefreshCw } from "@bop/icons";
 
+import { useFaceCapture } from "@/hooks/use-face-capture";
+
 export default function PublicMobileCheckInPage() {
-  const [cameraActive, setCameraActive] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<{
     matched: boolean;
@@ -17,7 +18,7 @@ export default function PublicMobileCheckInPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const { cameraActive, geo, startCamera, stopCamera, captureBurst } = useFaceCapture(videoRef);
 
   useEffect(() => {
     startCamera();
@@ -26,60 +27,30 @@ export default function PublicMobileCheckInPage() {
     };
   }, []);
 
-  async function startCamera() {
-    try {
-      setErrorMessage(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: "user" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraActive(true);
-    } catch (err) {
-      console.warn("Camera access failed:", err);
-      setCameraActive(false);
-    }
-  }
-
-  function stopCamera() {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  }
-
   async function captureAndPunch() {
     if (!videoRef.current || !cameraActive) {
       setErrorMessage("Camera is not active. Please allow camera permissions.");
       return;
     }
 
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    setScanning(true);
+    setErrorMessage(null);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const selfieBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.92),
-    );
-
-    if (!selfieBlob) {
+    const burst = await captureBurst();
+    if (!burst) {
+      setScanning(false);
       setErrorMessage("Failed to capture photo frame.");
       return;
     }
 
-    setScanning(true);
-    setErrorMessage(null);
-
     const formData = new FormData();
-    formData.append("file", selfieBlob, "selfie.jpg");
+    formData.append("file", burst.primary, "selfie.jpg");
+    burst.frames.forEach((frame, i) => formData.append("frames", frame, `frame-${i}.jpg`));
+    if (geo) {
+      formData.append("lat", String(geo.lat));
+      formData.append("lon", String(geo.lon));
+      formData.append("accuracy", String(geo.accuracy));
+    }
 
     try {
       const res = await fetch("/api/hr/attendance/checkin", {
@@ -164,7 +135,9 @@ export default function PublicMobileCheckInPage() {
           {scanning ? (
             <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
               <RefreshCw className="size-8 animate-spin text-emerald-400" />
-              <span className="text-sm font-semibold tracking-wide">Processing Check-in...</span>
+              <span className="text-sm font-semibold tracking-wide">
+                Hold still, checking in...
+              </span>
             </div>
           ) : null}
         </div>

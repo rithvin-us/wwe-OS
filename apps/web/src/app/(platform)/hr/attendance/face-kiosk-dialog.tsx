@@ -13,11 +13,12 @@ import {
 } from "@bop/ui/components/dialog";
 import { toast } from "sonner";
 
+import { useFaceCapture } from "@/hooks/use-face-capture";
+
 import { checkInFace } from "../actions";
 
 export function FaceKioskDialog() {
   const [open, setOpen] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<{
     matched: boolean;
@@ -30,7 +31,7 @@ export function FaceKioskDialog() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const { cameraActive, geo, startCamera, stopCamera, captureBurst } = useFaceCapture(videoRef);
 
   // Start webcam when modal opens
   useEffect(() => {
@@ -43,60 +44,30 @@ export function FaceKioskDialog() {
     }
   }, [open]);
 
-  async function startCamera() {
-    try {
-      setErrorMessage(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraActive(true);
-    } catch (err) {
-      console.warn("Camera access failed:", err);
-      setCameraActive(false);
-    }
-  }
-
-  function stopCamera() {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  }
-
   async function captureAndPunch() {
     if (!videoRef.current || !cameraActive) {
       toast.error("Webcam is not active.");
       return;
     }
 
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    setScanning(true);
+    setErrorMessage(null);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const selfieBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.92),
-    );
-
-    if (!selfieBlob) {
+    const burst = await captureBurst();
+    if (!burst) {
+      setScanning(false);
       toast.error("Failed to capture webcam frame.");
       return;
     }
 
-    setScanning(true);
-    setErrorMessage(null);
-
     const formData = new FormData();
-    formData.append("file", selfieBlob, "selfie.jpg");
+    formData.append("file", burst.primary, "selfie.jpg");
+    burst.frames.forEach((frame, i) => formData.append("frames", frame, `frame-${i}.jpg`));
+    if (geo) {
+      formData.append("lat", String(geo.lat));
+      formData.append("lon", String(geo.lon));
+      formData.append("accuracy", String(geo.accuracy));
+    }
 
     const res = await checkInFace(formData);
     setScanning(false);
