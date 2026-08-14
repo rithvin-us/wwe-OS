@@ -7,6 +7,7 @@ import { CompanyForm } from "@/app/(platform)/settings/company-form";
 import { PasswordForm } from "@/app/(platform)/settings/password-form";
 import { ProfileForm } from "@/app/(platform)/settings/profile-form";
 import { FaceEnrollmentCard } from "@/app/(platform)/settings/face-enrollment-card";
+import { SettingsTopologyDiagram } from "@/app/(platform)/settings/settings-topology-diagram";
 import { getCompany, getMyProfile } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -19,29 +20,36 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Settings"
-        description="Manage your profile, company details, biometric enrollment, and security."
+        title="Settings & System Architecture"
+        description="Manage your user profile, biometric face enrollment, company details, and monitor live platform architecture topology."
       />
 
+      {/* Interactive System Topology Diagram */}
+      <SettingsTopologyDiagram />
+
+      {/* Profile Configuration */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Your profile</CardTitle>
-          <CardDescription>How you appear and your personal preferences.</CardDescription>
+          <CardTitle className="text-base">Your Profile</CardTitle>
+          <CardDescription>
+            How you appear across the workspace and your personal preferences.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm profile={profile} />
         </CardContent>
       </Card>
 
-      {/* Admin Biometric Face ID Registration */}
+      {/* Biometric Face ID Registration & AI Engine Status */}
       <FaceEnrollmentCard />
 
+      {/* Company Profile Configuration */}
       {company ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Company</CardTitle>
+            <CardTitle className="text-base font-semibold">Company & Tenant Details</CardTitle>
             <CardDescription>
-              Your company details, used across the platform and on reports.
+              Your company details used across purchase orders, documents, invoices, and reports.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -50,27 +58,31 @@ export default async function SettingsPage() {
         </Card>
       ) : null}
 
+      {/* Security & Credentials */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Security</CardTitle>
-          <CardDescription>Change the password you use to sign in.</CardDescription>
+          <CardTitle className="text-base">Security & Authentication</CardTitle>
+          <CardDescription>
+            Change your account password and review device authentication policies.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <PasswordForm />
         </CardContent>
       </Card>
 
+      {/* Legal & Compliance */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Legal</CardTitle>
+          <CardTitle className="text-base">Legal & Privacy Compliance</CardTitle>
           <CardDescription>
-            What the platform collects and how it's used, including the attendance kiosk's face and
-            location capture.
+            What the platform collects and how biometric face templates and location metadata are
+            securely handled.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/privacy" className="text-sm font-medium text-primary hover:underline">
-            View privacy policy
+            View platform privacy policy & data retention terms →
           </Link>
         </CardContent>
       </Card>
