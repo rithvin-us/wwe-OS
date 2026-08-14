@@ -7,6 +7,7 @@ import { CompanyForm } from "@/app/(platform)/settings/company-form";
 import { PasswordForm } from "@/app/(platform)/settings/password-form";
 import { ProfileForm } from "@/app/(platform)/settings/profile-form";
 import { FaceEnrollmentCard } from "@/app/(platform)/settings/face-enrollment-card";
+import { SettingsTopologyDiagram } from "@/app/(platform)/settings/settings-topology-diagram";
 import { getCompany, getMyProfile } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -17,11 +18,14 @@ export default async function SettingsPage() {
   const [profile, company] = await Promise.all([getMyProfile(), getCompany()]);
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="space-y-8 max-w-6xl">
       <PageHeader
         title="Settings"
-        description="Manage your profile, company details, biometric enrollment, and security preferences."
+        description="Manage your profile, company details, biometric enrollment, and system node architecture."
       />
+
+      {/* High-End System Topology Diagram */}
+      <SettingsTopologyDiagram />
 
       {/* Your Profile */}
       <Card>
