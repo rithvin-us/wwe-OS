@@ -26,8 +26,14 @@ services:
         sync: false # Set to your Neon PostgreSQL connection string
       - key: CORS_ALLOWED_ORIGINS
         value: https://wwe-os.vercel.app
+      # Service-to-service ingestion secret (Telegram bot → backend). MUST be
+      # in "name:token" format — see platform/shared/service_auth.py, which
+      # skips any entry without a colon. generateValue produces a bare string
+      # with no "name:" prefix, so it CANNOT be used here. Set manually to:
+      #   telegram-bot:<LONG_RANDOM_SECRET>
+      # and give the bot's PLATFORM_SERVICE_TOKEN the <LONG_RANDOM_SECRET> half.
       - key: INGESTION_SERVICE_TOKENS
-        generateValue: true
+        sync: false
 
   # 2. Telegram Ingestion Bot (Worker Service)
   - type: worker
@@ -45,13 +51,17 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      # Full base URL of the backend. `fromService … property: host` returns a
+      # scheme-less host (wwe-os-backend.onrender.com), which httpx rejects
+      # (the bot passes this straight into httpx.AsyncClient). Set the full
+      # https URL — matches vercel_env's INTERNAL_API_URL. Swap for a custom
+      # domain if you front the backend with one.
       - key: PLATFORM_API_URL
-        fromService:
-          type: web
-          name: wwe-os-backend
-          property: host
+        value: https://wwe-os-backend.onrender.com
+      # The token half of the backend's INGESTION_SERVICE_TOKENS. If the
+      # backend has INGESTION_SERVICE_TOKENS=telegram-bot:SECRET, set this to
+      # SECRET (the bot sends "Authorization: Service SECRET"). Cannot be
+      # auto-wired from the backend: the backend value carries a "telegram-bot:"
+      # prefix that must NOT be sent by the bot.
       - key: PLATFORM_SERVICE_TOKEN
-        fromService:
-          type: web
-          name: wwe-os-backend
-          property: INGESTION_SERVICE_TOKENS
+        sync: false
