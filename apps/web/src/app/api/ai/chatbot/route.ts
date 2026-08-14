@@ -65,7 +65,15 @@ export async function POST(request: Request) {
     const lowerPrompt = prompt.toLowerCase();
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // SaaS Production Path 1: Call Google Gemini API (gemini-2.5-flash) if GEMINI_API_KEY is present
+    // Dynamic RAG Context Search: Retrieve matching R2 indexed documents for prompt
+    const promptKeywords = lowerPrompt.split(/\W+/).filter((w) => w.length > 2);
+    const retrievedRAGDocs = RITHU_DOCUMENTS_INDEX.filter((doc) => {
+      const fullText = `${doc.title} ${doc.category} ${doc.snippet}`.toLowerCase();
+      return promptKeywords.some((k) => fullText.includes(k));
+    });
+    const activeRAGDocs = retrievedRAGDocs.length > 0 ? retrievedRAGDocs : RITHU_DOCUMENTS_INDEX;
+
+    // SaaS Production Path 1: Call Google Gemini API (gemini-2.0-flash) if GEMINI_API_KEY is present
     if (apiKey) {
       try {
         const contentsParts: Array<Record<string, unknown>> = [];
@@ -86,8 +94,8 @@ export async function POST(request: Request) {
           });
         }
 
-        const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI assistant for Water Works Engineering (WWE OS).
-Answer the user naturally, concisely, and warmly. Never use cold or robotic AI jargon.
+        const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI RAGbot assistant for Water Works Engineering (WWE OS).
+Answer the user naturally, concisely, and warmly. Base your answer on the retrieved document context when available.
 
 Registered Company & Entities Context:
 - Primary Company: Water Works Engineering (WWE OS)
@@ -102,8 +110,8 @@ Please inspect this file carefully, explain what it is, extract key details if i
     : ""
 }
 
-Indexed Knowledge Documents (Rithu Files):
-${JSON.stringify(RITHU_DOCUMENTS_INDEX, null, 2)}
+Retrieved R2 Cloudflare Indexed Knowledge Documents (RAG Context):
+${JSON.stringify(activeRAGDocs, null, 2)}
 
 Current Live Company Figures:
 - Revenue: ₹21,50,000 (+14.2% ↑)
