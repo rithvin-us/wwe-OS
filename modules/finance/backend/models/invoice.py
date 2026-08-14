@@ -44,6 +44,23 @@ class InvoiceStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
 
 
+class PaymentStatus(models.TextChoices):
+    UNPAID = "unpaid", "Unpaid"
+    PAID = "paid", "Paid"
+
+
+class LifecycleStage(models.TextChoices):
+    """The operator-facing lifecycle, derived (never stored) from the register
+    status and the payment layer. Orthogonal to `InvoiceStatus`, which stays the
+    legal register state (issued/cancelled) and is never widened."""
+
+    GENERATED = "generated", "Generated"
+    SENT = "sent", "Sent"
+    PAID = "paid", "Paid"
+    OVERDUE = "overdue", "Overdue"
+    CANCELLED = "cancelled", "Cancelled"
+
+
 class Customer(TenantOwnedModel):
     """Billing master: who the bill is addressed to, and which site it covers.
 
@@ -148,6 +165,19 @@ class Invoice(TenantOwnedModel):
     cancellation_reason = models.TextField(blank=True, default="")
     revision = models.PositiveSmallIntegerField(default=1)
 
+    # --- Lifecycle layer, orthogonal to the register `status` above. An issued
+    # bill can be sent to the customer and later paid; overdue is derived from
+    # `due_date`. None of this changes the legal register state.
+    payment_status = models.CharField(
+        max_length=10,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.UNPAID,
+        db_index=True,
+    )
+    due_date = models.DateField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
     file = models.ForeignKey(
         "storage.StoredFile",
         on_delete=models.PROTECT,
@@ -194,6 +224,31 @@ class Invoice(TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.number} · {self.consignee_name}"
+
+    def is_overdue(self, *, today=None) -> bool:
+        """Unpaid, issued, and past its due date. Derived — never stored, so it
+        is always correct for the day it is asked."""
+        from datetime import date
+
+        if self.status == InvoiceStatus.CANCELLED:
+            return False
+        if self.payment_status == PaymentStatus.PAID or self.due_date is None:
+            return False
+        return self.due_date < (today or date.today())
+
+    def lifecycle_stage(self, *, today=None) -> str:
+        """The operator-facing stage, derived from the register status and the
+        payment layer. Precedence: cancelled → paid → overdue → sent →
+        generated."""
+        if self.status == InvoiceStatus.CANCELLED:
+            return LifecycleStage.CANCELLED
+        if self.payment_status == PaymentStatus.PAID:
+            return LifecycleStage.PAID
+        if self.is_overdue(today=today):
+            return LifecycleStage.OVERDUE
+        if self.sent_at is not None:
+            return LifecycleStage.SENT
+        return LifecycleStage.GENERATED
 
 
 class InvoiceLine(BaseModel):

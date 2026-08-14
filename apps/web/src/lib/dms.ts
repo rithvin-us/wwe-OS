@@ -20,3 +20,40 @@ export async function getDocuments(
 export async function getDocument(id: string) {
   return djangoFetch<DocumentRecord>(`/api/v1/documents/documents/${id}/`);
 }
+
+export interface DocumentVersionRecord {
+  id: string;
+  version: number;
+  is_current: boolean;
+  note: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  checksum: string;
+  uploaded_by_email: string | null;
+  created_at: string;
+}
+
+export async function getDocumentVersions(id: string) {
+  try {
+    return await djangoFetch<DocumentVersionRecord[]>(
+      `/api/v1/documents/documents/${id}/versions/`,
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** Types the browser can render inline; anything else previews as a download. */
+const INLINE_PREVIEW_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "text/plain",
+]);
+
+export function canPreviewInline(contentType: string): boolean {
+  return INLINE_PREVIEW_TYPES.has(contentType);
+}

@@ -13,8 +13,31 @@ from shared.permissions import HasPlatformPermission
 from tenancy.services import TenancyService
 
 from ai import prompts
+from ai.assistant import AssistantService
 from ai.models import AIUsage
 from ai.services import AIService
+
+
+class AssistantSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=500)
+
+
+class AssistantView(APIView):
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "ai.use"
+
+    @extend_schema(
+        tags=["ai"],
+        request=AssistantSerializer,
+        responses={200: OpenApiResponse(description="A grounded answer with source records.")},
+    )
+    def post(self, request: Request) -> Response:
+        payload = AssistantSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        answer = AssistantService().answer(
+            user=request.user, question=payload.validated_data["question"]
+        )
+        return Response(answer)
 
 
 class GenerateSerializer(serializers.Serializer):

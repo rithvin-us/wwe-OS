@@ -32,6 +32,8 @@ class HrConfig(AppConfig):
         post_migrate.connect(_sync_permissions, sender=self)
 
         # In-memory registration (safe at import; no DB access).
+        from hr.backend.approvals import register_approvals
         from hr.backend.search.adapter import register_search
 
         register_search()
+        register_approvals()

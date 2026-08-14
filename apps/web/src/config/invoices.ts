@@ -5,6 +5,27 @@
 export type InvoiceType = "amc" | "sales";
 export type TaxMode = "cgst_sgst" | "igst";
 export type InvoiceStatus = "issued" | "cancelled";
+export type PaymentStatus = "unpaid" | "paid";
+export type LifecycleStage = "generated" | "sent" | "paid" | "overdue" | "cancelled";
+
+export const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
+  generated: "Generated",
+  sent: "Sent",
+  paid: "Paid",
+  overdue: "Overdue",
+  cancelled: "Cancelled",
+};
+
+export const LIFECYCLE_BADGE_VARIANT: Record<
+  LifecycleStage,
+  "secondary" | "outline" | "success" | "destructive"
+> = {
+  generated: "outline",
+  sent: "secondary",
+  paid: "success",
+  overdue: "destructive",
+  cancelled: "secondary",
+};
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   issued: "Issued",
@@ -82,6 +103,12 @@ export interface Invoice {
   total: string;
   amount_in_words: string;
   status: InvoiceStatus;
+  payment_status: PaymentStatus;
+  lifecycle_stage: LifecycleStage;
+  is_overdue: boolean;
+  due_date: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
   cancelled_at: string | null;
   cancellation_reason: string;
   revision: number;

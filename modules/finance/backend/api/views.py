@@ -13,9 +13,11 @@ from finance.backend.repositories.invoice import CustomerRepository, InvoiceRepo
 from finance.backend.serializers.invoice import (
     CancelInvoiceSerializer,
     CustomerSerializer,
+    DueDateSerializer,
     GenerateInvoiceSerializer,
     InvoiceSerializer,
 )
+from finance.backend.services.customer_overview import CustomerOverviewService
 from finance.backend.services.invoice import InvoiceService
 from finance.backend.services.numbering import (
     InvoiceNumberingService,
@@ -24,11 +26,14 @@ from finance.backend.services.numbering import (
 )
 from finance.backend.services.pdf import CONTENT_TYPE as PDF_CONTENT_TYPE
 from finance.backend.services.renderer import CONTENT_TYPE
-from rest_framework import status
+from finance.backend.services.site_directory import SiteDirectoryService
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from shared.exceptions import NotFoundError
+from shared.permissions import HasPlatformPermission
 from shared.views import BaseModelViewSet
 
 
@@ -48,6 +53,7 @@ class CustomerViewSet(BaseModelViewSet):
     required_permissions = {
         "list": "finance.invoice.read",
         "retrieve": "finance.invoice.read",
+        "overview": "finance.invoice.read",
         "create": "finance.customer.manage",
         "partial_update": "finance.customer.manage",
         "destroy": "finance.customer.manage",
@@ -60,6 +66,39 @@ class CustomerViewSet(BaseModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(tenant=getattr(self.request.user, "tenant", None))
+
+    @action(detail=True, methods=["get"])
+    def overview(self, request: Request, pk=None) -> Response:
+        """Customer 360 — profile, financials, derived sites, recent invoices,
+        AMC and activity, aggregated read-only from existing data."""
+        customer = self.get_object()
+        return Response(CustomerOverviewService().overview(customer=customer))
+
+
+class SiteViewSet(viewsets.ViewSet):
+    """Site 360 — a read-only, facility-centric view derived from the bill
+    register. Sites are not a model of their own (see SiteDirectoryService);
+    this surface just lists the facilities invoices were raised against and
+    assembles one site's picture on demand."""
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "finance.invoice.read"
+
+    def list(self, request: Request) -> Response:
+        tenant = _tenant_from(request.user)
+        return Response(SiteDirectoryService().list_sites(tenant=tenant))
+
+    @action(detail=False, methods=["get"])
+    def overview(self, request: Request) -> Response:
+        tenant = _tenant_from(request.user)
+        name = request.query_params.get("name", "")
+        return Response(SiteDirectoryService().site_overview(tenant=tenant, name=name))
+
+
+def _tenant_from(user):
+    """The tenant object to scope by, or None when untenanted (superuser / the
+    single-operator setup) — mirrors `_tenant_id`."""
+    return None if (user.is_superuser or user.tenant_id is None) else getattr(user, "tenant", None)
 
 
 class InvoiceViewSet(BaseModelViewSet):
@@ -85,6 +124,10 @@ class InvoiceViewSet(BaseModelViewSet):
         "preview_document": "finance.invoice.generate",
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
+        "mark_sent": "finance.invoice.generate",
+        "mark_paid": "finance.invoice.generate",
+        "unmark_paid": "finance.invoice.generate",
+        "set_due_date": "finance.invoice.generate",
     }
 
     def get_queryset(self):
@@ -119,6 +162,33 @@ class InvoiceViewSet(BaseModelViewSet):
         payload.is_valid(raise_exception=True)
         invoice = InvoiceService().cancel(
             invoice=self.get_object(), actor=request.user, reason=payload.validated_data["reason"]
+        )
+        return Response(InvoiceSerializer(invoice).data)
+
+    # -- Lifecycle -------------------------------------------------------- #
+    @action(detail=True, methods=["post"], url_path="mark-sent")
+    def mark_sent(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().mark_sent(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="mark-paid")
+    def mark_paid(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().mark_paid(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="unmark-paid")
+    def unmark_paid(self, request: Request, pk=None) -> Response:
+        invoice = InvoiceService().unmark_paid(invoice=self.get_object(), actor=request.user)
+        return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=["post"], url_path="due-date")
+    def set_due_date(self, request: Request, pk=None) -> Response:
+        payload = DueDateSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        invoice = InvoiceService().set_due_date(
+            invoice=self.get_object(),
+            actor=request.user,
+            due_date=payload.validated_data["due_date"],
         )
         return Response(InvoiceSerializer(invoice).data)
 

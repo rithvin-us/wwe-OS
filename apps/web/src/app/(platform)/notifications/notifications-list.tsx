@@ -15,13 +15,18 @@ import {
   markReadAction,
 } from "@/app/(platform)/notifications/actions";
 import {
-  formatRelative,
+  BUCKET_BADGE_VARIANT,
+  BUCKET_LABELS,
+  NOTIFICATION_BUCKETS,
+  type NotificationBucket,
   type NotificationRecord,
   type NotificationStatus,
+  formatRelative,
   notificationHref,
 } from "@/lib/notifications-constants";
 
 type Filter = "all" | "unread" | NotificationStatus;
+type BucketFilter = "all" | NotificationBucket;
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
@@ -67,10 +72,8 @@ function Row({
           ) : (
             <span className="font-medium text-foreground">{item.title}</span>
           )}
-          {item.priority === "high" || item.priority === "urgent" ? (
-            <Badge variant="warning" className="capitalize">
-              {item.priority}
-            </Badge>
+          {item.bucket === "critical" || item.bucket === "action_required" ? (
+            <Badge variant={BUCKET_BADGE_VARIANT[item.bucket]}>{BUCKET_LABELS[item.bucket]}</Badge>
           ) : null}
         </div>
         {item.body ? <p className="text-sm text-muted-foreground">{item.body}</p> : null}
@@ -109,9 +112,18 @@ function Row({
 export function NotificationsList({ notifications }: { notifications: NotificationRecord[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [bucket, setBucket] = useState<BucketFilter>("all");
   const [pending, startTransition] = useTransition();
-  const rows = notifications.filter((item) => match(item, filter));
+  const rows = notifications.filter(
+    (item) => match(item, filter) && (bucket === "all" || item.bucket === bucket),
+  );
   const hasUnread = notifications.some((item) => item.status === "unread");
+
+  // Count per bucket across the not-archived set, so a tab can show how many
+  // things actually need attention.
+  const visibleForCounts = notifications.filter((item) => item.status !== "archived");
+  const bucketCount = (value: NotificationBucket) =>
+    visibleForCounts.filter((item) => item.bucket === value).length;
 
   function run(action: () => Promise<{ ok: boolean; message: string }>) {
     startTransition(async () => {
@@ -127,6 +139,32 @@ export function NotificationsList({ notifications }: { notifications: Notificati
 
   return (
     <section className="space-y-3">
+      <div className="flex flex-wrap gap-1.5 border-b border-border pb-3">
+        <Button
+          size="sm"
+          variant={bucket === "all" ? "secondary" : "ghost"}
+          onClick={() => setBucket("all")}
+        >
+          All
+        </Button>
+        {NOTIFICATION_BUCKETS.map((value) => {
+          const count = bucketCount(value);
+          return (
+            <Button
+              key={value}
+              size="sm"
+              variant={bucket === value ? "secondary" : "ghost"}
+              onClick={() => setBucket(value)}
+            >
+              {BUCKET_LABELS[value]}
+              {count > 0 ? (
+                <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{count}</span>
+              ) : null}
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           {FILTERS.map((option) => (

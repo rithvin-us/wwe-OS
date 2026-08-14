@@ -6,6 +6,8 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import {
   INVOICE_TYPE_LABELS,
+  LIFECYCLE_BADGE_VARIANT,
+  LIFECYCLE_LABELS,
   TAX_MODE_LABELS,
   formatInvoiceDate,
   formatRupees,
@@ -148,7 +150,16 @@ export default async function InvoicesPage() {
                           ) : null}
                         </>
                       ) : (
-                        <Badge variant="success">Issued</Badge>
+                        <>
+                          <Badge variant={LIFECYCLE_BADGE_VARIANT[invoice.lifecycle_stage]}>
+                            {LIFECYCLE_LABELS[invoice.lifecycle_stage]}
+                          </Badge>
+                          {invoice.due_date && invoice.lifecycle_stage !== "paid" ? (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              Due {formatInvoiceDate(invoice.due_date)}
+                            </span>
+                          ) : null}
+                        </>
                       )}
                     </td>
                     <td className="p-3">

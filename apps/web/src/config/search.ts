@@ -8,6 +8,7 @@ export const INDEX_LABELS: Record<string, string> = {
   purchase: "Purchases",
   invoices: "Invoices",
   employees: "Employees",
+  customers: "Customers",
 };
 
 export function indexLabel(index: string): string {
