@@ -41,12 +41,31 @@ if str(REPO_ROOT / "modules") not in sys.path:
 # --------------------------------------------------------------------------- #
 # Core
 # --------------------------------------------------------------------------- #
-SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str(
-    "SECRET_KEY", default="django-insecure-development-placeholder-key-change-in-production-12345"
+_INSECURE_SECRET_KEY = (
+    "django-insecure-development-placeholder-key-change-in-production-12345"
 )
+SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", default=_INSECURE_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")
+
+# Fail fast in production rather than silently shipping the development
+# placeholder secret (which would let anyone forge a valid JWT — it is the JWT
+# signing key). Scoped to APP_ENV=production so tests and local dev, which
+# legitimately run on the placeholder, are unaffected. A guard here beats a
+# runtime surprise: the process refuses to boot instead of coming up insecure.
+if APP_ENV == "production":
+    from config.env import ImproperlyConfigured
+
+    if not SECRET_KEY or SECRET_KEY == _INSECURE_SECRET_KEY or SECRET_KEY.startswith(
+        "django-insecure-"
+    ):
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set to a strong, unique value in production "
+            "(the development placeholder is not allowed when APP_ENV=production)."
+        )
+    if DEBUG:
+        raise ImproperlyConfigured("DJANGO_DEBUG must be off (0) when APP_ENV=production.")
 
 # Shared secrets for service-to-service ingestion (Telegram bot, email
 # service, …). Format: "name:token,name:token". See shared/service_auth.py.
@@ -214,10 +233,24 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "shared.validators.PasswordComplexityValidator"},
 ]
 
-# Brute-force / account-locking policy (enforced in auth services).
+# Brute-force / account-locking policy (enforced in auth services). Failures
+# are counted per identity (email, or IP for face login) within
+# AUTH_LOCKOUT_WINDOW_SECONDS; once AUTH_LOCKOUT_MAX_ATTEMPTS is reached the
+# identity is throttled with an *exponential backoff* rather than a fixed hard
+# lock: the wait starts at the base, multiplies by the factor on each further
+# failure, and is capped by the max so a real account can never be locked out
+# permanently. All thresholds are configurable.
 AUTH_LOCKOUT_MAX_ATTEMPTS = env_int("AUTH_LOCKOUT_MAX_ATTEMPTS", 5)
 AUTH_LOCKOUT_WINDOW_SECONDS = env_int("AUTH_LOCKOUT_WINDOW_SECONDS", 900)
+# The first backoff, applied the moment the threshold is crossed. Kept as
+# AUTH_LOCKOUT_DURATION_SECONDS for backward compatibility with existing
+# deployments/env files that already set it.
 AUTH_LOCKOUT_DURATION_SECONDS = env_int("AUTH_LOCKOUT_DURATION_SECONDS", 900)
+AUTH_LOCKOUT_BASE_BACKOFF_SECONDS = env_int(
+    "AUTH_LOCKOUT_BASE_BACKOFF_SECONDS", AUTH_LOCKOUT_DURATION_SECONDS
+)
+AUTH_LOCKOUT_BACKOFF_FACTOR = float(env_str("AUTH_LOCKOUT_BACKOFF_FACTOR", "2.0"))
+AUTH_LOCKOUT_MAX_BACKOFF_SECONDS = env_int("AUTH_LOCKOUT_MAX_BACKOFF_SECONDS", 86400)
 PASSWORD_RESET_TOKEN_TTL_SECONDS = env_int("PASSWORD_RESET_TOKEN_TTL_SECONDS", 3600)
 EMAIL_VERIFICATION_TTL_SECONDS = env_int("EMAIL_VERIFICATION_TTL_SECONDS", 86400)
 
@@ -404,6 +437,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGE_BACKEND = env_str("STORAGE_BACKEND", "local")
 STORAGE_LOCAL_PATH = env_str("STORAGE_LOCAL_PATH", str(BASE_DIR / ".storage"))
 STORAGE_MAX_UPLOAD_MB = env_int("STORAGE_MAX_UPLOAD_MB", 25)
+# Inspect uploaded bytes (magic numbers), not just the caller-declared MIME:
+# block native executables and reject files whose content contradicts their
+# declared type. On by default; disable only for a backend that must accept
+# genuinely opaque bytes.
+STORAGE_VERIFY_CONTENT = env_bool("STORAGE_VERIFY_CONTENT", default=True)
 STORAGE_ALLOWED_TYPES = set(
     env_list(
         "STORAGE_ALLOWED_TYPES",

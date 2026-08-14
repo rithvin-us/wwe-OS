@@ -42,21 +42,43 @@ from auth.models import (
 
 class AuthService(BaseService):
     # ---------------------------------------------------------------- lockout
+    # Failed attempts are counted per identity (email for password login, IP
+    # for face login). Once the count reaches AUTH_LOCKOUT_MAX_ATTEMPTS the
+    # identity is throttled, but instead of a fixed "hard" lock the wait grows
+    # exponentially with each further failure and always self-expires — a
+    # legitimate user who mistypes a few times waits a short, escalating delay,
+    # while an attacker faces a rapidly widening one, capped so it can never
+    # become a permanent denial of service against a real account.
+    def _backoff_seconds(self, failure_count: int) -> int:
+        overflow = max(0, failure_count - settings.AUTH_LOCKOUT_MAX_ATTEMPTS)
+        duration = settings.AUTH_LOCKOUT_BASE_BACKOFF_SECONDS * (
+            settings.AUTH_LOCKOUT_BACKOFF_FACTOR**overflow
+        )
+        return int(min(duration, settings.AUTH_LOCKOUT_MAX_BACKOFF_SECONDS))
+
+    def _locked(self, key: str) -> bool:
+        return cache.get(key, 0) >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS
+
+    def _register_failure(self, key: str) -> None:
+        try:
+            count = cache.incr(key)
+        except ValueError:
+            # First failure in a fresh window: seed the counter with the
+            # counting window TTL. It only escalates to a backoff TTL once the
+            # threshold is crossed below.
+            cache.set(key, 1, timeout=settings.AUTH_LOCKOUT_WINDOW_SECONDS)
+            count = 1
+        if count >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS:
+            cache.set(key, count, timeout=self._backoff_seconds(count))
+
     def _lockout_key(self, email: str) -> str:
         return f"auth:lockout:{email.lower()}"
 
     def _is_locked(self, email: str) -> bool:
-        return cache.get(self._lockout_key(email), 0) >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS
+        return self._locked(self._lockout_key(email))
 
     def _record_failure(self, email: str) -> None:
-        key = self._lockout_key(email)
-        try:
-            count = cache.incr(key)
-        except ValueError:
-            cache.set(key, 1, timeout=settings.AUTH_LOCKOUT_WINDOW_SECONDS)
-            count = 1
-        if count >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS:
-            cache.set(key, count, timeout=settings.AUTH_LOCKOUT_DURATION_SECONDS)
+        self._register_failure(self._lockout_key(email))
 
     def _clear_failures(self, email: str) -> None:
         cache.delete(self._lockout_key(email))
@@ -64,22 +86,15 @@ class AuthService(BaseService):
     # ----------------------------------------------------------- face lockout
     # Keyed on IP, not email: a face-login attempt has no claimed email up
     # front (identity comes FROM the match), so the normal per-email lockout
-    # above cannot apply here.
+    # above cannot apply here. Same exponential-backoff policy.
     def _face_lockout_key(self, ip: str | None) -> str:
         return f"auth:face_lockout:{ip or 'unknown'}"
 
     def _is_face_locked(self, ip: str | None) -> bool:
-        return cache.get(self._face_lockout_key(ip), 0) >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS
+        return self._locked(self._face_lockout_key(ip))
 
     def _record_face_failure(self, ip: str | None) -> None:
-        key = self._face_lockout_key(ip)
-        try:
-            count = cache.incr(key)
-        except ValueError:
-            cache.set(key, 1, timeout=settings.AUTH_LOCKOUT_WINDOW_SECONDS)
-            count = 1
-        if count >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS:
-            cache.set(key, count, timeout=settings.AUTH_LOCKOUT_DURATION_SECONDS)
+        self._register_failure(self._face_lockout_key(ip))
 
     def _clear_face_failures(self, ip: str | None) -> None:
         cache.delete(self._face_lockout_key(ip))
