@@ -20,6 +20,7 @@ from shared.events import Events, publish
 from shared.exceptions import ConflictError, ValidationError
 from shared.services import BaseService
 
+from storage.content import looks_executable, matches_declared_type
 from storage.models import ScanStatus, StoredFile
 from storage.providers import get_provider
 
@@ -88,6 +89,25 @@ class StorageService(BaseService):
             raise ValidationError(
                 detail={"file": [f"Content type '{content_type}' is not allowed."]}
             )
+
+        # Extension and declared MIME are caller-controlled and spoofable, so
+        # the allow-list check above is necessary but not sufficient. Inspect
+        # the actual bytes: refuse executables outright and require the content
+        # to back up its declared type when we can fingerprint it. Toggleable
+        # for the rare backend that must accept opaque bytes.
+        if getattr(settings, "STORAGE_VERIFY_CONTENT", True):
+            if looks_executable(data):
+                raise ValidationError(
+                    detail={"file": ["Executable files cannot be uploaded."]}
+                )
+            if not matches_declared_type(data, content_type):
+                raise ValidationError(
+                    detail={
+                        "file": [
+                            f"File content does not match the declared type '{content_type}'."
+                        ]
+                    }
+                )
 
         name = safe_filename(filename)
         digest = hashlib.sha256(data).hexdigest()

@@ -86,7 +86,7 @@ def test_empty_period_generates_nothing_but_does_not_fail(tenant):
 
 def test_non_pdf_files_are_excluded_from_the_merge(tenant):
     StorageService().store(
-        data=b"not a pdf",
+        data=b"\xff\xd8\xff\xe0 not a pdf, a jpeg",
         filename="photo.jpg",
         content_type="image/jpeg",
         module="test",

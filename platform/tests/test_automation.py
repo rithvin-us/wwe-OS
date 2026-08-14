@@ -42,7 +42,7 @@ def tag(tenant):
 @pytest.fixture
 def tagged_asset(tenant, tag):
     stored = StorageService().store(
-        data=b"warranty pdf bytes",
+        data=b"%PDF-1.4 warranty pdf bytes",
         filename="warranty.pdf",
         content_type="application/pdf",
         module="assets",

@@ -27,6 +27,18 @@ def test_register_creates_user_and_sends_verification(api):
     assert len(mail.outbox) == 1
 
 
+def test_register_rejects_oversized_password(api):
+    """A multi-megabyte password is rejected by schema validation (422)
+    before it ever reaches the CPU-heavy Argon2 hasher."""
+    resp = api.post(
+        REGISTER,
+        {"email": "dos@acme.test", "username": "dos", "password": "A1!" + "x" * 5000},
+        format="json",
+    )
+    assert resp.status_code == 422
+    assert not User.objects.filter(email="dos@acme.test").exists()
+
+
 def test_first_registration_bootstraps_company_and_becomes_owner(api):
     from tenancy.models import Tenant
 
@@ -110,6 +122,23 @@ def test_account_locks_after_repeated_failures(api, make_user):
     # Even the correct password is now refused while locked.
     resp = api.post(LOGIN, {"email": "a@acme.test", "password": PASSWORD}, format="json")
     assert resp.status_code == 429
+
+
+def test_lockout_backoff_escalates_exponentially(settings):
+    """The lock window doubles with each failure past the threshold and is
+    capped — an escalating backoff, never a fixed hard lock."""
+    from auth.services import AuthService
+
+    settings.AUTH_LOCKOUT_MAX_ATTEMPTS = 5
+    settings.AUTH_LOCKOUT_BASE_BACKOFF_SECONDS = 60
+    settings.AUTH_LOCKOUT_BACKOFF_FACTOR = 2.0
+    settings.AUTH_LOCKOUT_MAX_BACKOFF_SECONDS = 1000
+
+    svc = AuthService()
+    assert svc._backoff_seconds(5) == 60  # threshold crossed → base
+    assert svc._backoff_seconds(6) == 120  # +1 failure → doubled
+    assert svc._backoff_seconds(7) == 240
+    assert svc._backoff_seconds(20) == 1000  # capped, never unbounded
 
 
 def test_refresh_rotates_access(api, make_user):

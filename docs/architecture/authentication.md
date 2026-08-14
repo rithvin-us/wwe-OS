@@ -46,11 +46,17 @@ signs the user out everywhere on success.
 ## Protections
 
 - **Password policy** — minimum length plus complexity (upper/lower/digit/symbol),
-  Argon2 hashing.
-- **Account lockout** — after `AUTH_LOCKOUT_MAX_ATTEMPTS` failures within the
-  window, the account is locked for `AUTH_LOCKOUT_DURATION_SECONDS` (cache-backed).
-- **Rate limiting** — scoped throttles on login and password-reset endpoints,
-  plus global user/anon throttles.
+  Argon2 hashing, and a `MAX_PASSWORD_LENGTH` bound on submitted passwords so an
+  oversized input cannot turn one request into a hashing DoS.
+- **Account lockout with exponential backoff** — after `AUTH_LOCKOUT_MAX_ATTEMPTS`
+  failures within the window, the identity is throttled with a backoff that grows
+  per further failure (`min(AUTH_LOCKOUT_BASE_BACKOFF_SECONDS *
+  AUTH_LOCKOUT_BACKOFF_FACTOR^extra, AUTH_LOCKOUT_MAX_BACKOFF_SECONDS)`), cache-backed.
+  It is per-account for password login and per-IP for face login, and always
+  self-expires — never a permanent hard lock on a real account.
+- **Rate limiting** — scoped throttles on login and password-reset endpoints
+  (per-IP), combined with the per-account/per-IP lockout above, plus global
+  user/anon throttles. All thresholds are environment-configurable.
 - **Device tracking** — every session records device label, IP, and user agent.
 - **Single-use tokens** — reset/verification tokens are hashed at rest, expire,
   and can be consumed once.
