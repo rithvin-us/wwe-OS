@@ -23,7 +23,7 @@ services:
       - key: DJANGO_ALLOWED_HOSTS
         value: ".onrender.com,localhost,127.0.0.1"
       - key: DATABASE_URL
-        sync: false # Set to your Neon PostgreSQL connection string
+        sync: false # Set to your Supabase PostgreSQL transaction pooler string
       - key: CORS_ALLOWED_ORIGINS
         value: https://wwe-os.vercel.app
       # Service-to-service ingestion secret (Telegram bot → backend). MUST be
