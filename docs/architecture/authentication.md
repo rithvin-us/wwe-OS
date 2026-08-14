@@ -51,7 +51,7 @@ signs the user out everywhere on success.
 - **Account lockout with exponential backoff** — after `AUTH_LOCKOUT_MAX_ATTEMPTS`
   failures within the window, the identity is throttled with a backoff that grows
   per further failure (`min(AUTH_LOCKOUT_BASE_BACKOFF_SECONDS *
-  AUTH_LOCKOUT_BACKOFF_FACTOR^extra, AUTH_LOCKOUT_MAX_BACKOFF_SECONDS)`), cache-backed.
+AUTH_LOCKOUT_BACKOFF_FACTOR^extra, AUTH_LOCKOUT_MAX_BACKOFF_SECONDS)`), cache-backed.
   It is per-account for password login and per-IP for face login, and always
   self-expires — never a permanent hard lock on a real account.
 - **Rate limiting** — scoped throttles on login and password-reset endpoints

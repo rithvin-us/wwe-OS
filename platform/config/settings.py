@@ -41,9 +41,7 @@ if str(REPO_ROOT / "modules") not in sys.path:
 # --------------------------------------------------------------------------- #
 # Core
 # --------------------------------------------------------------------------- #
-_INSECURE_SECRET_KEY = (
-    "django-insecure-development-placeholder-key-change-in-production-12345"
-)
+_INSECURE_SECRET_KEY = "django-insecure-development-placeholder-key-change-in-production-12345"
 SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", default=_INSECURE_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
@@ -57,8 +55,10 @@ APP_ENV = env_str("APP_ENV", default="development")
 if APP_ENV == "production":
     from config.env import ImproperlyConfigured
 
-    if not SECRET_KEY or SECRET_KEY == _INSECURE_SECRET_KEY or SECRET_KEY.startswith(
-        "django-insecure-"
+    if (
+        not SECRET_KEY
+        or SECRET_KEY == _INSECURE_SECRET_KEY
+        or SECRET_KEY.startswith("django-insecure-")
     ):
         raise ImproperlyConfigured(
             "DJANGO_SECRET_KEY must be set to a strong, unique value in production "

@@ -12,14 +12,14 @@ and `services/`.
 **Verification:** `pytest` (735 passed), `ruff check` clean,
 `python manage.py check` clean, `pnpm --filter web build` succeeds.
 
-| # | Area | Prior state | This pass |
-|---|------|-------------|-----------|
-| 1 | Rate limiting | Scoped throttles + fixed lockout | **Exponential backoff** added |
-| 2 | Input validation | Typed DRF serializers | **Password/token length bounds** added |
-| 3 | Secrets | Env-driven; a prior committed key already removed | **Re-scanned clean** + prod fail-fast |
-| 4 | Dependency vulns | 40 (1 crit / 26 high) | **17** (runtime surface clean) |
-| 5 | Error handling | Uniform envelope, generic 500 | Reviewed — **no change needed** |
-| 6 | File upload | Size + declared-MIME allow-list | **Magic-byte content validation** added |
+| #   | Area             | Prior state                                       | This pass                               |
+| --- | ---------------- | ------------------------------------------------- | --------------------------------------- |
+| 1   | Rate limiting    | Scoped throttles + fixed lockout                  | **Exponential backoff** added           |
+| 2   | Input validation | Typed DRF serializers                             | **Password/token length bounds** added  |
+| 3   | Secrets          | Env-driven; a prior committed key already removed | **Re-scanned clean** + prod fail-fast   |
+| 4   | Dependency vulns | 40 (1 crit / 26 high)                             | **17** (runtime surface clean)          |
+| 5   | Error handling   | Uniform envelope, generic 500                     | Reviewed — **no change needed**         |
+| 6   | File upload      | Size + declared-MIME allow-list                   | **Magic-byte content validation** added |
 
 ---
 
@@ -31,7 +31,7 @@ face + check-in endpoints are capped (`10–20/min`), authenticated users are
 loose (`1000/hour`), all env-configurable via `THROTTLE_*`. A cache-backed
 lockout counted failed attempts per account (email) and per IP (face login).
 
-**Gap:** the lockout was a *fixed* hard lock (`AUTH_LOCKOUT_DURATION_SECONDS`)
+**Gap:** the lockout was a _fixed_ hard lock (`AUTH_LOCKOUT_DURATION_SECONDS`)
 — the prompt calls for exponential backoff instead.
 
 **Change** (`platform/auth/services.py`, `config/settings.py`): once the
@@ -43,7 +43,7 @@ wait = min(BASE_BACKOFF * BACKOFF_FACTOR ** (failures - MAX_ATTEMPTS), MAX_BACKO
 ```
 
 - Per-account for password login, per-IP for face login (identity there comes
-  *from* the match, so there is no email to key on up front).
+  _from_ the match, so there is no email to key on up front).
 - Never a permanent lock — capped by `AUTH_LOCKOUT_MAX_BACKOFF_SECONDS`, so a
   legitimate user is never permanently denied.
 - All knobs env-configurable; `AUTH_LOCKOUT_DURATION_SECONDS` is kept as the
@@ -58,7 +58,7 @@ New settings: `AUTH_LOCKOUT_BASE_BACKOFF_SECONDS`,
 fields (`EmailField`, bounded `CharField`, `BooleanField`, `ImageField`,
 `ListField`) and `is_valid(raise_exception=True)`; the exception handler
 normalises all field failures to a uniform `422`. This is schema validation
-that *rejects*, not just sanitises.
+that _rejects_, not just sanitises.
 
 **Gap:** password and token fields had no upper length bound. Because passwords
 are hashed with Argon2 (deliberately CPU-heavy), an unbounded password lets a
@@ -70,7 +70,7 @@ oversized input is rejected by schema validation before it reaches the hasher.
 Minimum length + complexity remain enforced by `AUTH_PASSWORD_VALIDATORS`.
 
 **Note (accepted design):** DRF ignores unknown fields rather than rejecting
-them. All *consumed* fields are strictly validated; unknown extras are dropped,
+them. All _consumed_ fields are strictly validated; unknown extras are dropped,
 never persisted. Left as-is to avoid breaking clients — flagged here as a
 conscious choice, not an oversight.
 
@@ -87,7 +87,7 @@ been removed — `services/face-ai/app/config.py` now defaults it to `""`.
 no bearer/API keys embedded in `apps/`.
 
 **Gap:** `DJANGO_SECRET_KEY` fell back to a development placeholder. If that env
-var were ever unset in production the app would boot on a *known* JWT signing
+var were ever unset in production the app would boot on a _known_ JWT signing
 key — anyone could forge a valid token.
 
 **Change** (`platform/config/settings.py`): a fail-fast guard, scoped to
@@ -106,18 +106,18 @@ audit.
 
 **JavaScript (`pnpm audit`): 40 → 17.**
 
-| Package | Severity | Action |
-|---------|----------|--------|
-| `next` 16.2.10 → **16.2.12** | high/moderate (SSRF, proxy/middleware bypass, cache confusion, image-opt DoS) | **Fixed** (direct bump; build re-verified) |
-| `sharp` | high (libvips CVEs) | **Fixed** — override `>=0.35.0` |
-| `postcss` | high/moderate | **Fixed** — override `>=8.5.23` |
-| `nanoid` | high | **Fixed** — override `>=3.3.18` |
-| `js-yaml` | high | **Fixed** — override `>=4.3.1` |
-| `minimatch` | high (ReDoS) | **Fixed** — override `>=3.1.4` |
-| `brace-expansion` | high (DoS) | **Fixed** — overrides `>=1.1.18 / 2.0.2 / 5.0.9` |
-| `tar` | critical/high | **Remaining, dev-only** — see below |
-| `image-size` | high | **Remaining** — no upstream fix published |
-| `uuid` 7.x | moderate | **Remaining** — fix is cross-major (>=11.1.1) only |
+| Package                      | Severity                                                                      | Action                                             |
+| ---------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| `next` 16.2.10 → **16.2.12** | high/moderate (SSRF, proxy/middleware bypass, cache confusion, image-opt DoS) | **Fixed** (direct bump; build re-verified)         |
+| `sharp`                      | high (libvips CVEs)                                                           | **Fixed** — override `>=0.35.0`                    |
+| `postcss`                    | high/moderate                                                                 | **Fixed** — override `>=8.5.23`                    |
+| `nanoid`                     | high                                                                          | **Fixed** — override `>=3.3.18`                    |
+| `js-yaml`                    | high                                                                          | **Fixed** — override `>=4.3.1`                     |
+| `minimatch`                  | high (ReDoS)                                                                  | **Fixed** — override `>=3.1.4`                     |
+| `brace-expansion`            | high (DoS)                                                                    | **Fixed** — overrides `>=1.1.18 / 2.0.2 / 5.0.9`   |
+| `tar`                        | critical/high                                                                 | **Remaining, dev-only** — see below                |
+| `image-size`                 | high                                                                          | **Remaining** — no upstream fix published          |
+| `uuid` 7.x                   | moderate                                                                      | **Remaining** — fix is cross-major (>=11.1.1) only |
 
 Overrides live in root `package.json` under `pnpm.overrides`, major-scoped so a
 fix stays within its major and cannot break API-incompatible consumers. The
@@ -148,7 +148,7 @@ is the single DRF exception handler and gives every error one shape:
 exception is caught, logged in full server-side (`logger.exception`), and
 returned to the client as a generic `500` with
 `"An unexpected error occurred."` — no stack trace, file path, or raw database
-error reaches the user. `DEBUG` is off in production (now *enforced* by the
+error reaches the user. `DEBUG` is off in production (now _enforced_ by the
 §3 guard, so Django's debug error page can never render), `django.request`
 logs at `ERROR`, and structured logs carry a request id for correlation.
 
@@ -162,7 +162,7 @@ tenant-namespaced keys, hashed every object (sha256), and served downloads via
 (R2/S3) or a non-web-root local path — so uploaded bytes are never served from
 a web root and cannot be executed as code.
 
-**Gap:** the allow-list trusted the *caller-declared* `content_type`. Extension
+**Gap:** the allow-list trusted the _caller-declared_ `content_type`. Extension
 and declared MIME are both spoofable — an executable sent as
 `content_type="application/pdf"` passed.
 

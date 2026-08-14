@@ -1,14 +1,21 @@
 from __future__ import annotations
 
-import pytest
-from django.core.cache import cache
-from permissions.models import Permission
-from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken
-from roles.models import Role
-from roles.services import RoleService
-from tenancy.models import Tenant
-from users.models import User
+import os
+
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings_test")
+django.setup()
+
+import pytest  # noqa: E402
+from django.core.cache import cache  # noqa: E402
+from permissions.models import Permission  # noqa: E402
+from rest_framework.test import APIClient  # noqa: E402
+from rest_framework_simplejwt.tokens import RefreshToken  # noqa: E402
+from roles.models import Role  # noqa: E402
+from roles.services import RoleService  # noqa: E402
+from tenancy.models import Tenant  # noqa: E402
+from users.models import User  # noqa: E402
 
 PASSWORD = "Str0ng!Pass1"
 

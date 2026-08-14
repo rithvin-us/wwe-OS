@@ -37,6 +37,8 @@ ANTHROPIC_API_KEY = ""
 
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
+STORAGE_BACKEND = "local"
+
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
     "DEFAULT_THROTTLE_CLASSES": [],

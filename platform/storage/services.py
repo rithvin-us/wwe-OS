@@ -97,15 +97,11 @@ class StorageService(BaseService):
         # for the rare backend that must accept opaque bytes.
         if getattr(settings, "STORAGE_VERIFY_CONTENT", True):
             if looks_executable(data):
-                raise ValidationError(
-                    detail={"file": ["Executable files cannot be uploaded."]}
-                )
+                raise ValidationError(detail={"file": ["Executable files cannot be uploaded."]})
             if not matches_declared_type(data, content_type):
                 raise ValidationError(
                     detail={
-                        "file": [
-                            f"File content does not match the declared type '{content_type}'."
-                        ]
+                        "file": [f"File content does not match the declared type '{content_type}'."]
                     }
                 )
 
