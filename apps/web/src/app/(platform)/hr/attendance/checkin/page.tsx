@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ScanFace } from "@bop/icons";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { FaceKioskDialog } from "../face-kiosk-dialog";
+
+export const metadata: Metadata = {
+  title: "Attendance Kiosk",
+};
 
 export default function CheckInKioskPage() {
   return (

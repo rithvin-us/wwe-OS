@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CalendarCheck, Lock } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { EmptyState } from "@bop/ui/components/empty-state";
@@ -11,6 +12,10 @@ import { AttendanceGridEditor } from "./attendance-grid";
 
 import { FaceKioskDialog } from "./face-kiosk-dialog";
 import { ShareCheckInLinkButton } from "./share-link-button";
+
+export const metadata: Metadata = {
+  title: "Attendance",
+};
 
 export default async function AttendancePage({
   searchParams,

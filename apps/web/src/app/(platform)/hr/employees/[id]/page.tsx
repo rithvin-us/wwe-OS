@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 
 import { ArrowLeft, CheckCircle2, ScanFace } from "@bop/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@bop/ui/components/avatar";
@@ -8,6 +10,23 @@ import { getEmployee, getEmployeeTasks, SHIFT_NAMES } from "@/lib/hr";
 
 import { ChecklistPanel } from "./checklist-panel";
 import { EnrollFaceDialog } from "./enroll-face-dialog";
+
+// Deduped per request so generateMetadata and the page body share one fetch.
+const getEmployeeCached = cache(getEmployee);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const employee = await getEmployeeCached(id);
+    return { title: employee.employee_name };
+  } catch {
+    return { title: "Employee" };
+  }
+}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(" ");
@@ -20,7 +39,7 @@ function getInitials(name: string): string {
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [employee, tasks] = await Promise.all([
-    getEmployee(id),
+    getEmployeeCached(id),
     getEmployeeTasks({ employee: id }),
   ]);
 

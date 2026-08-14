@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { PageHeader } from "@bop/ui/components/page-header";
 
@@ -52,6 +53,21 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <PasswordForm />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Legal</CardTitle>
+          <CardDescription>
+            What the platform collects and how it's used, including the attendance kiosk's face and
+            location capture.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/privacy" className="text-sm font-medium text-primary hover:underline">
+            View privacy policy
+          </Link>
         </CardContent>
       </Card>
     </div>

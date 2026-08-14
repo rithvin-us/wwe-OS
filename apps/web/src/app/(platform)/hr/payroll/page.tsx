@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { IndianRupee } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
@@ -12,6 +13,10 @@ import { RunPayrollButton } from "./run-payroll-button";
 
 const inr = (value: number) =>
   `₹${value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export const metadata: Metadata = {
+  title: "Payroll",
+};
 
 export default async function PayrollPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
@@ -32,6 +33,10 @@ const SEVERITY_TONE: Record<string, "danger" | "warning" | "neutral"> = {
   high: "danger",
   medium: "warning",
   low: "neutral",
+};
+
+export const metadata: Metadata = {
+  title: "HR",
 };
 
 export default async function HrPage({

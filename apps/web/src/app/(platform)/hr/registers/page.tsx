@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { FileSpreadsheet } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
@@ -8,6 +9,10 @@ import { HrNav } from "../hr-nav";
 import { PeriodSelector } from "../period-selector";
 import { GenerateRegistersButton } from "./generate-button";
 import { RegisterHistory } from "./register-history";
+
+export const metadata: Metadata = {
+  title: "Statutory registers",
+};
 
 export default async function RegistersPage({
   searchParams,
