@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Newspaper,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from "@bop/icons";
 
@@ -78,6 +79,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "WORKSPACE",
     items: [
       { name: "Briefing", href: "/briefing", icon: Newspaper },
+      { name: "Assistant", href: "/assistant", icon: Sparkles },
       { name: "Approvals", href: "/approvals", icon: Inbox },
       { name: "Deadlines", href: "/deadlines", icon: CalendarClock },
     ],

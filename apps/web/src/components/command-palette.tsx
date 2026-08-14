@@ -9,6 +9,7 @@ import {
   Loader2,
   Moon,
   Newspaper,
+  Sparkles,
   Sun,
   SunMoon,
 } from "@bop/icons";
@@ -316,6 +317,10 @@ export function CommandPalette({
               <CommandItem value="workspace-briefing" onSelect={() => go("/briefing")}>
                 <Newspaper aria-hidden />
                 Briefing
+              </CommandItem>
+              <CommandItem value="workspace-assistant" onSelect={() => go("/assistant")}>
+                <Sparkles aria-hidden />
+                Assistant
               </CommandItem>
               <CommandItem value="workspace-approvals" onSelect={() => go("/approvals")}>
                 <Inbox aria-hidden />
