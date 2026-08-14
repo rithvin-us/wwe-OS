@@ -1,5 +1,5 @@
 """
-Face Recognition — MTCNN detection + InsightFace ArcFace (buffalo_s) recognition.
+Face Recognition — MTCNN detection + InsightFace ArcFace (buffalo_l by default) recognition.
 
 Pluggable interface for self-service attendance. An admin enrols a reference
 face per employee (embedding stored on the employee row); at each check-in the
@@ -205,7 +205,7 @@ class StubFaceService(FaceRecognitionService):
 
 
 class InsightFaceService(FaceRecognitionService):
-    """Real face engine: MTCNN detection + InsightFace ArcFace (buffalo_s).
+    """Real face engine: MTCNN detection + InsightFace ArcFace (buffalo_l by default).
 
     All heavy imports (numpy, cv2, PIL, facenet-pytorch, insightface) happen at
     construction/first-use so this class can be *defined* even when those

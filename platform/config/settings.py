@@ -221,6 +221,19 @@ AUTH_LOCKOUT_DURATION_SECONDS = env_int("AUTH_LOCKOUT_DURATION_SECONDS", 900)
 PASSWORD_RESET_TOKEN_TTL_SECONDS = env_int("PASSWORD_RESET_TOKEN_TTL_SECONDS", 3600)
 EMAIL_VERIFICATION_TTL_SECONDS = env_int("EMAIL_VERIFICATION_TTL_SECONDS", 86400)
 
+# Touchless Owner face login — same face-ai microservice HR check-in uses
+# (services/face-ai; InsightFace ArcFace, model buffalo_l by default). An
+# unset FACE_AI_URL means every face request fails with 503 rather than
+# silently accepting any face — there is no client-only fallback.
+FACE_AI_URL = env_str("FACE_AI_URL", "http://localhost:9000")
+FACE_AI_API_KEY = env_str("FACE_AI_API_KEY", "")
+FACE_AI_TIMEOUT = env_int("FACE_AI_TIMEOUT", 10)
+FACE_AI_CONNECT_TIMEOUT = env_int("FACE_AI_CONNECT_TIMEOUT", 3)
+# Deliberately stricter than HR's 1:N attendance threshold (0.36) — this
+# match fully replaces a password for the platform Owner account.
+FACE_LOGIN_MATCH_THRESHOLD = float(env_str("FACE_LOGIN_MATCH_THRESHOLD", "0.45"))
+FACE_LOGIN_MARGIN = float(env_str("FACE_LOGIN_MARGIN", "0.05"))
+
 # --------------------------------------------------------------------------- #
 # REST framework
 # --------------------------------------------------------------------------- #
@@ -251,6 +264,10 @@ REST_FRAMEWORK = {
         # Public, unauthenticated self-service attendance check-in (HR). Each
         # request runs face matching, so it is capped well below "anon".
         "hr_checkin": env_str("THROTTLE_HR_CHECKIN", "20/minute"),
+        # Public, unauthenticated touchless Owner login — each request runs
+        # face matching, so it is capped well below "anon".
+        "face_login": env_str("THROTTLE_FACE_LOGIN", "10/minute"),
+        "face_enroll": env_str("THROTTLE_FACE_ENROLL", "10/minute"),
     },
 }
 

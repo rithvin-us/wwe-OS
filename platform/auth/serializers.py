@@ -44,3 +44,21 @@ class EmailVerifySerializer(serializers.Serializer):
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
+
+
+class FaceEnrollRequestSerializer(serializers.Serializer):
+    file = serializers.ImageField(help_text="Reference face photo")
+
+
+class FaceStatusSerializer(serializers.Serializer):
+    enrolled = serializers.BooleanField()
+    enrolled_at = serializers.DateTimeField(allow_null=True)
+
+
+class FaceLoginRequestSerializer(serializers.Serializer):
+    file = serializers.ImageField(help_text="Live-captured selfie")
+    frames = serializers.ListField(
+        child=serializers.ImageField(),
+        required=False,
+        help_text="Optional liveness burst: extra frames ~400 ms apart",
+    )

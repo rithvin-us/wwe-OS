@@ -41,6 +41,23 @@ class UserSession(BaseModel):
         indexes = [models.Index(fields=["user", "revoked"])]
 
 
+class FaceCredential(BaseModel):
+    """One enrolled face template per user — the Owner's touchless-login
+    credential. The embedding is produced by the face-ai microservice
+    (InsightFace ArcFace, `buffalo_l`); raw images are never stored, only the
+    512-d vector, matched by cosine similarity in `auth.services.AuthService`.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="face_credential"
+    )
+    embedding = models.TextField()
+    enrolled_at = models.DateTimeField(default=timezone.now)
+
+    class Meta(BaseModel.Meta):
+        db_table = "auth_face_credential"
+
+
 class LoginAttempt(BaseModel):
     """Every authentication attempt — the basis for brute-force detection."""
 

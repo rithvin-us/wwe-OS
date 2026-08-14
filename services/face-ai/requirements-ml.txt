@@ -1,6 +1,6 @@
 # Real face-recognition stack — install for FACE_ENGINE=insightface.
 #   MTCNN detection ....... facenet-pytorch (torch)
-#   ArcFace recognition ... insightface (buffalo_s) + onnxruntime
+#   ArcFace recognition ... insightface (buffalo_l by default) + onnxruntime
 #   preprocessing ......... opencv-python-headless + Pillow + numpy
 #
 # Install a CPU-only torch FIRST (see Dockerfile) to avoid the huge CUDA wheel:

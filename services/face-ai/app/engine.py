@@ -1,5 +1,5 @@
 """
-Face engine — MTCNN detection + InsightFace ArcFace (buffalo_s) embeddings.
+Face engine — MTCNN detection + InsightFace ArcFace (buffalo_l by default) embeddings.
 
 Self-contained copy of the recognition pipeline (ported from the HR backend's
 `app.services.face_recognition`), so this microservice shares NO code with the
@@ -110,7 +110,7 @@ class StubEngine(FaceEngine):
 
 
 class InsightFaceEngine(FaceEngine):
-    """Real engine: MTCNN detection + InsightFace ArcFace (buffalo_s).
+    """Real engine: MTCNN detection + InsightFace ArcFace (buffalo_l by default).
 
     Models load once in `load()` (called at startup) and are reused for every
     request. All heavy imports are lazy so this class can be *defined* without

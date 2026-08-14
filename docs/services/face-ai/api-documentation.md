@@ -24,7 +24,7 @@ side-profile, multiple, and too-small faces.
 **200**
 
 ```json
-{ "embedding": [0.01, -0.04, ...], "dim": 512, "engine": "insightface", "model": "buffalo_s" }
+{ "embedding": [0.01, -0.04, ...], "dim": 512, "engine": "insightface", "model": "buffalo_l" }
 ```
 
 ```bash
@@ -44,7 +44,7 @@ the caller (backend) runs the 1:N cosine against its own enrolled gallery.
 **200**
 
 ```json
-{ "embedding": [...], "dim": 512, "liveness": true, "engine": "insightface", "model": "buffalo_s" }
+{ "embedding": [...], "dim": 512, "liveness": true, "engine": "insightface", "model": "buffalo_l" }
 ```
 
 ---
@@ -53,12 +53,12 @@ the caller (backend) runs the 1:N cosine against its own enrolled gallery.
 
 Liveness/readiness probe for Cloudflare / Render / the backend circuit breaker.
 
-**200** — `{ "status": "ok", "engine": "insightface", "model": "buffalo_s", "ready": true }`
+**200** — `{ "status": "ok", "engine": "insightface", "model": "buffalo_l", "ready": true }`
 `ready:false` means models are not yet resident (warm-up failed / still loading).
 
 ## `GET /version` (open)
 
-`{ "service": "face-ai", "version": "1.0.0", "engine": "insightface", "model": "buffalo_s", "detector": "mtcnn", "embedding_dim": 512 }`
+`{ "service": "face-ai", "version": "1.0.0", "engine": "insightface", "model": "buffalo_l", "detector": "mtcnn", "embedding_dim": 512 }`
 
 ---
 

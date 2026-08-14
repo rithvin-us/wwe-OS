@@ -30,8 +30,10 @@ from shared.services import BaseService
 from tenancy.models import Tenant
 from users.models import User
 
+from auth.face_engine import FaceAIClient, cosine_similarity, deserialize, serialize
 from auth.models import (
     EmailVerificationToken,
+    FaceCredential,
     LoginAttempt,
     PasswordResetToken,
     UserSession,
@@ -58,6 +60,29 @@ class AuthService(BaseService):
 
     def _clear_failures(self, email: str) -> None:
         cache.delete(self._lockout_key(email))
+
+    # ----------------------------------------------------------- face lockout
+    # Keyed on IP, not email: a face-login attempt has no claimed email up
+    # front (identity comes FROM the match), so the normal per-email lockout
+    # above cannot apply here.
+    def _face_lockout_key(self, ip: str | None) -> str:
+        return f"auth:face_lockout:{ip or 'unknown'}"
+
+    def _is_face_locked(self, ip: str | None) -> bool:
+        return cache.get(self._face_lockout_key(ip), 0) >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS
+
+    def _record_face_failure(self, ip: str | None) -> None:
+        key = self._face_lockout_key(ip)
+        try:
+            count = cache.incr(key)
+        except ValueError:
+            cache.set(key, 1, timeout=settings.AUTH_LOCKOUT_WINDOW_SECONDS)
+            count = 1
+        if count >= settings.AUTH_LOCKOUT_MAX_ATTEMPTS:
+            cache.set(key, count, timeout=settings.AUTH_LOCKOUT_DURATION_SECONDS)
+
+    def _clear_face_failures(self, ip: str | None) -> None:
+        cache.delete(self._face_lockout_key(ip))
 
     # ------------------------------------------------------------------ tokens
     def issue_tokens(
@@ -241,3 +266,98 @@ class AuthService(BaseService):
         user.save(update_fields=["password"])
         self.logout_everywhere(user)
         publish(Events.PASSWORD_CHANGED, instance=user, actor=user)
+
+    # ------------------------------------------------------- face (touchless)
+    def enroll_face(self, *, user: User, image_bytes: bytes) -> FaceCredential:
+        """Register/replace `user`'s face template from a reference photo.
+
+        Strict quality gates run on the face-ai service (blur, side-profile,
+        multiple faces); a rejected capture raises FaceError with a
+        user-facing reason instead of silently storing a bad template.
+        """
+        embedding = FaceAIClient().enroll(image_bytes)
+        credential, _ = FaceCredential.objects.update_or_create(
+            user=user,
+            defaults={"embedding": serialize(embedding), "enrolled_at": timezone.now()},
+        )
+        publish(Events.FACE_ENROLLED, instance=user, actor=user)
+        return credential
+
+    def revoke_face(self, *, user: User) -> bool:
+        # Hard delete, not the usual soft-delete archive: a revoked biometric
+        # template should not linger in the database, and `all_objects` +
+        # `hard_delete()` avoids a stale soft-deleted row colliding with the
+        # OneToOneField unique constraint on the next enrollment.
+        deleted, _ = FaceCredential.all_objects.filter(user=user).hard_delete()
+        if deleted:
+            publish(Events.FACE_REVOKED, instance=user, actor=user)
+        return bool(deleted)
+
+    def face_status(self, *, user: User) -> FaceCredential | None:
+        return FaceCredential.objects.filter(user=user).first()
+
+    def login_face(
+        self,
+        *,
+        image_bytes: bytes,
+        extra_frames: list[bytes],
+        ip: str | None,
+        user_agent: str,
+    ) -> dict[str, Any]:
+        """Authenticate by face: 1:N match against every enrolled credential.
+
+        A face-login attempt has no claimed email, so it cannot use the
+        per-email lockout `login()` uses — it is rate-limited per IP instead
+        (`_face_lockout_key`), on top of the endpoint's DRF throttle scope.
+        """
+        if self._is_face_locked(ip):
+            raise RateLimitedError(
+                "Too many failed face-login attempts. "
+                "Wait a few minutes or sign in with your password."
+            )
+
+        probe_embedding, live = FaceAIClient().verify(image_bytes, extra_frames)
+        if not live:
+            self._record_face_failure(ip)
+            raise AuthenticationFailedError(
+                "Liveness check failed. Look directly at the camera, in good light, and try again."
+            )
+
+        best_score, runner_up, best_credential = -1.0, -1.0, None
+        for credential in FaceCredential.objects.select_related("user"):
+            score = cosine_similarity(probe_embedding, deserialize(credential.embedding))
+            if score > best_score:
+                best_score, runner_up, best_credential = score, best_score, credential
+            elif score > runner_up:
+                runner_up = score
+
+        # A confident match must also beat the runner-up by a margin — without
+        # it, two enrolled faces near the threshold could resolve arbitrarily.
+        matched = (
+            best_credential is not None
+            and best_score >= settings.FACE_LOGIN_MATCH_THRESHOLD
+            and (best_score - runner_up) >= settings.FACE_LOGIN_MARGIN
+        )
+        if not matched:
+            self._record_face_failure(ip)
+            LoginAttempt.objects.create(
+                email=best_credential.user.email if best_credential else "",
+                ip_address=ip,
+                user_agent=(user_agent or "")[:512],
+                successful=False,
+            )
+            raise AuthenticationFailedError("Face not recognized. Use your password instead.")
+
+        user = best_credential.user
+        if not user.is_active:
+            raise AuthenticationFailedError("This account is disabled.")
+
+        self._clear_face_failures(ip)
+        LoginAttempt.objects.create(
+            email=user.email, ip_address=ip, user_agent=(user_agent or "")[:512], successful=True
+        )
+        tokens = self.issue_tokens(user, remember_me=False, ip=ip, user_agent=user_agent)
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+        publish(Events.USER_LOGGED_IN, instance=user, actor=user)
+        return tokens

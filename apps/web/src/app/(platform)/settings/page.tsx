@@ -6,6 +6,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { CompanyForm } from "@/app/(platform)/settings/company-form";
 import { PasswordForm } from "@/app/(platform)/settings/password-form";
 import { ProfileForm } from "@/app/(platform)/settings/profile-form";
+import { FaceEnrollmentCard } from "@/app/(platform)/settings/face-enrollment-card";
 import { getCompany, getMyProfile } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Settings"
-        description="Manage your profile, your company details, and security."
+        description="Manage your profile, company details, biometric enrollment, and security."
       />
 
       <Card>
@@ -31,6 +32,9 @@ export default async function SettingsPage() {
           <ProfileForm profile={profile} />
         </CardContent>
       </Card>
+
+      {/* Admin Biometric Face ID Registration */}
+      <FaceEnrollmentCard />
 
       {company ? (
         <Card>

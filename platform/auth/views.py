@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -12,6 +13,9 @@ from users.serializers import UserSerializer
 from auth.serializers import (
     ChangePasswordSerializer,
     EmailVerifySerializer,
+    FaceEnrollRequestSerializer,
+    FaceLoginRequestSerializer,
+    FaceStatusSerializer,
     LoginSerializer,
     LogoutSerializer,
     PasswordResetConfirmSerializer,
@@ -20,7 +24,12 @@ from auth.serializers import (
     TokenPairSerializer,
 )
 from auth.services import AuthService
-from auth.throttles import LoginRateThrottle, PasswordResetRateThrottle
+from auth.throttles import (
+    FaceEnrollRateThrottle,
+    FaceLoginRateThrottle,
+    LoginRateThrottle,
+    PasswordResetRateThrottle,
+)
 
 
 def _request_meta() -> tuple[str | None, str]:
@@ -166,3 +175,80 @@ class MeView(APIView):
                 "permissions": sorted(RoleService().effective_permission_codes(request.user)),
             }
         )
+
+
+@extend_schema(
+    tags=["auth"],
+    responses={200: FaceStatusSerializer},
+)
+class FaceStatusView(APIView):
+    """GET /api/v1/auth/face/ — whether the current user has a face profile enrolled."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        credential = AuthService().face_status(user=request.user)
+        return Response(
+            FaceStatusSerializer(
+                {
+                    "enrolled": credential is not None,
+                    "enrolled_at": credential.enrolled_at if credential else None,
+                }
+            ).data
+        )
+
+
+@extend_schema(
+    tags=["auth"], request=FaceEnrollRequestSerializer, responses={200: FaceStatusSerializer}
+)
+class FaceEnrollView(APIView):
+    """POST/DELETE /api/v1/auth/face/enroll/ — register or remove the caller's face template."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [FaceEnrollRateThrottle]
+    throttle_scope = "face_enroll"
+
+    def post(self, request: Request) -> Response:
+        data = FaceEnrollRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        credential = AuthService().enroll_face(
+            user=request.user, image_bytes=data.validated_data["file"].read()
+        )
+        return Response(
+            FaceStatusSerializer({"enrolled": True, "enrolled_at": credential.enrolled_at}).data
+        )
+
+    def delete(self, request: Request) -> Response:
+        AuthService().revoke_face(user=request.user)
+        return Response({"detail": "Face profile removed."})
+
+
+@extend_schema(
+    tags=["auth"],
+    request=FaceLoginRequestSerializer,
+    responses={200: TokenPairSerializer},
+)
+class FaceLoginView(APIView):
+    """POST /api/v1/auth/face/login/ — touchless 1:N face login (no email/password).
+
+    Public by construction (there is no claimed identity to authenticate
+    against up front — the match IS the identity), so it leans on its own
+    throttle scope plus a per-IP lockout in AuthService.login_face.
+    """
+
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [FaceLoginRateThrottle]
+    throttle_scope = "face_login"
+
+    def post(self, request: Request) -> Response:
+        data = FaceLoginRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        selfie = data.validated_data["file"]
+        frames = [frame.read() for frame in data.validated_data.get("frames") or []]
+        ip, ua = _request_meta()
+        tokens = AuthService().login_face(
+            image_bytes=selfie.read(), extra_frames=frames, ip=ip, user_agent=ua
+        )
+        return Response(tokens)
