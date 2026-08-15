@@ -258,8 +258,15 @@ EMAIL_VERIFICATION_TTL_SECONDS = env_int("EMAIL_VERIFICATION_TTL_SECONDS", 86400
 # (services/face-ai; InsightFace ArcFace, model buffalo_l by default). An
 # unset FACE_AI_URL means every face request fails with 503 rather than
 # silently accepting any face — there is no client-only fallback.
-FACE_AI_URL = env_str("FACE_AI_URL", "http://localhost:9000")
-FACE_AI_API_KEY = env_str("FACE_AI_API_KEY", "")
+#
+# Falls back to HR_FACE_AI_URL/HR_FACE_AI_API_KEY (modules/hr's own config,
+# periods/face_config.py) when the bare FACE_AI_* vars aren't set — every
+# real deployment configures only the HR-prefixed ones (that's the client
+# that's actually been exercised and proven reachable), so without this
+# fallback this Owner-login client always fell through to the localhost:9000
+# default and 503'd in production, unrelated to whether the tunnel was up.
+FACE_AI_URL = env_str("FACE_AI_URL", env_str("HR_FACE_AI_URL", "http://localhost:9000"))
+FACE_AI_API_KEY = env_str("FACE_AI_API_KEY", env_str("HR_FACE_AI_API_KEY", ""))
 FACE_AI_TIMEOUT = env_int("FACE_AI_TIMEOUT", 10)
 FACE_AI_CONNECT_TIMEOUT = env_int("FACE_AI_CONNECT_TIMEOUT", 3)
 # Deliberately stricter than HR's 1:N attendance threshold (0.36) — this
