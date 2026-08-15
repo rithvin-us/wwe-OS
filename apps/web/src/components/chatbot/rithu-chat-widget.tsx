@@ -114,6 +114,7 @@ export function RithuChatWidget() {
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function onAttachEvent(e: Event) {
@@ -151,6 +152,13 @@ export function RithuChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  // Keep the caret in the input at all times: on open, after Rithu replies,
+  // and after a slash/@ command is picked from the popover (which otherwise
+  // steals focus to the clicked button).
+  useEffect(() => {
+    if (open && !busy) inputRef.current?.focus();
+  }, [open, busy]);
+
   function handleInputChange(text: string) {
     setInput(text);
     if (text.startsWith("/") || text.includes("@")) {
@@ -171,6 +179,7 @@ export function RithuChatWidget() {
       });
     }
     setShowCommandMenu(false);
+    inputRef.current?.focus();
   }
 
   async function triggerSendWithAttachment(
@@ -249,6 +258,7 @@ export function RithuChatWidget() {
         dataUrl,
       });
       toast.success(`Attached "${file.name}"`);
+      inputRef.current?.focus();
     };
     reader.readAsDataURL(file);
   }
@@ -563,11 +573,13 @@ export function RithuChatWidget() {
                 <Paperclip className="size-3.5" />
               </Button>
               <Input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="Type / for commands, @ for mentions..."
                 className="flex-1 text-xs h-8 border-border/70 rounded-xl"
                 disabled={busy}
+                autoFocus
               />
               <Button
                 type="submit"
