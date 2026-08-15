@@ -195,12 +195,20 @@ export function RithuChatWidget() {
     setBusy(true);
 
     try {
+      const history = messages.slice(-8).map((m) => ({
+        sender: m.sender,
+        text: m.text,
+        fileAttachment: m.fileAttachment
+          ? { name: m.fileAttachment.name, type: m.fileAttachment.type }
+          : undefined,
+      }));
       const res = await fetch("/api/ai/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: promptText,
           fileAttachment: fileToAttach || undefined,
+          history,
         }),
       });
       const data: ChatMessage = await res.json();

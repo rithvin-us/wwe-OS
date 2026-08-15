@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { ApiRequestError } from "@/lib/api/envelope";
-import { djangoFetch, getAccessToken, internalApiUrl } from "@/lib/api/server";
+import { djangoFetch } from "@/lib/api/server";
 
 export interface ActionResult {
   ok: boolean;
@@ -11,63 +11,6 @@ export interface ActionResult {
 }
 
 const BASE = "/api/v1/documents/documents";
-
-/**
- * Uploads carry a file, so they go out as multipart — not through
- * `djangoFetch` (which forces application/json). Still server-only: the
- * access token comes from the httpOnly cookie and never reaches the browser.
- */
-export async function uploadDocumentAction(formData: FormData): Promise<ActionResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: "Choose a file to upload." };
-  }
-  const title = String(formData.get("title") ?? "").trim();
-  if (!title) return { ok: false, message: "Give the document a title." };
-
-  try {
-    const token = await getAccessToken();
-    const arrayBuffer = await file.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: file.type || "application/octet-stream" });
-
-    const forward = new FormData();
-    forward.append("file", blob, file.name || "document");
-    forward.append("title", title);
-    forward.append("category", String(formData.get("category") ?? "other"));
-    forward.append("description", String(formData.get("description") ?? ""));
-    for (const tag of parseTags(String(formData.get("tags") ?? ""))) {
-      forward.append("tags", tag);
-    }
-
-    const response = await fetch(`${internalApiUrl()}${BASE}/`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: forward,
-      cache: "no-store",
-    });
-    const text = await response.text();
-    let envelope: { success?: boolean; error?: { message?: string } } | null = null;
-    try {
-      envelope = JSON.parse(text);
-    } catch {
-      return {
-        ok: false,
-        message: `Platform returned HTTP ${response.status}: ${text.slice(0, 100) || "Invalid response"}`,
-      };
-    }
-    if (!envelope?.success) {
-      return { ok: false, message: envelope?.error?.message ?? "Upload failed." };
-    }
-    revalidatePath("/dms");
-    return { ok: true, message: "Document uploaded." };
-  } catch (error: unknown) {
-    console.error("[uploadDocumentAction] Error:", error);
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : "Something went wrong. Try again.",
-    };
-  }
-}
 
 export async function summarizeDocumentAction(id: string): Promise<ActionResult> {
   return post(`${BASE}/${id}/summarize/`, "Summary regenerated.", id);
@@ -101,11 +44,4 @@ async function post(path: string, success: string, id: string): Promise<ActionRe
 function errorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return error.message;
   return "Something went wrong. Try again.";
-}
-
-function parseTags(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
 }

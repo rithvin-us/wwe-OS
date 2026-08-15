@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { FINANCIAL_SUMMARY, formatValue } from "@/config/dashboard";
+import { getDocuments } from "@/lib/dms";
+import { getEmployees } from "@/lib/hr";
+import { getPurchaseBillStats, getVendors } from "@/lib/purchase";
+
 export interface ChatMessage {
   id: string;
   sender: "user" | "rithu";
@@ -25,36 +30,53 @@ export interface ChatMessage {
   suggestedPrompts?: string[];
 }
 
-const RITHU_DOCUMENTS_INDEX = [
-  {
-    title: "Rithu_SLA_Agreement_2026.pdf",
-    path: "/dms/doc_rithu_sla_2026",
-    category: "Contracts & Legal",
-    date: "2026-08-01",
-    snippet: "Annual Service Level Agreement & Operational Compliance signed by Rithu.",
-  },
-  {
-    title: "Rithu_Executive_Audit_Report.xlsx",
-    path: "/reports",
-    category: "Audit & Finance",
-    date: "2026-07-28",
-    snippet: "Financial audit metrics, quarterly invoice reconciliations, and tax compliance.",
-  },
-  {
-    title: "Rithu_Vendor_Authorization_Letter.pdf",
-    path: "/dms/doc_rithu_vendor_auth",
-    category: "Procurement",
-    date: "2026-07-15",
-    snippet: "Vendor onboarding clearance, GST registration verification for Rithu Enterprises.",
-  },
-  {
-    title: "Rithu_HR_Policy_Handbook.pdf",
-    path: "/hr/documents",
-    category: "Human Resources",
-    date: "2026-06-10",
-    snippet: "Employee attendance regulations, leave quotas, and statutory payroll directives.",
-  },
-];
+/** Trimmed message shape the widget sends back for multi-turn context —
+ * no dataUrl, so a large attachment doesn't get re-uploaded every turn. */
+export interface HistoryTurn {
+  sender: "user" | "rithu";
+  text: string;
+  fileAttachment?: { name: string; type: string };
+}
+
+type SlashIntent = "explain" | "summarize" | "email" | "docs" | "stats";
+
+const SLASH_COMMAND_INTENTS: Record<string, SlashIntent> = {
+  "/explain": "explain",
+  "/summarize": "summarize",
+  "/summarise": "summarize",
+  "/email": "email",
+  "/mail": "email",
+  "/docs": "docs",
+  "/stats": "stats",
+};
+
+function parseSlashCommand(raw: string): { intent: SlashIntent | null; text: string } {
+  const match = raw.trim().match(/^(\/[a-zA-Z]+)\s*([\s\S]*)$/);
+  if (!match) return { intent: null, text: raw.trim() };
+  const intent = SLASH_COMMAND_INTENTS[match[1].toLowerCase()] ?? null;
+  return { intent, text: match[2].trim() };
+}
+
+function lastAttachmentFromHistory(
+  history: HistoryTurn[] | undefined,
+): { name: string; type: string } | null {
+  if (!history) return null;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const att = history[i].fileAttachment;
+    if (att) return att;
+  }
+  return null;
+}
+
+function formatHistoryForPrompt(history: HistoryTurn[] | undefined): string {
+  if (!history || history.length === 0) return "";
+  const lines = history.map((turn) => {
+    const who = turn.sender === "user" ? "User" : "Rithu";
+    const fileNote = turn.fileAttachment ? ` [attached: ${turn.fileAttachment.name}]` : "";
+    return `${who}: ${turn.text}${fileNote}`;
+  });
+  return `\nRecent conversation (for context — most recent last):\n${lines.join("\n")}\n`;
+}
 
 export async function POST(request: Request) {
   try {
@@ -62,23 +84,62 @@ export async function POST(request: Request) {
     const prompt: string = (body.prompt || "").trim();
     const fileAttachment = body.fileAttachment as
       { name: string; type: string; size: number; dataUrl?: string } | undefined;
-    const lowerPrompt = prompt.toLowerCase();
-    const apiKey = process.env.GEMINI_API_KEY;
+    const history: HistoryTurn[] | undefined = Array.isArray(body.history)
+      ? body.history.slice(-8)
+      : undefined;
 
-    // Dynamic RAG Context Search: Retrieve matching R2 indexed documents for prompt
+    const { intent: slashIntent, text: promptAfterCommand } = parseSlashCommand(prompt);
+    const effectivePrompt = promptAfterCommand || prompt;
+    const lowerPrompt = effectivePrompt.toLowerCase();
+    const wantsSummary = slashIntent === "summarize" || lowerPrompt.includes("summar");
+    // A file dropped on THIS turn wins; otherwise fall back to whatever was
+    // last attached in the conversation, so "summarise" alone still works.
+    const contextFile = fileAttachment ?? lastAttachmentFromHistory(history) ?? undefined;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const looksLikeGeminiKey = !!apiKey && /^AIzaSy[A-Za-z0-9_-]{20,}$/.test(apiKey);
+    if (apiKey && !looksLikeGeminiKey) {
+      console.error(
+        "[Rithu AI] GEMINI_API_KEY is set but isn't a valid Gemini key (real keys start with " +
+          "'AIzaSy'). Get one at https://aistudio.google.com/apikey and update apps/web/.env.local. " +
+          "Serving offline fallback responses until this is fixed.",
+      );
+    }
+
+    // Real platform data — every figure below is read from the same sources
+    // the Executive Dashboard and module pages use. Nothing here is invented;
+    // a fetch failure yields an honest empty result, not a made-up number.
+    const [documents, purchaseStats, vendors, employees] = await Promise.all([
+      getDocuments().catch(() => []),
+      getPurchaseBillStats().catch(() => null),
+      getVendors().catch(() => []),
+      getEmployees().catch(() => []),
+    ]);
+
+    const documentsIndex = documents.map((doc) => ({
+      title: doc.title,
+      path: `/dms/${doc.id}`,
+      category: doc.category_label,
+      date: doc.created_at?.slice(0, 10) ?? "",
+      snippet: doc.ai_summary || doc.description || "",
+    }));
+
     const promptKeywords = lowerPrompt.split(/\W+/).filter((w) => w.length > 2);
-    const retrievedRAGDocs = RITHU_DOCUMENTS_INDEX.filter((doc) => {
+    const retrievedRAGDocs = documentsIndex.filter((doc) => {
       const fullText = `${doc.title} ${doc.category} ${doc.snippet}`.toLowerCase();
       return promptKeywords.some((k) => fullText.includes(k));
     });
-    const activeRAGDocs = retrievedRAGDocs.length > 0 ? retrievedRAGDocs : RITHU_DOCUMENTS_INDEX;
+    const activeRAGDocs =
+      retrievedRAGDocs.length > 0 ? retrievedRAGDocs : documentsIndex.slice(0, 8);
 
-    // SaaS Production Path 1: Call Google Gemini API (gemini-2.0-flash) if GEMINI_API_KEY is present
-    if (apiKey) {
+    const activeVendors = vendors.filter((v) => v.is_active);
+    const activeEmployees = employees.filter((e) => e.status === "Active");
+
+    // SaaS Production Path 1: Call Google Gemini API (gemini-2.0-flash) if a valid key is present
+    if (looksLikeGeminiKey) {
       try {
         const contentsParts: Array<Record<string, unknown>> = [];
 
-        // If file attachment contains base64 image data, attach inlineData for multimodal vision inspection
         if (
           fileAttachment?.dataUrl &&
           fileAttachment.dataUrl.startsWith("data:image/") &&
@@ -86,47 +147,45 @@ export async function POST(request: Request) {
         ) {
           const mimeType = fileAttachment.dataUrl.split(";")[0].replace("data:", "");
           const base64Data = fileAttachment.dataUrl.split(";base64,")[1];
-          contentsParts.push({
-            inlineData: {
-              mimeType,
-              data: base64Data,
-            },
-          });
+          contentsParts.push({ inlineData: { mimeType, data: base64Data } });
         }
 
-        const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI RAGbot assistant for Water Works Engineering (WWE OS).
-Answer the user naturally, concisely, and warmly. Base your answer on the retrieved document context when available.
-
+        const systemPrompt = `You are Rithu, an intelligent, warm, friendly AI assistant for Water Works Engineering (WWE OS).
+Answer the user naturally, concisely, and warmly. Base your answer on the retrieved document context and live figures below when relevant — do not invent numbers or documents that aren't listed here.
+${formatHistoryForPrompt(history)}
 Registered Company & Entities Context:
 - Primary Company: Water Works Engineering (WWE OS)
-- Key Internal Team Members: Lakshmanan (Platform Operator / Executive), Preethika (Senior Operations Engineer), Rajesh (Site Manager), Priya (Finance Auditor), total 28 active staff members.
-- Registered Vendors & Suppliers: Apex Technologies, Sri Laxmi Electricals, Rithu Enterprises
-- Operational Equipment: 42 Active Units in service
-
+- Active Team Members (${activeEmployees.length}): ${
+          activeEmployees
+            .slice(0, 15)
+            .map((e) => `${e.employee_name} (${e.designation})`)
+            .join(", ") || "none on file yet"
+        }
+- Active Vendors & Suppliers: ${activeVendors.map((v) => v.name).join(", ") || "none on file yet"}
 ${
-  fileAttachment
-    ? `User uploaded/dropped a file: "${fileAttachment.name}" (Type: ${fileAttachment.type}, Size: ${(fileAttachment.size / 1024).toFixed(1)} KB).
-Please inspect this file carefully, explain what it is, extract key details if it's a document/invoice/receipt/image/blueprint, and suggest logical next actions.`
+  contextFile
+    ? `User's file in context: "${contextFile.name}" (Type: ${contextFile.type}).${
+        fileAttachment
+          ? ` Just uploaded/dropped this turn — inspect it, explain what it is, extract key details if it's a document/invoice/receipt/image, and suggest logical next actions.`
+          : ` Uploaded earlier in this conversation — use it as context if the user refers back to it (e.g. asks to summarize).`
+      }`
     : ""
 }
 
-Retrieved R2 Cloudflare Indexed Knowledge Documents (RAG Context):
+Retrieved Indexed Documents (from Document Management, real data — may be empty if none match or none are uploaded yet):
 ${JSON.stringify(activeRAGDocs, null, 2)}
 
-Current Live Company Figures:
-- Revenue: ₹21,50,000 (+14.2% ↑)
-- Expenses: ₹9,45,000 (-3.8% ↓)
-- Cash Position: ₹48,20,000
-- Purchases: 28 Bills Processed (2 Pending Review)
-- Active Workforce: 28 Employees (96% Attendance)
-- Equipment: 42 Active Units
+Live Company Figures (from Purchases & Finance):
+${FINANCIAL_SUMMARY.map((row) => `- ${row.label}: ${formatValue(row.value, row.format)}`).join("\n")}
+- Purchases: ${purchaseStats?.processed ?? "—"} bills processed, ${purchaseStats?.needs_attention ?? "—"} needing review, ${purchaseStats?.unpaid ?? "—"} unpaid
 
-User Question/Prompt: "${prompt || "What is this file and explain what's inside?"}"
+User Question/Prompt: "${effectivePrompt || "What is this file and explain what's inside?"}"
+${slashIntent ? `(User invoked the /${slashIntent} command — bias your answer toward that intent.)` : ""}
 
 Return your response strictly as a JSON object matching this schema:
 {
   "replyText": "Your friendly, conversational markdown response text",
-  "emailDraft": null or {"to": "string", "subject": "string", "body": "string"},
+  "emailDraft": null or {"to": "string (leave empty string if you don't have a real contact on file — never invent an email address)", "subject": "string", "body": "string"},
   "relatedDocs": null or [{"title": "string", "path": "string", "category": "string", "date": "string"}],
   "suggestedPrompts": ["3 short, natural follow-up prompt suggestions"]
 }`;
@@ -140,12 +199,7 @@ Return your response strictly as a JSON object matching this schema:
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: contentsParts,
-                },
-              ],
+              contents: [{ role: "user", parts: contentsParts }],
               generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1024,
@@ -165,12 +219,7 @@ Return your response strictly as a JSON object matching this schema:
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                contents: [
-                  {
-                    role: "user",
-                    parts: contentsParts,
-                  },
-                ],
+                contents: [{ role: "user", parts: contentsParts }],
                 generationConfig: {
                   temperature: 0.7,
                   maxOutputTokens: 1024,
@@ -185,7 +234,6 @@ Return your response strictly as a JSON object matching this schema:
           const geminiData = await geminiResponse.json();
           let jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
           if (jsonText) {
-            // Clean up any markdown code block wrapper if present
             jsonText = jsonText.trim();
             if (jsonText.startsWith("```json")) {
               jsonText = jsonText.slice(7);
@@ -202,7 +250,10 @@ Return your response strictly as a JSON object matching this schema:
               text:
                 parsed.replyText || parsed.text || "I've processed your request using Gemini AI!",
               timestamp: new Date().toISOString(),
-              emailDraft: parsed.emailDraft || undefined,
+              emailDraft:
+                parsed.emailDraft && parsed.emailDraft.to !== undefined
+                  ? parsed.emailDraft
+                  : undefined,
               relatedDocs: parsed.relatedDocs || undefined,
               suggestedPrompts: parsed.suggestedPrompts || [
                 "Summarize document key points",
@@ -220,7 +271,8 @@ Return your response strictly as a JSON object matching this schema:
       }
     }
 
-    // Smart Dynamic Context Provider (Fallback when no API key)
+    // Offline fallback (no valid Gemini key, or the Gemini call failed above).
+    // Slash-command intent takes priority over loose keyword matching.
     let replyText = "";
     let emailDraft: ChatMessage["emailDraft"] = undefined;
     let relatedDocs: ChatMessage["relatedDocs"] = undefined;
@@ -235,76 +287,100 @@ Return your response strictly as a JSON object matching this schema:
 
       if (isImg) {
         replyText =
-          `I inspected your image **"${fileName}"**! 📷\n\n` +
-          `• **Type:** High-resolution image asset (${fileAttachment.type || "Image"})\n` +
-          `• **File Size:** ${(fileAttachment.size / 1024).toFixed(1)} KB\n` +
-          `• **Visual Analysis:** This appears to be a brand asset / diagram for Water Works Engineering (WWE OS). The typography and blue/metallic geometric line-art symbolize fluid dynamics and mechanical engineering.\n\n` +
-          `Would you like me to set this image as your company logo, upload it to Document Management (DMS), or draft a brand report?`;
+          `I received your image **"${fileName}"**! 📷\n\n` +
+          `• **File Size:** ${(fileAttachment.size / 1024).toFixed(1)} KB\n\n` +
+          `I can't inspect the image contents right now (offline mode — no AI key configured), but I can archive it, or you can tell me what it is and I'll draft next steps.`;
         suggestedPrompts = [
           "Upload to Document Management (DMS)",
           "Draft email with this image",
-          "Set as primary company logo",
+          "Archive in DMS",
         ];
       } else if (isPdf) {
         replyText =
-          `I received your document **"${fileName}"**! 📄\n\n` +
-          `• **Document Type:** PDF Document (${(fileAttachment.size / 1024).toFixed(1)} KB)\n` +
-          `• **Content Extract:** Verified operational compliance & formal documentation for WWE OS.\n\n` +
-          `I can summarize the key terms, extract line items into Purchase Bills, or archive it under DMS.`;
-        suggestedPrompts = [
-          "Summarize key contract clauses",
-          "Extract invoice line items",
-          "Draft email to vendor",
-        ];
+          `I received your document **"${fileName}"** (${(fileAttachment.size / 1024).toFixed(1)} KB)! 📄\n\n` +
+          `I'm running in offline mode (no AI key configured) so I can't read its contents yet — but once it's uploaded to Document Management, I can look it up by name. ` +
+          `Type "summarize" any time and I'll pull up what I have.`;
+        suggestedPrompts = ["Summarize this document", "Archive in DMS", "Draft email to vendor"];
       } else if (isExcel) {
         replyText =
-          `I loaded your spreadsheet **"${fileName}"**! 📊\n\n` +
-          `• **Dataset:** Financial & operational spreadsheet (${(fileAttachment.size / 1024).toFixed(1)} KB)\n` +
-          `• **Data Summary:** Ready to parse rows for HR attendance, expense reconciliation, or inventory stock levels.\n\n` +
-          `What analysis would you like me to run?`;
-        suggestedPrompts = [
-          "Reconcile expense numbers",
-          "Import data into Finance module",
-          "Generate executive audit summary",
-        ];
+          `I received your spreadsheet **"${fileName}"** (${(fileAttachment.size / 1024).toFixed(1)} KB)! 📊\n\n` +
+          `Offline mode — I can't parse rows right now, but once it's in Document Management or Purchases I can pull the numbers back up.`;
+        suggestedPrompts = ["Show purchase stats", "Import into Finance module", "Archive in DMS"];
       } else {
         replyText =
           `I received **"${fileName}"** (${(fileAttachment.size / 1024).toFixed(1)} KB)! 📁\n\n` +
-          `I have ingested the file context. What would you like me to do with it?`;
+          `What would you like me to do with it?`;
+        suggestedPrompts = ["Summarize this document", "Archive in DMS", "Explain this file"];
+      }
+    } else if (wantsSummary) {
+      if (contextFile) {
+        const doc = activeRAGDocs.find((d) =>
+          d.title.toLowerCase().includes(contextFile.name.toLowerCase().split(".")[0]),
+        );
+        replyText = doc
+          ? `Here's what I have on **"${contextFile.name}"**:\n\n${doc.snippet || "No summary generated yet — open it in Document Management to view or regenerate the AI summary."}`
+          : `I don't have a stored summary for **"${contextFile.name}"** yet (offline mode, or it isn't archived in Document Management). Upload it under Documents and I can summarize it once it's indexed.`;
         suggestedPrompts = [
-          "Explain what is in this file",
-          "Summarize document text",
-          "Archive in DMS",
+          "Open in Document Management",
+          "Draft email about this file",
+          "Show all documents",
+        ];
+      } else {
+        replyText = `Sure — attach or drop the file you'd like me to summarize, and I'll pull up what I have on it.`;
+        suggestedPrompts = [
+          "Show Rithu documents",
+          "How is the business doing?",
+          "Write an email to vendor",
         ];
       }
     } else if (
-      lowerPrompt.includes("preethika") ||
+      slashIntent === "docs" ||
+      lowerPrompt.includes("file") ||
+      lowerPrompt.includes("doc")
+    ) {
+      relatedDocs = documentsIndex.length > 0 ? activeRAGDocs : undefined;
+      replyText =
+        documentsIndex.length > 0
+          ? "Here are the documents I found — tap any of them to view:"
+          : "No documents indexed in Document Management yet. Upload one from the Documents area and I'll be able to look it up here.";
+      suggestedPrompts = [
+        "Upload a document",
+        "How is the company doing financially?",
+        "Show vendor list",
+      ];
+    } else if (
       lowerPrompt.includes("employee") ||
       lowerPrompt.includes("who is") ||
-      lowerPrompt.includes("company") ||
+      lowerPrompt.includes("staff") ||
       lowerPrompt.includes("vendor") ||
       lowerPrompt.includes("supplier")
     ) {
-      if (lowerPrompt.includes("preethika")) {
+      const namedEmployee = activeEmployees.find((e) =>
+        lowerPrompt.includes(e.employee_name.toLowerCase().split(" ")[0]),
+      );
+      if (namedEmployee) {
         replyText =
-          "I searched our WWE OS system registry for **Preethika**: 😊\n\n" +
-          "• **Type:** Registered Team Member (HR Employee)\n" +
-          "• **Role:** Senior Operations Engineer\n" +
-          "• **Module:** Human Resources (HR Attendance & Payroll)\n" +
-          "• **Status:** Active (96% Attendance Rate)\n\n" +
-          "*(Note: Preethika is an internal employee, not an external vendor company. Registered vendors include Apex Technologies, Sri Laxmi Electricals, and Rithu Enterprises).*";
+          `I found **${namedEmployee.employee_name}** in the HR registry: 😊\n\n` +
+          `• **Designation:** ${namedEmployee.designation}\n` +
+          `• **Department:** ${namedEmployee.department}\n` +
+          `• **Status:** ${namedEmployee.status}`;
         suggestedPrompts = [
-          "Check Preethika attendance log",
-          "Show all registered vendors",
           "View HR Employee Directory",
+          "Show all registered vendors",
+          "Check attendance",
         ];
       } else {
         replyText =
-          "Here is the summary of registered entities in Water Works Engineering (WWE OS):\n\n" +
-          "• **Primary Company:** Water Works Engineering (WWE OS)\n" +
-          "• **Registered Vendors:** Sri Laxmi Electricals, Apex Technologies, Rithu Enterprises\n" +
-          "• **Key Staff & Operators:** Lakshmanan (Platform Operator), Preethika (Sr. Operations Engineer), Rajesh (Site Manager), Priya (Finance Auditor)\n" +
-          "• **Workforce Total:** 28 Active Employees";
+          `Here's what's on file in WWE OS:\n\n` +
+          `• **Active Team:** ${activeEmployees.length} employee${activeEmployees.length === 1 ? "" : "s"}${
+            activeEmployees.length
+              ? ` — ${activeEmployees
+                  .slice(0, 5)
+                  .map((e) => e.employee_name)
+                  .join(", ")}${activeEmployees.length > 5 ? ", …" : ""}`
+              : ""
+          }\n` +
+          `• **Active Vendors:** ${activeVendors.length ? activeVendors.map((v) => v.name).join(", ") : "none on file yet"}`;
         suggestedPrompts = [
           "Show vendor invoices",
           "Check HR Employee Directory",
@@ -312,40 +388,33 @@ Return your response strictly as a JSON object matching this schema:
         ];
       }
     } else if (
-      lowerPrompt.includes("rithu") ||
-      lowerPrompt.includes("file") ||
-      lowerPrompt.includes("doc")
-    ) {
-      relatedDocs = RITHU_DOCUMENTS_INDEX;
-      replyText =
-        "Here are all the documents and files related to **Rithu**! You can tap on any of them to view:";
-      suggestedPrompts = [
-        "Write an email about the SLA",
-        "How is the company doing financially?",
-        "Show vendor invoices",
-      ];
-    } else if (
+      slashIntent === "email" ||
       lowerPrompt.includes("email") ||
       lowerPrompt.includes("draft") ||
       lowerPrompt.includes("mail") ||
       lowerPrompt.includes("write")
     ) {
-      const isVendor =
+      const namedVendor = activeVendors.find((v) =>
+        lowerPrompt.includes(v.name.toLowerCase().split(" ")[0]),
+      );
+      const isVendorEmail =
+        namedVendor ||
         lowerPrompt.includes("vendor") ||
         lowerPrompt.includes("supplier") ||
         lowerPrompt.includes("invoice");
       emailDraft = {
-        to: isVendor ? "vendor.contact@srilaxmi-elec.com" : "rithu@waterworks.engineering",
-        subject: isVendor
-          ? "Update regarding Tax Invoice & Delivery Challan"
-          : "Quarterly Review & SLA Summary",
-        body: isVendor
-          ? `Hi there,\n\nHope you're doing well!\n\nWe're reviewing our purchase bills for August 2026. Could you please send over the updated tax invoice and delivery challan for Purchase Order #PB-8832 when you get a chance?\n\nThanks,\nLakshmanan\nWater Works Engineering`
-          : `Hi Rithu,\n\nHear is a quick update on our operational summary for Q3 2026. All payroll calculations, HR registers, and purchase receipts are up to date.\n\nLet me know whenever you'd like to catch up or review!\n\nBest,\nLakshmanan\nWater Works Engineering`,
+        to: "",
+        subject: isVendorEmail
+          ? `Update regarding ${namedVendor ? namedVendor.name : "your"} Invoice`
+          : "Quarterly Review Summary",
+        body: isVendorEmail
+          ? `Hi ${namedVendor ? namedVendor.name : "there"},\n\nHope you're doing well!\n\nCould you please send over the latest tax invoice and delivery challan when you get a chance?\n\nThanks,\nWater Works Engineering`
+          : `Hi,\n\nHere's a quick update on our operational summary. Let me know if you'd like to review anything in detail.\n\nBest,\nWater Works Engineering`,
       };
-      replyText = `Here's a draft for you! You can copy it or send it directly below:`;
+      replyText = `Here's a draft — I left the "To" field blank since I don't have a stored contact email; add it before sending:`;
       suggestedPrompts = ["Show Rithu documents", "How are sales doing?", "Check pending bills"];
     } else if (
+      slashIntent === "stats" ||
       lowerPrompt.includes("finance") ||
       lowerPrompt.includes("stat") ||
       lowerPrompt.includes("revenue") ||
@@ -359,16 +428,22 @@ Return your response strictly as a JSON object matching this schema:
     ) {
       replyText =
         "Here's a quick look at how the business is doing today! 😊\n\n" +
-        "• **Revenue**: ₹21,50,000 (+14.2% ↑)\n" +
-        "• **Expenses**: ₹9,45,000 (-3.8% ↓)\n" +
-        "• **Cash Position**: ₹48,20,000\n" +
-        "• **Purchases / Invoices Received**: 28 bills processed (2 pending review, 5 unpaid)\n" +
-        "• **Team**: 28 active team members (96% attendance)\n" +
-        "• **Equipment**: 42 active units in service";
+        FINANCIAL_SUMMARY.map(
+          (row) => `• **${row.label}**: ${formatValue(row.value, row.format)}`,
+        ).join("\n") +
+        `\n• **Purchases / Invoices**: ${purchaseStats?.processed ?? "—"} processed, ${purchaseStats?.needs_attention ?? "—"} pending review, ${purchaseStats?.unpaid ?? "—"} unpaid\n` +
+        `• **Team**: ${activeEmployees.length || "—"} active employees`;
       suggestedPrompts = [
         "Write an email to vendor",
         "Show Rithu documents",
         "Check employee attendance",
+      ];
+    } else if (slashIntent === "explain" && contextFile) {
+      replyText = `I don't have vision/summarization available right now (offline mode — no AI key configured), but "${contextFile.name}" is attached in this conversation. Once a valid GEMINI_API_KEY is configured I can inspect it directly.`;
+      suggestedPrompts = [
+        "Show Rithu documents",
+        "How is the business doing?",
+        "Write an email to vendor",
       ];
     } else {
       replyText = `Hey! What would you like help with today? I can find files, write emails, or check business stats for you!`;
