@@ -4,11 +4,25 @@
 
 export type InvoiceType = "amc" | "sales";
 export type TaxMode = "cgst_sgst" | "igst";
-export type InvoiceStatus = "issued" | "cancelled";
+export type InvoiceStatus = "issued" | "approved" | "on_hold" | "declined" | "cancelled";
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   issued: "Issued",
+  approved: "Approved",
+  on_hold: "On Hold",
+  declined: "Declined",
   cancelled: "Cancelled",
+};
+
+export const INVOICE_STATUS_BADGE_VARIANTS: Record<
+  InvoiceStatus,
+  "default" | "secondary" | "success" | "warning" | "destructive"
+> = {
+  issued: "secondary",
+  approved: "success",
+  on_hold: "warning",
+  declined: "destructive",
+  cancelled: "destructive",
 };
 
 export const INVOICE_TYPE_LABELS: Record<InvoiceType, string> = {

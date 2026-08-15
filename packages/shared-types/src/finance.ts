@@ -8,7 +8,7 @@
 
 export type InvoiceType = "amc" | "sales";
 export type TaxMode = "cgst_sgst" | "igst";
-export type InvoiceStatus = "issued" | "cancelled";
+export type InvoiceStatus = "issued" | "approved" | "on_hold" | "declined" | "cancelled";
 
 export interface BillingCustomer {
   id: string;
