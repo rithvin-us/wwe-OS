@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 
-import { getAccessToken, internalApiUrl, isAuthenticated } from "@/lib/api/server";
+import { getAccessToken, internalApiUrl } from "@/lib/api/server";
 
 /**
  * POST /api/hr/attendance/checkin
  * Route Handler for face recognition check-in kiosk.
+ *
+ * Deliberately unauthenticated — this proxies both the public /checkin page
+ * (no login, shared link) and the logged-in admin kiosk dialog. The Django
+ * view itself is AllowAny for the same reason (see CheckInView docstring);
+ * gating it here would 401 every real employee using the public link.
  * Receives primary photo + burst frames + geolocation, forwards multipart to backend.
  */
 export async function POST(request: Request) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ ok: false, error: "Authentication required." }, { status: 401 });
-  }
-
   let form: FormData;
   try {
     form = await request.formData();
