@@ -96,15 +96,12 @@ export async function POST(request: Request) {
     // last attached in the conversation, so "summarise" alone still works.
     const contextFile = fileAttachment ?? lastAttachmentFromHistory(history) ?? undefined;
 
+    // Google issues more than one key shape ("AIzaSy..." from the classic
+    // AI Studio flow, "AQ...." from newer OAuth-adjacent flows) — both work
+    // against the real API. Gate on presence only; a genuinely bad key still
+    // fails safely below and falls through to the offline responses.
     const apiKey = process.env.GEMINI_API_KEY;
-    const looksLikeGeminiKey = !!apiKey && /^AIzaSy[A-Za-z0-9_-]{20,}$/.test(apiKey);
-    if (apiKey && !looksLikeGeminiKey) {
-      console.error(
-        "[Rithu AI] GEMINI_API_KEY is set but isn't a valid Gemini key (real keys start with " +
-          "'AIzaSy'). Get one at https://aistudio.google.com/apikey and update apps/web/.env.local. " +
-          "Serving offline fallback responses until this is fixed.",
-      );
-    }
+    const looksLikeGeminiKey = !!apiKey && apiKey.length >= 20;
 
     // Real platform data — every figure below is read from the same sources
     // the Executive Dashboard and module pages use. Nothing here is invented;
