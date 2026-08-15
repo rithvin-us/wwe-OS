@@ -12,7 +12,7 @@ from datetime import date
 
 from django.db.models import Q
 from django.http import HttpResponse
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -402,3 +402,23 @@ class RegisterViewSet(ReadOnlyModelViewSet):
         """Confirm an archived workbook has not been altered since generation."""
         result = RegisterService().verify(self.get_object())
         return Response(VerifyRegisterSerializer(result).data)
+
+
+class FaceDiagnosticsView(APIView):
+    """Read-only face check-in engine diagnostics for the Maintenance dashboard.
+
+    Same check logic as `manage.py face_doctor` (see
+    `hr.backend.services.face_doctor`) — engine wiring, enrolled-template
+    dimension health, and a live face-ai `/version` probe when
+    FACE_ENGINE=http. Surfaces the exact "dimension mismatch" / "fallback
+    stub" failure modes that broke check-in silently earlier this project.
+    """
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "hr.diagnostics.read"
+
+    @extend_schema(tags=["hr"], responses={200: OpenApiResponse(description="Diagnostics report.")})
+    def get(self, request: Request) -> Response:
+        from hr.backend.services.face_doctor import run_face_diagnostics
+
+        return Response(run_face_diagnostics())

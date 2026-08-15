@@ -44,6 +44,7 @@ urlpatterns = [
     path("healthz", health.liveness, name="liveness"),
     path("readyz", health.readiness, name="readiness"),
     path("metrics", health.metrics, name="metrics"),
+    path("api/v1/ops/status/", health.runtime_status, name="ops-status"),
     # API surface
     path("api/v1/", include((api_v1, "v1"))),
     # OpenAPI

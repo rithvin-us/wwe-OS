@@ -20,6 +20,7 @@ from hr.backend.api.views import (
     AttendanceGridView,
     DeductionViewSet,
     EmployeeViewSet,
+    FaceDiagnosticsView,
     HolidayViewSet,
     PayrollRunView,
     PayrollView,
@@ -52,5 +53,6 @@ urlpatterns = [
     path("analytics/trends/", AttendanceTrendsView.as_view(), name="hr-analytics-trends"),
     path("analytics/anomalies/", AnomaliesView.as_view(), name="hr-analytics-anomalies"),
     path("policy-chat/", PolicyChatView.as_view(), name="hr-policy-chat"),
+    path("face/diagnostics/", FaceDiagnosticsView.as_view(), name="hr-face-diagnostics"),
     *router.urls,
 ]

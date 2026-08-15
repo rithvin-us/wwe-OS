@@ -25,7 +25,7 @@ export function ConfigForm({ config }: { config: TenantConfig }) {
         config: {
           ...config,
           gemini_api_key: fd.get("gemini_api_key") as string,
-          ocr_model: (fd.get("ocr_model") as string) || "gemini-2.0-flash",
+          ocr_model: (fd.get("ocr_model") as string) || "gemini-flash-latest",
           openai_api_key: fd.get("openai_api_key") as string,
         },
       });
@@ -78,16 +78,18 @@ export function ConfigForm({ config }: { config: TenantConfig }) {
         <select
           id="ocr_model"
           name="ocr_model"
-          defaultValue={(config?.ocr_model as string) || "gemini-2.0-flash"}
+          defaultValue={(config?.ocr_model as string) || "gemini-flash-latest"}
           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended — Fast & Accurate)</option>
-          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Highest Accuracy for Scans)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard Baseline)</option>
-          <option value="gemini-flash-latest">Gemini Flash Latest</option>
+          <option value="gemini-flash-latest">Gemini Flash Latest (Recommended)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (pinned — may be retired)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (pinned — may be retired)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (pinned — may be retired)</option>
         </select>
         <p className="text-xs text-muted-foreground">
-          Selects the default multimodal vision model used for receipts and scanned bills.
+          Selects the default multimodal vision model used for receipts and scanned bills. Google
+          retires dated snapshots (2.0-flash, 1.5-*) without notice — &quot;-latest&quot; tracks
+          whatever is currently live and won&apos;t 404 out from under you.
         </p>
       </div>
 
