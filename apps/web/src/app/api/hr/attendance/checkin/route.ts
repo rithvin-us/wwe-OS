@@ -52,9 +52,17 @@ export async function POST(request: Request) {
     }
 
     if (!upstream.ok || !(body as { success?: boolean })?.success) {
-      const err = (body as { error?: { message?: string } })?.error;
+      const err = (body as { error?: { message?: string; details?: Record<string, unknown> } })
+        ?.error;
+      // The platform's generic handler collapses any multi-field ValidationError
+      // to "One or more fields are invalid." and moves the real, user-facing
+      // reason (e.g. "Face not recognized...", a liveness/blur rejection) into
+      // error.details — prefer that over the generic message when present.
+      const firstDetail = Object.values(err?.details ?? {}).find(
+        (v): v is string[] => Array.isArray(v) && v.length > 0 && typeof v[0] === "string",
+      )?.[0];
       return NextResponse.json(
-        { ok: false, error: err?.message ?? "Face check-in failed." },
+        { ok: false, error: firstDetail ?? err?.message ?? "Face check-in failed." },
         { status: upstream.status },
       );
     }

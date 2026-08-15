@@ -78,14 +78,31 @@ export function useFaceCapture(videoRef: RefObject<HTMLVideoElement | null>) {
     setCameraActive(false);
   }
 
-  function snapshot(): Promise<Blob | null> {
+  // HAVE_CURRENT_DATA (2) — the browser has decoded at least one frame.
+  // Below that, drawImage() silently draws whatever was last in the canvas
+  // (nothing, on the very first capture), producing a blank frame that the
+  // face-ai service correctly — but unhelpfully — rejects as "no face".
+  const VIDEO_READY_STATE = 2;
+  const VIDEO_READY_TIMEOUT_MS = 1500;
+  const VIDEO_READY_POLL_MS = 50;
+
+  async function waitForVideoReady(video: HTMLVideoElement): Promise<boolean> {
+    const deadline = Date.now() + VIDEO_READY_TIMEOUT_MS;
+    while (video.readyState < VIDEO_READY_STATE && Date.now() < deadline) {
+      await wait(VIDEO_READY_POLL_MS);
+    }
+    return video.readyState >= VIDEO_READY_STATE;
+  }
+
+  async function snapshot(): Promise<Blob | null> {
     const video = videoRef.current;
-    if (!video) return Promise.resolve(null);
+    if (!video) return null;
+    if (!(await waitForVideoReady(video))) return null;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return Promise.resolve(null);
+    if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
   }

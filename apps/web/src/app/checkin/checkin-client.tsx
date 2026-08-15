@@ -65,7 +65,10 @@ export function PublicMobileCheckIn() {
       if (res.ok) {
         setResult(data);
       } else {
-        setErrorMessage(data.message || data.detail || "Check-in failed. Please try again.");
+        // The Route Handler's error field is `error`, not `message`/`detail` —
+        // those never existed on this response shape, so every failure was
+        // silently falling through to the generic fallback below.
+        setErrorMessage(data.error || "Check-in failed. Please try again.");
       }
     } catch (err) {
       setScanning(false);
