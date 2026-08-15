@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+from django.conf import settings
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from shared.exceptions import NotFoundError
 from shared.views import BaseModelViewSet
+from tenancy.services import TenancyService
 from users.models import User
 
-from notifications.models import Notification, Status
+from notifications.models import Notification, PushSubscription, Status
 from notifications.serializers import (
     NotificationCreateSerializer,
     NotificationSerializer,
+    PushSubscribeSerializer,
 )
 from notifications.services import NotificationService
 
@@ -69,3 +72,47 @@ class NotificationViewSet(BaseModelViewSet):
     def read_all(self, request: Request) -> Response:
         updated = NotificationService().mark_all_read(request.user)
         return Response({"updated": updated})
+
+    @action(detail=False, methods=["get"], url_path="push/vapid-public-key")
+    def vapid_public_key(self, request: Request) -> Response:
+        return Response({"key": settings.VAPID_PUBLIC_KEY or None})
+
+    @action(detail=False, methods=["post"], url_path="push/subscribe")
+    def push_subscribe(self, request: Request) -> Response:
+        data = PushSubscribeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        # A superuser created without a tenant (the bootstrap operator
+        # account) has no `.tenant` — resolve the single-operator default
+        # the same way the AI gateway does rather than failing every
+        # subscribe from that account.
+        tenant = request.user.tenant or TenancyService().resolve_existing_default_tenant()
+        # all_objects: `endpoint` is unique across tenants, not scoped to
+        # one — look it up unscoped so re-subscribing never races the
+        # tenant-scoped manager into inserting a duplicate.
+        # Reset is_deleted/deleted_at explicitly — this row may be a prior
+        # soft-deleted unsubscribe of the same endpoint (see delete() below).
+        PushSubscription.all_objects.update_or_create(
+            endpoint=v["endpoint"],
+            defaults={
+                "recipient": request.user,
+                "tenant": tenant,
+                "p256dh_key": v["keys"]["p256dh"],
+                "auth_key": v["keys"]["auth"],
+                "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
+                "is_deleted": False,
+                "deleted_at": None,
+            },
+        )
+        return Response({"subscribed": True}, status=201)
+
+    @action(detail=False, methods=["post"], url_path="push/unsubscribe")
+    def push_unsubscribe(self, request: Request) -> Response:
+        endpoint = request.data.get("endpoint", "")
+        # QuerySet.delete() is soft-delete platform-wide (shared/models.py) —
+        # it returns the updated row count, not Django's default
+        # (count, {model: count}) tuple.
+        updated = PushSubscription.objects.filter(
+            recipient=request.user, endpoint=endpoint
+        ).delete()
+        return Response({"unsubscribed": updated > 0})

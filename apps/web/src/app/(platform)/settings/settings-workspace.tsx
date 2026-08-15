@@ -10,6 +10,7 @@ import { PasswordForm } from "@/app/(platform)/settings/password-form";
 import { ProfileForm } from "@/app/(platform)/settings/profile-form";
 import { FaceEnrollmentCard } from "@/app/(platform)/settings/face-enrollment-card";
 import { EmailIngestionCard } from "@/app/(platform)/settings/email-ingestion-card";
+import { PushNotificationsCard } from "@/app/(platform)/settings/push-notifications-card";
 import { SettingsTopologyDiagram } from "@/app/(platform)/settings/settings-topology-diagram";
 import type { CompanyBasics, CompanyProfile, MyProfile } from "@/lib/settings";
 
@@ -129,6 +130,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
+            className="space-y-4"
           >
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
@@ -145,6 +147,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
                 <ProfileForm profile={profile} />
               </CardContent>
             </Card>
+            <PushNotificationsCard />
           </motion.div>
         )}
 

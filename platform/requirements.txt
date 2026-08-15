@@ -22,3 +22,4 @@ pypdf>=5.0           # auditor: merges PDFs into one package
 # step, so leaving it out here means every upload 500s in production.
 boto3>=1.35.0
 docxtpl==0.16.8
+pywebpush>=2.0        # notifications: Web Push delivery + VAPID signing

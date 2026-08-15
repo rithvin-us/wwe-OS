@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -7,10 +8,11 @@ import httpx
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.utils import timezone
+from pywebpush import WebPushException, webpush
 from shared.events import Events, publish
 from shared.services import BaseService
 
-from notifications.models import Channel, Notification, Status
+from notifications.models import Channel, Notification, PushSubscription, Status
 
 logger = logging.getLogger("platform.notifications")
 
@@ -44,7 +46,9 @@ class NotificationService(BaseService):
 
     def _dispatch(self, notification: Notification) -> None:
         """In-app is stored (nothing more to do). Email and Telegram send now;
-        webhooks are wired by their service later."""
+        webhooks are wired by their service later. Push fans out to every
+        subscribed browser regardless of `channel` — it's a delivery
+        surface, not something a caller opts a notification into."""
         if notification.channel == Channel.EMAIL and notification.recipient.email:
             self._send_email(notification)
         elif notification.channel == Channel.TELEGRAM:
@@ -55,6 +59,7 @@ class NotificationService(BaseService):
                 notification.id,
                 notification.channel,
             )
+        self._send_push(notification)
 
     @staticmethod
     def _tenant_config(tenant) -> dict:
@@ -92,6 +97,50 @@ class NotificationService(BaseService):
             ).send(fail_silently=False)
         except Exception:  # noqa: BLE001 - best-effort delivery, never raise
             logger.exception("Failed to deliver email notification %s.", notification.id)
+
+    def _send_push(self, notification: Notification) -> None:
+        """Best-effort browser push to every device the recipient has
+        subscribed. A 404/410 response means the browser dropped the
+        subscription (uninstalled, permission revoked, storage cleared) —
+        clean it up rather than retry it forever."""
+        if not settings.VAPID_PRIVATE_KEY:
+            return
+        subscriptions = PushSubscription.objects.filter(recipient=notification.recipient)
+        if not subscriptions.exists():
+            return
+
+        payload = json.dumps(
+            {
+                "title": notification.title,
+                "body": notification.body,
+                "data": {
+                    "category": notification.category,
+                    "notification_id": str(notification.id),
+                },
+            }
+        )
+        for sub in subscriptions:
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": sub.endpoint,
+                        "keys": {"p256dh": sub.p256dh_key, "auth": sub.auth_key},
+                    },
+                    data=payload,
+                    vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": f"mailto:{settings.VAPID_CLAIM_EMAIL}"},
+                )
+            except WebPushException as exc:
+                status_code = getattr(exc.response, "status_code", None)
+                if status_code in (404, 410):
+                    sub.delete()
+                else:
+                    logger.warning(
+                        "Push delivery to subscription %s failed (%s): %s",
+                        sub.id,
+                        status_code,
+                        exc,
+                    )
 
     def _send_telegram(self, notification: Notification) -> None:
         """Tenant config (set via Maintenance > Integrations) takes priority

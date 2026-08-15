@@ -396,6 +396,16 @@ TELEGRAM_BOT_TOKEN = env_str("TELEGRAM_BOT_TOKEN", "") or ""
 TELEGRAM_ALERT_CHAT_ID = env_str("TELEGRAM_ALERT_CHAT_ID", "") or ""
 
 # --------------------------------------------------------------------------- #
+# Web Push (platform/notifications) — every Notification fans out to every
+# browser the recipient has granted permission on, regardless of `channel`.
+# Keypair generated once for this deployment; the private half never leaves
+# the backend, the public half is served to the frontend to subscribe with.
+# --------------------------------------------------------------------------- #
+VAPID_PUBLIC_KEY = env_str("VAPID_PUBLIC_KEY", "") or ""
+VAPID_PRIVATE_KEY = env_str("VAPID_PRIVATE_KEY", "") or ""
+VAPID_CLAIM_EMAIL = env_str("VAPID_CLAIM_EMAIL", "admin@wwe-os.local")
+
+# --------------------------------------------------------------------------- #
 # CORS
 # --------------------------------------------------------------------------- #
 CORS_ALLOWED_ORIGINS = env_list(

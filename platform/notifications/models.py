@@ -48,3 +48,23 @@ class Notification(TenantOwnedModel):
     class Meta(TenantOwnedModel.Meta):
         db_table = "notifications_notification"
         indexes = [models.Index(fields=["recipient", "status"])]
+
+
+class PushSubscription(TenantOwnedModel):
+    """A browser's Web Push subscription (one per device/browser a user has
+    granted notification permission on). Every Notification, regardless of
+    its own `channel`, also fans out to every push subscription its
+    recipient has — push is a delivery surface, not something callers opt
+    into per notification."""
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions"
+    )
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh_key = models.CharField(max_length=200)
+    auth_key = models.CharField(max_length=100)
+    user_agent = models.CharField(max_length=300, blank=True, default="")
+
+    class Meta(TenantOwnedModel.Meta):
+        db_table = "notifications_push_subscription"
+        indexes = [models.Index(fields=["recipient"])]
