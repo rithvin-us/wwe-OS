@@ -36,6 +36,8 @@ interface MaintenanceWorkspaceProps {
   faceDiag: FaceDiagnostics | null;
   period: CurrentPeriod | null;
   activity: AuditEntry[];
+  telegramBillsCount: number | null;
+  notificationsSentCount: number | null;
 }
 
 function timeAgo(iso: string): string {
@@ -72,6 +74,8 @@ export function MaintenanceWorkspace({
   faceDiag,
   period,
   activity,
+  telegramBillsCount,
+  notificationsSentCount,
 }: MaintenanceWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<
     "overview" | "ai_gateway" | "face_checkin" | "activity" | "integrations"
@@ -597,7 +601,11 @@ export function MaintenanceWorkspace({
                 <CardDescription>Manage third-party integrations and billing.</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <ConfigForm config={tenantConfig || {}} />
+                <ConfigForm
+                  config={tenantConfig || {}}
+                  telegramBillsCount={telegramBillsCount}
+                  notificationsSentCount={notificationsSentCount}
+                />
               </CardContent>
             </Card>
           </motion.div>

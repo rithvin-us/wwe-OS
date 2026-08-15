@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSearch, Layers, LayoutDashboard, Loader2, Moon, Sun, SunMoon } from "@bop/icons";
+import { FileSearch, LayoutDashboard, Loader2, Moon, Sun, SunMoon } from "@bop/icons";
 import { useTheme } from "@bop/theme";
 import { Badge } from "@bop/ui/components/badge";
 import {
@@ -304,10 +304,6 @@ export function CommandPalette({
               <CommandItem value="platform-dashboard" onSelect={() => go("/")}>
                 <LayoutDashboard aria-hidden />
                 Dashboard
-              </CommandItem>
-              <CommandItem value="platform-services" onSelect={() => go("/services")}>
-                <Layers aria-hidden />
-                Services
               </CommandItem>
               {ADMIN_PAGES.map((page) => (
                 <CommandItem

@@ -1,11 +1,11 @@
-import { Bot, Layers, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
+import { Bot, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
 /**
  * The one sidebar. Deliberately simple for a single-operator company: Home,
- * the apps, a quiet Services entry, and System (Settings). App entries resolve
- * from the registry so name and icon never drift between nav, launcher, pages.
+ * the apps, and System (Settings). App entries resolve from the registry so
+ * name and icon never drift between nav, launcher, pages.
  *
  * Multi-user administration (Users, Roles, Permissions, Audit) is intentionally
  * hidden — one operator does everything, so there are no access gates to manage.
@@ -67,7 +67,6 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
       { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
-      { name: "Services", href: "/services", icon: Layers, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
     ],
   },

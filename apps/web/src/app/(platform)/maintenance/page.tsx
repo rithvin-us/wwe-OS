@@ -7,8 +7,10 @@ import {
   getAIUsage,
   getCurrentPeriod,
   getFaceDiagnostics,
+  getNotificationsSentCount,
   getRecentActivity,
   getRuntimeStatus,
+  getTelegramBillsCount,
   getTenantConfig,
 } from "@/lib/maintenance";
 
@@ -17,7 +19,17 @@ export const metadata: Metadata = {
 };
 
 export default async function MaintenancePage() {
-  const [tenantConfig, aiUsage, aiOps, runtime, faceDiag, period, activity] = await Promise.all([
+  const [
+    tenantConfig,
+    aiUsage,
+    aiOps,
+    runtime,
+    faceDiag,
+    period,
+    activity,
+    telegramBillsCount,
+    notificationsSentCount,
+  ] = await Promise.all([
     getTenantConfig(),
     getAIUsage(),
     getAIOperations(),
@@ -25,6 +37,8 @@ export default async function MaintenancePage() {
     getFaceDiagnostics(),
     getCurrentPeriod(),
     getRecentActivity(),
+    getTelegramBillsCount(),
+    getNotificationsSentCount(),
   ]);
 
   return (
@@ -42,6 +56,8 @@ export default async function MaintenancePage() {
         faceDiag={faceDiag}
         period={period}
         activity={activity}
+        telegramBillsCount={telegramBillsCount}
+        notificationsSentCount={notificationsSentCount}
       />
     </div>
   );

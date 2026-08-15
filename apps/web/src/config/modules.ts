@@ -1,14 +1,9 @@
 import {
   BarChart3,
-  Bell,
-  Bot,
   FileSearch,
   FileText,
   History,
   Landmark,
-  Mail,
-  ScanText,
-  Send,
   ShoppingCart,
   Users,
   Workflow,
@@ -110,59 +105,6 @@ export const AVAILABILITY_LABEL: Record<Availability, string | null> = {
   "in-progress": "In progress",
   "coming-soon": "Coming soon",
 };
-
-/**
- * Background services — the machinery behind the apps. Kept off the main
- * navigation on purpose: one quiet "Services" page explains what runs in
- * the background, in plain language. Nothing to click, nothing to manage.
- */
-export interface PlatformService {
-  slug: string;
-  name: string;
-  icon: LucideIcon;
-  /** Plain-language line: what it does for the user, not how it works. */
-  plain: string;
-  availability: Availability;
-}
-
-export const SERVICES: PlatformService[] = [
-  {
-    slug: "notifications",
-    name: "Notifications",
-    icon: Bell,
-    plain: "Alerts the right person in the app and on Telegram. Email is not connected yet.",
-    availability: "in-progress",
-  },
-  {
-    slug: "ai-assistant",
-    name: "AI Assistant",
-    icon: Bot,
-    plain:
-      "Answers questions and helps with routine tasks — talk to it from the assistant bubble anywhere in the app.",
-    availability: "ready",
-  },
-  {
-    slug: "ocr",
-    name: "Document scanning",
-    icon: ScanText,
-    plain: "Turns paper scans, photos, and bills into searchable, usable text.",
-    availability: "ready",
-  },
-  {
-    slug: "email",
-    name: "Email delivery",
-    icon: Mail,
-    plain: "Sends platform updates and reports to inboxes reliably.",
-    availability: "coming-soon",
-  },
-  {
-    slug: "telegram",
-    name: "Telegram",
-    icon: Send,
-    plain: "Sends bills straight from your phone and delivers urgent alerts back.",
-    availability: "ready",
-  },
-];
 
 export function getApp(slug: string): PlatformApp | undefined {
   return APPS.find((a) => a.slug === slug);
