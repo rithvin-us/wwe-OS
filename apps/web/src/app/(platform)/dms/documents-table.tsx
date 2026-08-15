@@ -5,13 +5,21 @@ import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { DataTable } from "@bop/ui/components/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@bop/ui/components/dialog";
 import { TagPill } from "@bop/ui/components/tag-pill";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   DOCUMENT_CATEGORIES,
+  formatFileSize,
   type DocumentCategory,
   type DocumentRecord,
   type DocumentStatus,
@@ -37,105 +45,163 @@ function formatDate(iso: string) {
   });
 }
 
-const columns: ColumnDef<DocumentRecord, unknown>[] = [
-  {
-    accessorKey: "title",
-    header: "Title",
-    cell: ({ row }) => (
-      <Link
-        href={`/dms/${row.original.id}`}
-        className="font-medium text-foreground transition-colors hover:text-primary"
-      >
-        {row.original.title}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="capitalize">
-        {row.original.category_label}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <StatusBadge document={row.original} />,
-  },
-  {
-    id: "summary",
-    header: "Summary",
-    enableSorting: false,
-    cell: ({ row }) =>
-      row.original.summary_status === "ready" ? (
-        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-          <Sparkles aria-hidden className="size-3" />
-          Ready
-        </span>
-      ) : (
-        <span className="text-xs text-muted-foreground">—</span>
-      ),
-  },
-  {
-    id: "tags",
-    header: "Tags",
-    enableSorting: false,
-    cell: ({ row }) => {
-      const tags = row.original.tags;
-      if (tags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-      const shown = tags.slice(0, 2);
-      const overflow = tags.length - shown.length;
-      return (
-        <div className="flex flex-wrap items-center gap-1">
-          {shown.map((tag) => (
-            <TagPill key={tag.id} tag={tag} />
-          ))}
-          {overflow > 0 ? <span className="text-xs text-muted-foreground">+{overflow}</span> : null}
+function isPreviewableInline(contentType: string): boolean {
+  return contentType === "application/pdf" || contentType.startsWith("image/");
+}
+
+function PreviewDialog({
+  document,
+  onOpenChange,
+}: {
+  document: DocumentRecord | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const previewUrl = document ? `/api/dms/${document.id}/download?inline=1` : "";
+  const previewable = document ? isPreviewableInline(document.content_type) : false;
+
+  return (
+    <Dialog open={!!document} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[85vh] max-w-4xl flex-col">
+        <DialogHeader>
+          <DialogTitle>{document?.title}</DialogTitle>
+          <DialogDescription>
+            {document?.file_name} · {document ? formatFileSize(document.file_size) : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border bg-muted/20">
+          {!document ? null : document.content_type.startsWith("image/") ? (
+            <div className="flex h-full items-center justify-center overflow-auto p-2">
+              <img
+                src={previewUrl}
+                alt={document.title}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : previewable ? (
+            <iframe src={previewUrl} title={document.title} className="h-full w-full border-0" />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <FileText className="size-8 text-muted-foreground" />
+              <p className="max-w-sm text-sm text-muted-foreground">
+                This file type ({document.content_type || "unknown"}) can&apos;t be previewed
+                inline. Download it to view the contents.
+              </p>
+              <Button size="sm" variant="secondary" asChild>
+                <a href={`/api/dms/${document.id}/download`}>
+                  <Download aria-hidden />
+                  Download
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
-      );
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function buildColumns(
+  onPreview: (document: DocumentRecord) => void,
+): ColumnDef<DocumentRecord, unknown>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Title",
+      cell: ({ row }) => (
+        <Link
+          href={`/dms/${row.original.id}`}
+          className="font-medium text-foreground transition-colors hover:text-primary"
+        >
+          {row.original.title}
+        </Link>
+      ),
     },
-  },
-  {
-    accessorKey: "created_at",
-    header: "Added",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{formatDate(row.original.created_at)}</span>
-    ),
-  },
-  {
-    id: "actions",
-    header: "",
-    enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex justify-end gap-1">
-        <Button size="sm" variant="ghost" asChild>
-          <a
-            href={`/api/dms/${row.original.id}/download?inline=1`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="capitalize">
+          {row.original.category_label}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge document={row.original} />,
+    },
+    {
+      id: "summary",
+      header: "Summary",
+      enableSorting: false,
+      cell: ({ row }) =>
+        row.original.summary_status === "ready" ? (
+          <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+            <Sparkles aria-hidden className="size-3" />
+            Ready
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "tags",
+      header: "Tags",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const tags = row.original.tags;
+        if (tags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        const shown = tags.slice(0, 2);
+        const overflow = tags.length - shown.length;
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {shown.map((tag) => (
+              <TagPill key={tag.id} tag={tag} />
+            ))}
+            {overflow > 0 ? (
+              <span className="text-xs text-muted-foreground">+{overflow}</span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Added",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{formatDate(row.original.created_at)}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1">
+          <Button size="sm" variant="ghost" onClick={() => onPreview(row.original)}>
             <Eye aria-hidden />
             Preview
-          </a>
-        </Button>
-        <Button size="sm" variant="ghost" asChild>
-          <a href={`/api/dms/${row.original.id}/download`}>
-            <Download aria-hidden />
-            Download
-          </a>
-        </Button>
-      </div>
-    ),
-  },
-];
+          </Button>
+          <Button size="sm" variant="ghost" asChild>
+            <a href={`/api/dms/${row.original.id}/download`}>
+              <Download aria-hidden />
+              Download
+            </a>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+}
 
 export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
   const [aiFilter, setAiFilter] = useState<"all" | "ready" | "pending">("all");
+  const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
+
+  const columns = useMemo(() => buildColumns(setPreviewDoc), []);
 
   const rows = documents.filter((d) => {
     if (statusFilter !== "all" && d.status !== statusFilter) return false;
@@ -227,6 +293,8 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
               : "No documents match your search or filters. Try clearing some filters.",
         }}
       />
+
+      <PreviewDialog document={previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)} />
     </section>
   );
 }
