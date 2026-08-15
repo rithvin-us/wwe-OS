@@ -500,8 +500,9 @@ INVOICE_LOCAL_ARCHIVE_PATH = env_str("INVOICE_LOCAL_ARCHIVE_PATH", "") or STORAG
 # --------------------------------------------------------------------------- #
 GEMINI_API_KEY = env_str("GEMINI_API_KEY", "") or ""
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
-# Auto-switch to gemini-2.5-flash if GEMINI_API_KEY is configured
-_default_ai_model = "gemini-2.5-flash" if GEMINI_API_KEY else "mock"
+# gemini-flash-latest tracks Google's current model; pinned versions (e.g.
+# gemini-2.5-flash) get retired and start 404ing without warning.
+_default_ai_model = "gemini-flash-latest" if GEMINI_API_KEY else "mock"
 AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", _default_ai_model)
 AI_FALLBACK_MODEL = env_str("AI_FALLBACK_MODEL", "") or ""
 AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 30)
