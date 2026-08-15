@@ -90,3 +90,10 @@ they define the dependency rules.
 | PostgreSQL         | docker compose             | Managed PostgreSQL                    |
 | Workers/bots/email | per-service `src/`         | Render background services            |
 | AI engine          | local process              | Cloudflare Tunnel → independent later |
+
+> **Whichever machine hosts the Face-AI / Telegram-bot local services must
+> install the Cloudflare Tunnel as a Windows service**, not run it as a
+> foreground process — Render's production backend depends on
+> `ai.water-works.in` / `bot.water-works.in` staying up continuously.
+> See `docs/deployment/cloudflare-tunnel-setup.md` Step 5 and
+> `services/face-ai/cloudflare/install-tunnel-service.ps1`.
