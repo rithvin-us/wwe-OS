@@ -245,20 +245,6 @@ export async function offboardEmployee(id: string, dateOfLeaving: string): Promi
   }
 }
 
-export async function enrollFace(id: string, formData: FormData): Promise<ActionResult> {
-  try {
-    await djangoFetch(`/api/v1/hr/employees/${id}/enroll/`, {
-      method: "POST",
-      body: formData,
-    });
-    revalidatePath(`/hr/employees/${id}`);
-    revalidatePath("/hr/employees");
-    return { ok: true };
-  } catch (err) {
-    return failed(err);
-  }
-}
-
 export async function revokeEnrollment(id: string): Promise<ActionResult> {
   try {
     await djangoFetch(`/api/v1/hr/employees/${id}/revoke-enrollment/`, {
@@ -281,43 +267,5 @@ export async function resetAllBiometrics(): Promise<ActionResult> {
     return { ok: true };
   } catch (err) {
     return failed(err);
-  }
-}
-
-export type CheckInResult =
-  | {
-      ok: true;
-      data: {
-        matched: boolean;
-        employee_code?: string;
-        employee_name?: string;
-        action?: string;
-        timestamp?: string;
-        message?: string;
-      };
-    }
-  | { ok: false; error: string };
-
-export async function checkInFace(formData: FormData): Promise<CheckInResult> {
-  try {
-    const res = await djangoFetch<{
-      matched: boolean;
-      employee_code?: string;
-      employee_name?: string;
-      action?: string;
-      timestamp?: string;
-      message?: string;
-    }>("/api/v1/hr/attendance/checkin/", {
-      method: "POST",
-      body: formData,
-    });
-    revalidatePath("/hr/attendance");
-    revalidatePath("/hr");
-    return { ok: true, data: res };
-  } catch (err) {
-    if (err instanceof ApiRequestError) {
-      return { ok: false, error: err.message };
-    }
-    return { ok: false, error: err instanceof Error ? err.message : "Face check-in failed." };
   }
 }

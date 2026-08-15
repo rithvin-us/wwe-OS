@@ -13,7 +13,8 @@ import {
 } from "@bop/ui/components/dialog";
 import { toast } from "sonner";
 
-import { enrollFace, revokeEnrollment } from "../../actions";
+import { useRouter } from "next/navigation";
+import { revokeEnrollment } from "../../actions";
 
 const CANVAS_SIZE = 300;
 
@@ -26,6 +27,7 @@ export function EnrollFaceDialog({
   employeeName: string;
   isEnrolled: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -156,16 +158,26 @@ export function EnrollFaceDialog({
         const formData = new FormData();
         formData.append("file", blob, "cropped_face.jpg");
 
-        const res = await enrollFace(employeeId, formData);
-        setLoading(false);
+        try {
+          const resp = await fetch(`/api/hr/employees/${employeeId}/enroll`, {
+            method: "POST",
+            body: formData,
+          });
+          const res = await resp.json().catch(() => null);
+          setLoading(false);
 
-        if (res.ok) {
-          toast.success(`Face photo enrolled successfully for ${employeeName}!`);
-          setOpen(false);
-          setSelectedFile(null);
-          setImageObj(null);
-        } else {
-          toast.error(res.error || "Face enrollment failed.");
+          if (resp.ok && res?.ok) {
+            toast.success(`Face photo enrolled successfully for ${employeeName}!`);
+            setOpen(false);
+            setSelectedFile(null);
+            setImageObj(null);
+            router.refresh();
+          } else {
+            toast.error(res?.message || "Face enrollment failed.");
+          }
+        } catch (err: unknown) {
+          setLoading(false);
+          toast.error(err instanceof Error ? err.message : "Network error.");
         }
       },
       "image/jpeg",

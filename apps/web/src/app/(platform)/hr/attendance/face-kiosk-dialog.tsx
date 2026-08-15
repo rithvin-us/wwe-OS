@@ -15,8 +15,6 @@ import { toast } from "sonner";
 
 import { useFaceCapture } from "@/hooks/use-face-capture";
 
-import { checkInFace } from "../actions";
-
 export function FaceKioskDialog() {
   const [open, setOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -69,23 +67,31 @@ export function FaceKioskDialog() {
       formData.append("accuracy", String(geo.accuracy));
     }
 
-    const res = await checkInFace(formData);
-    setScanning(false);
+    try {
+      const resp = await fetch("/api/hr/attendance/checkin", {
+        method: "POST",
+        body: formData,
+      });
+      const res = await resp.json().catch(() => null);
+      setScanning(false);
 
-    if (res.ok) {
-      setResult(res.data);
-      if (res.data.matched) {
-        toast.success(
-          `Punch Registered! ${res.data.employee_name} marked ${res.data.action || "IN"}`,
-        );
+      if (resp.ok && res?.ok && res.data) {
+        setResult(res.data);
+        if (res.data.matched) {
+          toast.success(
+            `Punch Registered! ${res.data.employee_name} marked ${res.data.action || "IN"}`,
+          );
+        } else {
+          toast.warning(
+            res.data.message || "Face not recognized. Please stand clearly in front of camera.",
+          );
+        }
       } else {
-        toast.warning(
-          res.data.message || "Face not recognized. Please stand clearly in front of camera.",
-        );
+        toast.error(res?.error || "Face recognition check-in failed.");
       }
-    } else {
-      setErrorMessage(res.error || "Attendance punch failed.");
-      toast.error(res.error || "Attendance punch failed.");
+    } catch (err: unknown) {
+      setScanning(false);
+      toast.error(err instanceof Error ? err.message : "Network error.");
     }
   }
 
