@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText, Search, Sparkles } from "@bop/icons";
+import { Download, Eye, FileText, Search, Sparkles } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
@@ -109,7 +109,17 @@ const columns: ColumnDef<DocumentRecord, unknown>[] = [
     header: "",
     enableSorting: false,
     cell: ({ row }) => (
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-1">
+        <Button size="sm" variant="ghost" asChild>
+          <a
+            href={`/api/dms/${row.original.id}/download?inline=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Eye aria-hidden />
+            Preview
+          </a>
+        </Button>
         <Button size="sm" variant="ghost" asChild>
           <a href={`/api/dms/${row.original.id}/download`}>
             <Download aria-hidden />

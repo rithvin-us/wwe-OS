@@ -39,7 +39,6 @@ from storage.services import StorageService, safe_filename
 from tagging.services import TagService
 
 WORKFLOW_KEY = "document-approval"
-TEXT_CONTENT_TYPES = ("text/plain", "text/csv", "text/html", "application/json")
 SUMMARY_INPUT_LIMIT = 6000
 TAG_MODULE = "documents"
 TAG_OBJECT_TYPE = "Document"
@@ -143,10 +142,12 @@ class DocumentService(BaseService):
     # AI summary (through the platform gateway)
     # ------------------------------------------------------------------ #
     def generate_summary(self, document: Document) -> Document:
-        """Best-effort: a failed summary never blocks the document. Text-like
-        files are summarized from their content; everything else is summarized
-        from its title + description (honest — no fake OCR here, that is the
-        ingestion pipeline's job)."""
+        """Best-effort: a failed summary never blocks the document. Files with
+        extractable text (PDF text layer, plain text, CSV, JSON, HTML, Markdown
+        — via ai.rag_service.extract_text_from_file, the same extractor the
+        search index uses) are summarized from their real content; everything
+        else falls back to title + description (honest — no OCR on scanned
+        images, that is the ingestion pipeline's job)."""
         from ai.services import AIService
 
         try:
@@ -170,13 +171,15 @@ class DocumentService(BaseService):
         return document
 
     def _summary_input(self, document: Document) -> str:
-        if document.file.content_type in TEXT_CONTENT_TYPES:
-            try:
-                text = StorageService().open(document.file).decode("utf-8", errors="ignore")
-                if text.strip():
-                    return text[:SUMMARY_INPUT_LIMIT]
-            except Exception:  # noqa: BLE001 - fall back to metadata
-                self.logger.warning("Could not read document %s for summary", document.id)
+        from ai.rag_service import extract_text_from_file
+
+        try:
+            raw = StorageService().open(document.file)
+            text = extract_text_from_file(raw, document.file.content_type, document.file.filename)
+            if text.strip():
+                return text[:SUMMARY_INPUT_LIMIT]
+        except Exception:  # noqa: BLE001 - fall back to metadata
+            self.logger.warning("Could not read document %s for summary", document.id)
         return (document.description or document.title)[:SUMMARY_INPUT_LIMIT]
 
     # ------------------------------------------------------------------ #
