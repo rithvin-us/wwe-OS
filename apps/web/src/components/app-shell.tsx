@@ -17,6 +17,7 @@ import { RithuChatWidget } from "@/components/chatbot/rithu-chat-widget";
 import { CommandPalette } from "@/components/command-palette";
 import { MobileFabDock } from "@/components/mobile-fab-dock";
 import { SessionRefresh } from "@/components/session-refresh";
+import { LiveRefresh } from "@/components/live-refresh";
 
 const SIDEBAR_HINT_SEEN_KEY = "wwe-os-sidebar-collapse-hint-seen";
 
@@ -231,6 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <RithuChatWidget />
       <MobileFabDock />
       <SessionRefresh />
+      <LiveRefresh />
     </div>
   );
 }

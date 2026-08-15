@@ -97,6 +97,17 @@ export function AppHeader({
         </kbd>
       </button>
 
+      <div
+        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400"
+        title="5-second live data auto-refresh active across all modules"
+      >
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+        </span>
+        <span>Live (5s)</span>
+      </div>
+
       <div className="ml-auto flex items-center gap-2">
         <ActivityTicker />
 
