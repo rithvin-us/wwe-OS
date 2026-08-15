@@ -283,33 +283,40 @@ class AuthService(BaseService):
         publish(Events.PASSWORD_CHANGED, instance=user, actor=user)
 
     # ------------------------------------------------------- face (touchless)
-    def enroll_face(self, *, user: User, image_bytes: bytes) -> FaceCredential:
-        """Register/replace `user`'s face template from a reference photo.
+    def enroll_face(
+        self, *, user: User, image_bytes: bytes, label: str = "Face Profile"
+    ) -> FaceCredential:
+        """Enroll a face template for touchless login.
 
-        Strict quality gates run on the face-ai service (blur, side-profile,
-        multiple faces); a rejected capture raises FaceError with a
-        user-facing reason instead of silently storing a bad template.
+        Validates quality/liveness (rejects blur, side profiles, multiple faces).
+        Allows enrolling multiple face templates per account (e.g. alternate angles,
+        with glasses, or secondary lighting).
         """
         embedding = FaceAIClient().enroll(image_bytes)
-        credential, _ = FaceCredential.objects.update_or_create(
+        count = FaceCredential.objects.filter(user=user).count()
+        final_label = label.strip() if label.strip() else f"Face Profile #{count + 1}"
+        credential = FaceCredential.objects.create(
             user=user,
-            defaults={"embedding": serialize(embedding), "enrolled_at": timezone.now()},
+            label=final_label,
+            embedding=serialize(embedding),
+            enrolled_at=timezone.now(),
         )
         publish(Events.FACE_ENROLLED, instance=user, actor=user)
         return credential
 
-    def revoke_face(self, *, user: User) -> bool:
-        # Hard delete, not the usual soft-delete archive: a revoked biometric
-        # template should not linger in the database, and `all_objects` +
-        # `hard_delete()` avoids a stale soft-deleted row colliding with the
-        # OneToOneField unique constraint on the next enrollment.
-        deleted, _ = FaceCredential.all_objects.filter(user=user).hard_delete()
+    def revoke_face(self, *, user: User, credential_id: str | None = None) -> bool:
+        """Revoke a specific face template by ID, or all face templates for the user."""
+        qs = FaceCredential.all_objects.filter(user=user)
+        if credential_id:
+            qs = qs.filter(id=credential_id)
+        deleted, _ = qs.hard_delete()
         if deleted:
             publish(Events.FACE_REVOKED, instance=user, actor=user)
         return bool(deleted)
 
-    def face_status(self, *, user: User) -> FaceCredential | None:
-        return FaceCredential.objects.filter(user=user).first()
+    def face_status(self, *, user: User) -> list[FaceCredential]:
+        """Return all enrolled face credentials for the given user."""
+        return list(FaceCredential.objects.filter(user=user).order_by("-enrolled_at"))
 
     def login_face(
         self,
@@ -319,7 +326,7 @@ class AuthService(BaseService):
         ip: str | None,
         user_agent: str,
     ) -> dict[str, Any]:
-        """Authenticate by face: 1:N match against every enrolled credential.
+        """Authenticate by face: 1:N match against all enrolled credentials.
 
         A face-login attempt has no claimed email, so it cannot use the
         per-email lockout `login()` uses — it is rate-limited per IP instead
@@ -341,17 +348,18 @@ class AuthService(BaseService):
         best_score, runner_up, best_credential = -1.0, -1.0, None
         for credential in FaceCredential.objects.select_related("user"):
             score = cosine_similarity(probe_embedding, deserialize(credential.embedding))
-            if score > best_score:
-                best_score, runner_up, best_credential = score, best_score, credential
-            elif score > runner_up:
+            if best_credential is None or score > best_score:
+                if best_credential is not None and best_credential.user_id != credential.user_id:
+                    runner_up = best_score
+                best_score, best_credential = score, credential
+            elif credential.user_id != best_credential.user_id and score > runner_up:
                 runner_up = score
 
-        # A confident match must also beat the runner-up by a margin — without
-        # it, two enrolled faces near the threshold could resolve arbitrarily.
+        # A confident match must also beat competing users by a margin
         matched = (
             best_credential is not None
             and best_score >= settings.FACE_LOGIN_MATCH_THRESHOLD
-            and (best_score - runner_up) >= settings.FACE_LOGIN_MARGIN
+            and (runner_up < 0 or (best_score - runner_up) >= settings.FACE_LOGIN_MARGIN)
         )
         if not matched:
             self._record_face_failure(ip)
@@ -361,7 +369,9 @@ class AuthService(BaseService):
                 user_agent=(user_agent or "")[:512],
                 successful=False,
             )
-            raise AuthenticationFailedError("Face not recognized. Use your password instead.")
+            raise AuthenticationFailedError(
+                "Face not recognized. Ensure you face the camera directly."
+            )
 
         user = best_credential.user
         if not user.is_active:

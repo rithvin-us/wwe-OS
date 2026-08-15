@@ -182,17 +182,23 @@ class MeView(APIView):
     responses={200: FaceStatusSerializer},
 )
 class FaceStatusView(APIView):
-    """GET /api/v1/auth/face/ — whether the current user has a face profile enrolled."""
+    """GET /api/v1/auth/face/ — list enrolled face profiles for the current user."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        credential = AuthService().face_status(user=request.user)
+        credentials = AuthService().face_status(user=request.user)
+        latest = credentials[0] if credentials else None
         return Response(
             FaceStatusSerializer(
                 {
-                    "enrolled": credential is not None,
-                    "enrolled_at": credential.enrolled_at if credential else None,
+                    "enrolled": len(credentials) > 0,
+                    "count": len(credentials),
+                    "credentials": [
+                        {"id": str(c.id), "label": c.label, "enrolled_at": c.enrolled_at}
+                        for c in credentials
+                    ],
+                    "enrolled_at": latest.enrolled_at if latest else None,
                 }
             ).data
         )
@@ -202,7 +208,7 @@ class FaceStatusView(APIView):
     tags=["auth"], request=FaceEnrollRequestSerializer, responses={200: FaceStatusSerializer}
 )
 class FaceEnrollView(APIView):
-    """POST/DELETE /api/v1/auth/face/enroll/ — register or remove the caller's face template."""
+    """POST/DELETE /api/v1/auth/face/enroll/ — register or remove face templates for the caller."""
 
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -213,14 +219,28 @@ class FaceEnrollView(APIView):
         data = FaceEnrollRequestSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         credential = AuthService().enroll_face(
-            user=request.user, image_bytes=data.validated_data["file"].read()
+            user=request.user,
+            image_bytes=data.validated_data["file"].read(),
+            label=data.validated_data.get("label") or "Face Profile",
         )
+        credentials = AuthService().face_status(user=request.user)
         return Response(
-            FaceStatusSerializer({"enrolled": True, "enrolled_at": credential.enrolled_at}).data
+            FaceStatusSerializer(
+                {
+                    "enrolled": True,
+                    "count": len(credentials),
+                    "credentials": [
+                        {"id": str(c.id), "label": c.label, "enrolled_at": c.enrolled_at}
+                        for c in credentials
+                    ],
+                    "enrolled_at": credential.enrolled_at,
+                }
+            ).data
         )
 
     def delete(self, request: Request) -> Response:
-        AuthService().revoke_face(user=request.user)
+        credential_id = request.query_params.get("id") or request.data.get("id")
+        AuthService().revoke_face(user=request.user, credential_id=credential_id)
         return Response({"detail": "Face profile removed."})
 
 

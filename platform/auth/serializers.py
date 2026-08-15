@@ -56,10 +56,19 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class FaceEnrollRequestSerializer(serializers.Serializer):
     file = serializers.ImageField(help_text="Reference face photo")
+    label = serializers.CharField(required=False, allow_blank=True, default="Face Profile")
+
+
+class FaceProfileSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    label = serializers.CharField()
+    enrolled_at = serializers.DateTimeField()
 
 
 class FaceStatusSerializer(serializers.Serializer):
     enrolled = serializers.BooleanField()
+    count = serializers.IntegerField(default=0)
+    credentials = FaceProfileSerializer(many=True, default=[])
     enrolled_at = serializers.DateTimeField(allow_null=True)
 
 
