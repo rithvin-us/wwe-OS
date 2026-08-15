@@ -171,11 +171,19 @@ class InsightFaceEngine(FaceEngine):
             providers=providers,
         )
         ctx_id = 0 if self._use_gpu else -1
-        app.prepare(ctx_id=ctx_id, det_size=(1024, 1024))
+        # 640 is the proven baseline (matches the backend's in-process engine and
+        # the model's own training/eval convention). Measured empirically against
+        # both a multi-face reference photo and a reproduction of this service's
+        # exact enroll-photo pipeline (browser canvas crop -> 512x512 JPEG): 1024
+        # detects the same faces but consistently at 5-10 points lower confidence
+        # (e.g. 0.887 vs 0.920 on an easy case), and on a borderline-quality crop
+        # it was the deciding factor between a real face being found or not. Do
+        # not raise this again without a same-pipeline A/B showing a net gain.
+        app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         self._app = app
         self.ready = True
         logger.info(
-            "Face models loaded: native InsightFace FaceAnalysis pack=%s det_size=(1024, 1024) (%.0f ms)",
+            "Face models loaded: native InsightFace FaceAnalysis pack=%s det_size=(640, 640) (%.0f ms)",
             self._model_name,
             (time.perf_counter() - t0) * 1000,
         )
@@ -205,18 +213,22 @@ class InsightFaceEngine(FaceEngine):
 
     @staticmethod
     def _normalize_lighting(rgb):
-        """Adaptive CLAHE on L channel only when lighting is underexposed or harsh."""
+        """CLAHE on the L channel, unconditionally.
+
+        A conditional skip (only apply when mean L looks under/over-exposed)
+        was tried and reverted: on a normally-lit portrait it removed contrast
+        enhancement that was providing real detection margin on borderline
+        crops (a browser canvas export is rarely as clean as a native photo),
+        turning a working enrollment into a "no face detected" 422 with no
+        code or lighting change on the user's end. Always apply it.
+        """
         import cv2  # lazy
 
         lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
         l, a, b = cv2.split(lab)
-        mean_l = float(l.mean())
-        # Only apply CLAHE if image is dark (<60) or harsh contrast (>200)
-        if mean_l < 60.0 or mean_l > 200.0:
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-            l = clahe.apply(l)
-            return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2RGB)
-        return rgb
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l = clahe.apply(l)
+        return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2RGB)
 
     # -- enrolment quality gates -----------------------------------------
     def _check_blur(self, bgr) -> None:
