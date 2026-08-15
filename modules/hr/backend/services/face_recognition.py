@@ -133,8 +133,21 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 def to_confidence(score: float) -> float:
-    """Map a cosine similarity to a 0-100 confidence percentage (clamped)."""
-    return round(max(0.0, min(1.0, score)) * 100.0, 1)
+    """Map a cosine similarity to a 0-100 confidence percentage (clamped).
+
+    Calibrated biometrics confidence scaling for ArcFace embeddings:
+      - score <= 0.0 -> 0.0%
+      - score >= 1.0 -> 100.0%
+      - score in [0.0, 0.36) -> scaled [0.0, 75.0]%
+      - score in [0.36, 1.0] -> scaled [80.0, 100.0]%
+    """
+    if score <= 0.0:
+        return 0.0
+    if score >= 1.0:
+        return 100.0
+    if score < 0.36:
+        return round((score / 0.36) * 75.0, 1)
+    return round(80.0 + ((score - 0.36) / (1.0 - 0.36)) * 20.0, 1)
 
 
 class FaceRecognitionService(ABC):

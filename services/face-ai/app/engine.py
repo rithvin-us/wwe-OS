@@ -171,11 +171,11 @@ class InsightFaceEngine(FaceEngine):
             providers=providers,
         )
         ctx_id = 0 if self._use_gpu else -1
-        app.prepare(ctx_id=ctx_id, det_size=(640, 640))
+        app.prepare(ctx_id=ctx_id, det_size=(1024, 1024))
         self._app = app
         self.ready = True
         logger.info(
-            "Face models loaded: native InsightFace FaceAnalysis pack=%s (%.0f ms)",
+            "Face models loaded: native InsightFace FaceAnalysis pack=%s det_size=(1024, 1024) (%.0f ms)",
             self._model_name,
             (time.perf_counter() - t0) * 1000,
         )
@@ -205,13 +205,18 @@ class InsightFaceEngine(FaceEngine):
 
     @staticmethod
     def _normalize_lighting(rgb):
+        """Adaptive CLAHE on L channel only when lighting is underexposed or harsh."""
         import cv2  # lazy
 
         lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
         l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        l = clahe.apply(l)
-        return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2RGB)
+        mean_l = float(l.mean())
+        # Only apply CLAHE if image is dark (<60) or harsh contrast (>200)
+        if mean_l < 60.0 or mean_l > 200.0:
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            l = clahe.apply(l)
+            return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2RGB)
+        return rgb
 
     # -- enrolment quality gates -----------------------------------------
     def _check_blur(self, bgr) -> None:
@@ -236,6 +241,7 @@ class InsightFaceEngine(FaceEngine):
     def embed(self, image_bytes: bytes, enroll: bool = False) -> list[float]:
         import numpy as np  # lazy
         import cv2  # lazy
+        from insightface.utils import face_align  # lazy
 
         t0 = time.perf_counter()
         try:
@@ -272,13 +278,27 @@ class InsightFaceEngine(FaceEngine):
                 if hasattr(face, "kps"):
                     self._check_side_profile(face.kps)
 
-            feat = np.asarray(face.embedding).flatten()
+            # Test-Time Augmentation (TTA): Ensemble original + horizontally flipped crops
+            feat_orig = np.asarray(face.embedding).flatten()
+            if hasattr(face, "kps") and "recognition" in getattr(self._app, "models", {}):
+                try:
+                    aligned = face_align.norm_crop(bgr, landmark=face.kps, image_size=112)
+                    aligned_flip = cv2.flip(aligned, 1)
+                    feat_flip = np.asarray(
+                        self._app.models["recognition"].get_feat(aligned_flip)
+                    ).flatten()
+                    feat = feat_orig + feat_flip
+                except Exception:  # noqa: BLE001 - fallback to single embedding
+                    feat = feat_orig
+            else:
+                feat = feat_orig
+
             norm = float(np.linalg.norm(feat))
             vec = (feat / norm) if norm else feat  # L2-normalise -> cosine == dot
             self._dim = int(vec.shape[0])
 
             logger.info(
-                "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms",
+                "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms (TTA ensemble)",
                 enroll,
                 det_conf,
                 int(side),
