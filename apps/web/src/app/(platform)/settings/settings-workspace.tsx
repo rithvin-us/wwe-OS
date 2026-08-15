@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, ScanFace, Building2, Lock, Layers } from "@bop/icons";
+import { User, ScanFace, Building2, Lock, Layers, Mail } from "@bop/icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -9,6 +9,7 @@ import { CompanyForm } from "@/app/(platform)/settings/company-form";
 import { PasswordForm } from "@/app/(platform)/settings/password-form";
 import { ProfileForm } from "@/app/(platform)/settings/profile-form";
 import { FaceEnrollmentCard } from "@/app/(platform)/settings/face-enrollment-card";
+import { EmailIngestionCard } from "@/app/(platform)/settings/email-ingestion-card";
 import { SettingsTopologyDiagram } from "@/app/(platform)/settings/settings-topology-diagram";
 import type { CompanyBasics, CompanyProfile, MyProfile } from "@/lib/settings";
 
@@ -19,7 +20,7 @@ interface SettingsWorkspaceProps {
 
 export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<
-    "profile" | "face_id" | "company" | "security" | "topology"
+    "profile" | "face_id" | "email_ingest" | "company" | "security" | "topology"
   >("profile");
 
   const tabs = [
@@ -36,6 +37,13 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
       description: "Touchless passwordless sign-in",
       icon: ScanFace,
       badge: "ENROLLED",
+    },
+    {
+      id: "email_ingest",
+      label: "Email Ingestion",
+      description: "Auto-save attachments from VIP mail IDs",
+      icon: Mail,
+      badge: "WEBHOOK",
     },
     {
       id: "company",
@@ -149,6 +157,18 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
             transition={{ duration: 0.15 }}
           >
             <FaceEnrollmentCard />
+          </motion.div>
+        )}
+
+        {activeTab === "email_ingest" && (
+          <motion.div
+            key="email_ingest"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+          >
+            <EmailIngestionCard />
           </motion.div>
         )}
 
