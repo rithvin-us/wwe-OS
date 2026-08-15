@@ -89,13 +89,17 @@ export function UploadDialog() {
     }
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
-      const result = await uploadDocumentAction(formData);
-      if (result.ok) {
-        toast.success(result.message);
-        resetFormState();
-        setOpen(false);
-      } else {
-        toast.error(result.message);
+      try {
+        const result = await uploadDocumentAction(formData);
+        if (result.ok) {
+          toast.success(result.message);
+          resetFormState();
+          setOpen(false);
+        } else {
+          toast.error(result.message);
+        }
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "An unexpected error occurred.");
       }
     });
   }

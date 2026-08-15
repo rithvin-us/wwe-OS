@@ -42,14 +42,27 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       body: forward,
       cache: "no-store",
     });
-    const envelope = await response.json();
-    if (!envelope.success) {
-      return { ok: false, message: envelope.error?.message ?? "Upload failed." };
+    const text = await response.text();
+    let envelope: { success?: boolean; error?: { message?: string } } | null = null;
+    try {
+      envelope = JSON.parse(text);
+    } catch {
+      return {
+        ok: false,
+        message: `Platform returned HTTP ${response.status}: ${text.slice(0, 100) || "Invalid response"}`,
+      };
+    }
+    if (!envelope?.success) {
+      return { ok: false, message: envelope?.error?.message ?? "Upload failed." };
     }
     revalidatePath("/dms");
     return { ok: true, message: "Document uploaded." };
-  } catch {
-    return { ok: false, message: "Something went wrong. Try again." };
+  } catch (error: unknown) {
+    console.error("[uploadDocumentAction] Error:", error);
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Something went wrong. Try again.",
+    };
   }
 }
 
