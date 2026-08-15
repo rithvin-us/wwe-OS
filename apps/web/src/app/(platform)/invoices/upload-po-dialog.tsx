@@ -56,6 +56,7 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
   const [generating, setGenerating] = useState(false);
 
   const [draft, setDraft] = useState<ParsedPoDraft | null>(null);
+  const [tickedIndices, setTickedIndices] = useState<Set<number>>(new Set());
   const [invoiceDate, setInvoiceDate] = useState<string>(today());
   const [billedMonth, setBilledMonth] = useState<string>(previousMonth(today()));
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
@@ -123,6 +124,24 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
           ? "amc"
           : "sales";
 
+      const parsedLines = Array.isArray(data.lines)
+        ? data.lines.map(
+            (line: {
+              description: string;
+              hsn: string;
+              quantity: string;
+              uom: string;
+              rate: string;
+            }) => ({
+              description: line.description || "",
+              hsn: line.hsn || (detectedType === "amc" ? "998714" : "8421"),
+              quantity: String(line.quantity || "1"),
+              uom: line.uom || "Nos",
+              rate: String(line.rate || "0"),
+            }),
+          )
+        : [];
+
       const parsedDraft: ParsedPoDraft = {
         customerId: matchedId,
         customerName: data.customer_name || "",
@@ -130,26 +149,11 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
         gstRate: data.gst_rate || "18",
         poNumber: data.po_number || "",
         poDate: data.po_date || "",
-        lines: Array.isArray(data.lines)
-          ? data.lines.map(
-              (line: {
-                description: string;
-                hsn: string;
-                quantity: string;
-                uom: string;
-                rate: string;
-              }) => ({
-                description: line.description || "",
-                hsn: line.hsn || "",
-                quantity: String(line.quantity || "1"),
-                uom: line.uom || "Nos",
-                rate: String(line.rate || "0"),
-              }),
-            )
-          : [],
+        lines: parsedLines,
       };
 
       setDraft(parsedDraft);
+      setTickedIndices(new Set(parsedLines.map((_: InvoiceLineDraft, i: number) => i)));
       setSelectedCustomerId(matchedId);
       setInvoiceType(detectedType);
       toast.success(
@@ -163,10 +167,41 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
     }
   }
 
+  function toggleTick(index: number) {
+    setTickedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
+  function toggleAllTicks() {
+    if (!draft) return;
+    if (tickedIndices.size === draft.lines.length) {
+      setTickedIndices(new Set());
+    } else {
+      setTickedIndices(new Set(draft.lines.map((_: InvoiceLineDraft, i: number) => i)));
+    }
+  }
+
+  function updateLineHsn(index: number, hsn: string) {
+    if (!draft) return;
+    const updated = [...draft.lines];
+    updated[index] = { ...updated[index], hsn };
+    setDraft({ ...draft, lines: updated });
+  }
+
   async function handleOneClickGenerate() {
     if (!draft) return;
     if (!selectedCustomerId) {
       toast.error("Please choose the customer or site for this bill.");
+      return;
+    }
+
+    const selectedLines = draft.lines.filter((_, idx) => tickedIndices.has(idx));
+    if (selectedLines.length === 0) {
+      toast.error("Please tick at least one line item to generate the invoice.");
       return;
     }
 
@@ -179,9 +214,9 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
       gst_rate: draft.gstRate || "18",
       period_year: invoiceType === "amc" ? Number(year) : null,
       period_month: invoiceType === "amc" ? Number(month) : null,
-      lines: draft.lines.map((l) => ({
+      lines: selectedLines.map((l) => ({
         description: l.description.trim(),
-        hsn: l.hsn.trim(),
+        hsn: l.hsn.trim() || (invoiceType === "amc" ? "998714" : "8421"),
         quantity: l.quantity || "1",
         uom: l.uom.trim() || "Nos",
         rate: l.rate || "0",
@@ -196,14 +231,18 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
       return;
     }
 
-    toast.success(`AMC Bill ${result.data.number} generated successfully!`);
+    toast.success(`Bill ${result.data.number} generated successfully!`);
     setOpen(false);
     setDraft(null);
     router.refresh();
   }
 
   const calculatedSubtotal = draft
-    ? draft.lines.reduce((acc, l) => acc + (Number(l.quantity) || 0) * (Number(l.rate) || 0), 0)
+    ? draft.lines.reduce(
+        (acc, l, idx) =>
+          tickedIndices.has(idx) ? acc + (Number(l.quantity) || 0) * (Number(l.rate) || 0) : acc,
+        0,
+      )
     : 0;
 
   return (
@@ -215,7 +254,7 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
             Upload PO to convert
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="sm:max-w-[620px]">
           <DialogHeader>
             <DialogTitle>Upload Purchase Order (PO)</DialogTitle>
             <DialogDescription>
@@ -255,20 +294,76 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
                     </span>
                   </div>
 
-                  {draft.lines.length > 0 ? (
-                    <div className="space-y-1 pt-1 border-t border-border/50 text-muted-foreground">
-                      {draft.lines.slice(0, 2).map((line, i) => (
-                        <p key={i} className="truncate">
-                          • {line.description} — {formatRupees(line.rate)} / {line.uom}
-                        </p>
-                      ))}
-                      {draft.lines.length > 2 ? (
-                        <p className="text-[11px] font-medium text-muted-foreground">
-                          + {draft.lines.length - 2} more line items
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  <p className="text-[11px] text-muted-foreground">
+                    {tickedIndices.size} of {draft.lines.length} line items selected for invoice
+                  </p>
+                </div>
+
+                {/* Line Item Checkboxes & HSN Editing Table */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">
+                      Tick Line Items to Include
+                    </span>
+                    <button
+                      type="button"
+                      onClick={toggleAllTicks}
+                      className="text-[11px] font-medium text-primary hover:underline"
+                    >
+                      {tickedIndices.size === draft.lines.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+
+                  <div className="max-h-[220px] overflow-y-auto rounded-md border border-border bg-background p-1 space-y-1">
+                    {draft.lines.map((line, i) => {
+                      const isTicked = tickedIndices.has(i);
+                      const itemTotal = (Number(line.quantity) || 0) * (Number(line.rate) || 0);
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md p-2.5 transition-colors ${
+                            isTicked
+                              ? "bg-accent/40 text-foreground"
+                              : "bg-muted/20 text-muted-foreground opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isTicked}
+                              onChange={() => toggleTick(i)}
+                              className="mt-0.5 size-4 rounded border-input text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate">{line.description}</p>
+                              <p className="text-[11px] font-mono text-muted-foreground">
+                                {line.quantity} {line.uom} × {formatRupees(line.rate)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 pl-6 sm:pl-0">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                                HSN:
+                              </span>
+                              <Input
+                                size={1}
+                                className="h-7 w-20 px-1.5 font-mono text-xs"
+                                value={line.hsn}
+                                placeholder="998714"
+                                onChange={(e) => updateLineHsn(i, e.target.value)}
+                              />
+                            </div>
+                            <span className="font-mono text-xs font-semibold w-24 text-right">
+                              {formatRupees(itemTotal)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* 1-Click Form Controls */}
@@ -357,7 +452,7 @@ export function UploadPoDialog({ customers }: { customers: BillingCustomer[] }) 
                     <Button
                       type="button"
                       size="sm"
-                      disabled={generating || !selectedCustomerId}
+                      disabled={generating || !selectedCustomerId || tickedIndices.size === 0}
                       onClick={handleOneClickGenerate}
                     >
                       <Sparkles className="mr-1.5 size-4" />

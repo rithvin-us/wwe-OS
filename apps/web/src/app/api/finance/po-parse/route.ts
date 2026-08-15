@@ -123,17 +123,32 @@ Return ONLY the raw JSON object without markdown formatting.`;
               invoice_type: parsed.invoice_type === "amc" ? "amc" : "sales",
               lines:
                 Array.isArray(parsed.lines) && parsed.lines.length > 0
-                  ? parsed.lines.map((l) => ({
-                      description: l.description || "Supply item",
-                      hsn: l.hsn || "",
-                      quantity: String(l.quantity || "1"),
-                      uom: l.uom || "Nos",
-                      rate: String(l.rate || "0"),
-                    }))
+                  ? parsed.lines.map((l) => {
+                      const desc = (l.description || "").toLowerCase();
+                      const defaultHsn =
+                        parsed.invoice_type === "amc" ||
+                        desc.includes("maintenance") ||
+                        desc.includes("cleaning") ||
+                        desc.includes("service") ||
+                        desc.includes("operation") ||
+                        desc.includes("amc") ||
+                        desc.includes("tank") ||
+                        desc.includes("sludge")
+                          ? "998714"
+                          : "8421";
+
+                      return {
+                        description: l.description || "Supply item",
+                        hsn: l.hsn || defaultHsn,
+                        quantity: String(l.quantity || "1"),
+                        uom: l.uom || "Nos",
+                        rate: String(l.rate || "0"),
+                      };
+                    })
                   : [
                       {
                         description: `PO ${parsed.po_number || file.name} items`,
-                        hsn: "",
+                        hsn: parsed.invoice_type === "amc" ? "998714" : "8421",
                         quantity: "1",
                         uom: "Nos",
                         rate: "0",

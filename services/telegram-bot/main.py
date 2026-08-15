@@ -523,7 +523,13 @@ def _start_health_server(port: int) -> None:
 def main() -> None:
     """Start the bot."""
     port = int(os.getenv("PORT", os.getenv("TELEGRAM_BOT_PORT", "9001")))
-    _start_health_server(port)
+    webhook_url = os.getenv("WEBHOOK_URL")
+
+    # In webhook mode, PTB's own server binds `port` and serves /telegram.
+    # The standalone health server would collide with it on the same port,
+    # so only run it here when nothing else is going to own the port.
+    if not webhook_url:
+        _start_health_server(port)
 
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -537,7 +543,6 @@ def main() -> None:
             time.sleep(3600)
         return
 
-    webhook_url = os.getenv("WEBHOOK_URL")
     try:
         application = Application.builder().token(token).build()
 
@@ -550,6 +555,9 @@ def main() -> None:
 
         msg_filter = filters.Document.ALL | filters.PHOTO
         application.add_handler(MessageHandler(msg_filter, handle_document))
+
+        # Always start background HTTP health server for readiness probes
+        _start_health_server(port)
 
         if webhook_url:
             secret_token = os.getenv("WEBHOOK_SECRET")

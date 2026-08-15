@@ -453,8 +453,9 @@ export function GenerateInvoiceDialog({
                       onChange={(event) => updateLine(index, "description", event.target.value)}
                     />
                     <Input
-                      className="col-span-4 sm:col-span-2"
-                      placeholder="HSN"
+                      className="col-span-4 sm:col-span-2 font-mono"
+                      placeholder="998714"
+                      title="HSN / SAC Code (e.g. 998714 for AMC/Services, 8421 for Goods)"
                       value={line.hsn}
                       onChange={(event) => updateLine(index, "hsn", event.target.value)}
                     />
