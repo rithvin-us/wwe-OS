@@ -61,39 +61,48 @@ pnpm install
 
 ---
 
-## ⚡ Running the Services locally
+## ⚡ 1-Command Startup (Run Everything Concurrently)
 
-Run each component in a separate terminal window:
-
-### Terminal 1: Django Platform Backend (Port 8000)
+Once dependencies are installed, you can start **ALL** services (Django Backend, Face AI Microservice, Next.js Web App) with **a single command**:
 
 ```bash
-# Activate virtual environment
-.\.venv\Scripts\Activate.ps1
+pnpm dev
+```
 
-# Apply Database Migrations (if using local/fresh DB)
-python platform/manage.py migrate
+_(or `npm run dev`)_
 
-# Start Django Backend API
+This single command automatically:
+
+1. **Syncs Django database migrations** (`python manage.py migrate`)
+2. **Spawns Web Application UI** (`http://localhost:3000`)
+3. **Spawns Django Platform API** (`http://localhost:8000`)
+4. **Spawns Face-AI Microservice** (`http://localhost:9000`)
+
+---
+
+### Alternative: Running Services Manually in Separate Terminals
+
+If you prefer running individual services in separate terminals:
+
+#### Terminal 1: Django Platform Backend (Port 8000)
+
+```bash
 cd platform
+python manage.py migrate
 python manage.py runserver 8000
 ```
 
-### Terminal 2: Biometric Face-AI Service (Port 9000)
+#### Terminal 2: Biometric Face-AI Service (Port 9000)
 
 ```bash
-# Activate virtual environment
-.\.venv\Scripts\Activate.ps1
-
-# Start FastAPI Face-AI Engine
 cd services/face-ai
 uvicorn app.main:app --host 0.0.0.0 --port 9000
 ```
 
-### Terminal 3: Next.js Web Application (Port 3000)
+#### Terminal 3: Next.js Web Application (Port 3000)
 
 ```bash
-pnpm dev
+pnpm --filter web dev
 ```
 
 ---
