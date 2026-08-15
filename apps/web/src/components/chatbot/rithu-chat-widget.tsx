@@ -285,34 +285,26 @@ export function RithuChatWidget() {
     <>
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileInputChange} />
 
-      {/* Floating Action Trigger Button */}
-      <div className="fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40">
-        {/* Persistent glow ring — a genuine floating overlay, the one place
-            the design bible's "quiet depth" rule allows an escalated glow. */}
+      {/* Floating Action Trigger Button - Compact & Non-Intrusive */}
+      <div className="fixed right-4 bottom-4 z-30">
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-emerald-500/40 blur-xl animate-pulse max-md:hidden"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-emerald-500/30 blur-md animate-pulse"
         />
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className={cn(
-            "group flex size-13 items-center justify-center rounded-full border border-emerald-500/40 bg-card text-foreground shadow-xl backdrop-blur-md max-md:backdrop-blur-none transition-all duration-200 hover:scale-105 hover:border-emerald-500 hover:shadow-emerald-500/25 focus-visible:ring-[3px] focus-visible:ring-emerald-500/50 focus-visible:outline-none sm:size-auto sm:px-4 sm:py-3",
-            open && "ring-2 ring-emerald-500 border-emerald-500",
+            "group flex size-11 items-center justify-center rounded-full border border-emerald-500/40 bg-card text-foreground shadow-lg backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-emerald-500 hover:shadow-emerald-500/30 focus-visible:ring-[3px] focus-visible:ring-emerald-500/50 focus-visible:outline-none",
+            open && "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-950/80 text-white",
           )}
-          title="Open Rithu AI Assistant"
+          title="Rithu AI Assistant (Click to open)"
         >
-          <div className="relative flex size-8 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs shrink-0">
-            <Bot className="size-4.5" />
-            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-card animate-pulse" />
-          </div>
-          <div className="hidden text-left sm:ml-2.5 sm:block">
-            <p className="font-display text-xs font-bold leading-none tracking-tight text-foreground">
-              Rithu AI
-            </p>
-            <p className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">
-              Agent Online
-            </p>
+          <div className="relative flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs shrink-0">
+            {open ? <X className="size-4" /> : <Bot className="size-4" />}
+            {!open && (
+              <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emerald-400 ring-2 ring-card animate-pulse" />
+            )}
           </div>
         </button>
       </div>
