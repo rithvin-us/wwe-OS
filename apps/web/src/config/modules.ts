@@ -130,22 +130,23 @@ export const SERVICES: PlatformService[] = [
     slug: "notifications",
     name: "Notifications",
     icon: Bell,
-    plain: "Makes sure the right person is alerted — in the app, by email, or in chat.",
+    plain: "Alerts the right person in the app and on Telegram. Email is not connected yet.",
     availability: "in-progress",
   },
   {
     slug: "ai-assistant",
     name: "AI Assistant",
     icon: Bot,
-    plain: "Will answer questions and help with routine tasks across the platform.",
-    availability: "coming-soon",
+    plain:
+      "Answers questions and helps with routine tasks — talk to it from the assistant bubble anywhere in the app.",
+    availability: "ready",
   },
   {
     slug: "ocr",
     name: "Document scanning",
     icon: ScanText,
-    plain: "Turns paper scans and photos into searchable, usable text.",
-    availability: "coming-soon",
+    plain: "Turns paper scans, photos, and bills into searchable, usable text.",
+    availability: "ready",
   },
   {
     slug: "email",
@@ -156,10 +157,10 @@ export const SERVICES: PlatformService[] = [
   },
   {
     slug: "telegram",
-    name: "Telegram alerts",
+    name: "Telegram",
     icon: Send,
-    plain: "Delivers urgent updates straight to the team's phones.",
-    availability: "coming-soon",
+    plain: "Sends bills straight from your phone and delivers urgent alerts back.",
+    availability: "ready",
   },
 ];
 
