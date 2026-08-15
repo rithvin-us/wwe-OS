@@ -189,7 +189,11 @@ Return your response strictly as a JSON object matching this schema:
 
         contentsParts.push({ text: systemPrompt });
 
-        const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+        // "gemini-flash-latest" is the same model the platform backend uses
+        // for document summaries (ai/providers.py, AI_DEFAULT_MODEL) — proven
+        // working. "gemini-2.0-flash" / "gemini-1.5-flash" are retired and
+        // 404 on v1beta now.
+        const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
         let geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
@@ -208,10 +212,10 @@ Return your response strictly as a JSON object matching this schema:
 
         if (!geminiResponse.ok) {
           console.warn(
-            `Gemini API ${modelName} returned status ${geminiResponse.status}, retrying with gemini-1.5-flash...`,
+            `Gemini API ${modelName} returned status ${geminiResponse.status}, retrying with gemini-2.5-flash...`,
           );
           geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
