@@ -323,8 +323,15 @@ class InsightFaceService(FaceRecognitionService):
     def _preprocess(self, image_bytes: bytes, normalize: bool = True):
         """Bytes -> RGB uint8 ndarray, EXIF-rotated, RGB, downscaled, CLAHE'd.
 
-        normalize=False skips the CLAHE lighting step (used for liveness, whose
-        variance threshold is tuned on un-equalised pixels).
+        `normalize` controls the CLAHE lighting step. Liveness used to call
+        this with normalize=False on the theory its variance threshold was
+        tuned on un-equalised pixels — but that threshold was never actually
+        validated against real webcam frames, and CLAHE roughly doubles the
+        measured Laplacian variance (confirmed empirically: 31.6 -> 67.8 on
+        one real capture), while it cannot inflate a genuinely flat/blank
+        source (stays 0.00). Liveness now normalizes too, for consistency
+        with detection/embedding and because the un-normalized threshold was
+        silently rejecting real, live captures.
         """
         import numpy as np  # lazy
         from PIL import Image, ImageOps  # lazy
@@ -481,7 +488,7 @@ class InsightFaceService(FaceRecognitionService):
 
         grays = []
         for data in [image_bytes, *(extra_frames or [])]:
-            rgb = self._preprocess(data, normalize=False)
+            rgb = self._preprocess(data, normalize=True)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
         # Texture gate on every frame (catches low-detail screens/prints). Was

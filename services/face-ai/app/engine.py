@@ -342,9 +342,17 @@ class InsightFaceEngine(FaceEngine):
         import cv2  # lazy
         import numpy as np  # lazy
 
+        # normalize=True (CLAHE), matching embed()'s preprocessing. Was False —
+        # measured empirically (same real check-in frame) that CLAHE roughly
+        # doubles the Laplacian variance the texture gate below reads (31.6 ->
+        # 67.8 on one test capture), which is exactly why detection/matching
+        # worked reliably while the raw, non-enhanced liveness gate silently
+        # rejected the same real frame as "too low texture" every time.
+        # Confirmed CLAHE cannot inflate a genuinely flat/blank source (stays
+        # 0.00), so this doesn't weaken the flat-photo/print rejection.
         grays = []
         for data in [image_bytes, *(extra_frames or [])]:
-            rgb = self._preprocess(data, normalize=False)
+            rgb = self._preprocess(data, normalize=True)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
         # Texture gate on every frame (catches low-detail screens/prints). This
@@ -385,6 +393,38 @@ class InsightFaceEngine(FaceEngine):
             logger.warning("liveness fail: static frames (motion=%.5f)", motion)
             return False
         return True
+
+    def _detect(self, rgb):
+        """Run detection on one RGB frame, returning (box, kps, det_conf) for
+        the primary (largest) face. Raises NoFaceDetectedError /
+        FaceTooSmallError on failure — mirrors the inline detection in
+        embed(), factored out because _blink_detected needs landmarks alone
+        without running the full embed pipeline.
+
+        This method didn't exist until now — _blink_detected referenced it
+        unconditionally, so every liveness check that got past the texture
+        gate and wasn't an obvious "too much motion" reject crashed with
+        AttributeError, surfaced to the caller as a 500 that HttpFaceService
+        silently retried (see the check-in latency/liveness incident).
+        """
+        import cv2  # lazy
+
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        faces = self._app.get(bgr)
+        if not faces:
+            raise NoFaceDetectedError()
+        face = max(faces, key=lambda f: float((f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])))
+        det_conf = float(face.det_score) if hasattr(face, "det_score") else 1.0
+        if det_conf < self._det_min_conf:
+            raise NoFaceDetectedError()
+        box = face.bbox
+        side = min(float(box[2] - box[0]), float(box[3] - box[1]))
+        if side < self._min_face_px:
+            raise FaceTooSmallError()
+        kps = getattr(face, "kps", None)
+        if kps is None:
+            raise NoFaceDetectedError()
+        return box, kps, det_conf
 
     def _blink_detected(self, grays, global_motion: float) -> bool:
         """Blink / non-rigid facial movement: the eye-landmark patches changing
