@@ -14,7 +14,6 @@ Business capability modules. **All business logic lives here** — and only here
 | `maintenance/` | Maintenance requests and scheduling                       |
 | `visitors/`    | Visitor management                                        |
 | `finance/`     | Finance operations                                        |
-| `analytics/`   | Cross-module analytics                                    |
 | `reports/`     | Report generation                                         |
 | `chatbot/`     | Conversational assistant                                  |
 

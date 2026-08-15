@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   FileSearch,
   FileText,
   History,
@@ -69,13 +68,6 @@ export const APPS: PlatformApp[] = [
     icon: Landmark,
     tagline: "Generate and track Delivery Challans.",
     availability: "ready",
-  },
-  {
-    slug: "analytics",
-    name: "Analytics",
-    icon: BarChart3,
-    tagline: "Numbers and trends across the company.",
-    availability: "coming-soon",
   },
   {
     slug: "reports",
