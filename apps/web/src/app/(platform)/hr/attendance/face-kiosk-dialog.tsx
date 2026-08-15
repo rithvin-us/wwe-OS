@@ -54,6 +54,7 @@ export function FaceKioskDialog() {
 
     setScanning(true);
     setErrorMessage(null);
+    setResult(null);
 
     const burst = await captureBurst();
     if (!burst) {

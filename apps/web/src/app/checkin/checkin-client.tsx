@@ -24,6 +24,7 @@ export function PublicMobileCheckIn() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const { cameraActive, geo, startCamera, stopCamera, captureBurst } = useFaceCapture(videoRef);
 
   useEffect(() => {
@@ -33,6 +34,17 @@ export function PublicMobileCheckIn() {
     };
   }, []);
 
+  // The page used to vertically auto-center its content (my-auto below) —
+  // once a result banner made the page taller than a short mobile viewport,
+  // the header+banner could center-scroll above the fold while the camera
+  // and button stayed put, so a real success/failure looked like nothing
+  // happened. Force it into view explicitly on every result/error change.
+  useEffect(() => {
+    if (result || errorMessage) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [result, errorMessage]);
+
   async function captureAndPunch() {
     if (!videoRef.current || !cameraActive) {
       setErrorMessage("Camera is not active. Please allow camera permissions.");
@@ -41,6 +53,7 @@ export function PublicMobileCheckIn() {
 
     setScanning(true);
     setErrorMessage(null);
+    setResult(null);
 
     const burst = await captureBurst();
     if (!burst) {
@@ -83,8 +96,8 @@ export function PublicMobileCheckIn() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-between p-4 sm:p-6 font-sans">
-      <main className="w-full max-w-md mx-auto my-auto space-y-4">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center p-4 sm:p-6 font-sans">
+      <main className="w-full max-w-md mx-auto space-y-4 py-6">
         {/* Header Title matching exact user screenshot */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance check-in</h1>
@@ -93,34 +106,37 @@ export function PublicMobileCheckIn() {
           </p>
         </div>
 
-        {/* Result Banner */}
-        {result?.recognized && result.decision === "auto_approved" ? (
-          <div className="p-4 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 space-y-1 animate-in fade-in">
-            <div className="flex items-center gap-2 font-bold text-base text-emerald-800">
-              <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
-              Marked {result.direction?.toUpperCase() || "PUNCH"} Successfully
+        {/* Result Banner — scroll-anchored so it can't render off-screen on a
+            short mobile viewport (see the scrollIntoView effect above). */}
+        <div ref={resultRef} className="scroll-mt-4">
+          {result?.recognized && result.decision === "auto_approved" ? (
+            <div className="p-4 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 space-y-1 animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-base text-emerald-800">
+                <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
+                Marked {result.direction?.toUpperCase() || "PUNCH"} Successfully
+              </div>
+              <p className="text-sm font-semibold text-slate-900">
+                {result.employee_name} ({result.employee_code})
+              </p>
+              <p className="text-xs text-slate-600">{result.message || result.time}</p>
             </div>
-            <p className="text-sm font-semibold text-slate-900">
-              {result.employee_name} ({result.employee_code})
-            </p>
-            <p className="text-xs text-slate-600">{result.message || result.time}</p>
-          </div>
-        ) : result?.recognized ? (
-          // Identified, but flagged (liveness/geofence/marginal score) — the
-          // punch was NOT recorded. Distinct from "no face matched at all":
-          // the employee needs to retry, not assume they're unenrolled.
-          <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-900 text-xs space-y-1">
-            <p className="font-bold text-sm text-amber-800">
-              {result.employee_name} — Flagged for Review
-            </p>
-            <p className="text-slate-700">{result.message}</p>
-          </div>
-        ) : errorMessage ? (
-          <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs flex items-start gap-2">
-            <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
-            <div>{errorMessage}</div>
-          </div>
-        ) : null}
+          ) : result?.recognized ? (
+            // Identified, but flagged (liveness/geofence/marginal score) — the
+            // punch was NOT recorded. Distinct from "no face matched at all":
+            // the employee needs to retry, not assume they're unenrolled.
+            <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-900 text-xs space-y-1">
+              <p className="font-bold text-sm text-amber-800">
+                {result.employee_name} — Flagged for Review
+              </p>
+              <p className="text-slate-700">{result.message}</p>
+            </div>
+          ) : errorMessage ? (
+            <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs flex items-start gap-2">
+              <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
+              <div>{errorMessage}</div>
+            </div>
+          ) : null}
+        </div>
 
         {/* Camera Viewfinder (Clean Rounded Box, NO green circle overlay) */}
         <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm aspect-[3/4] flex items-center justify-center">
