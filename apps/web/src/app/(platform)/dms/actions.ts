@@ -27,8 +27,11 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
 
   try {
     const token = await getAccessToken();
+    const arrayBuffer = await file.arrayBuffer();
+    const blob = new Blob([arrayBuffer], { type: file.type || "application/octet-stream" });
+
     const forward = new FormData();
-    forward.append("file", file);
+    forward.append("file", blob, file.name || "document");
     forward.append("title", title);
     forward.append("category", String(formData.get("category") ?? "other"));
     forward.append("description", String(formData.get("description") ?? ""));
