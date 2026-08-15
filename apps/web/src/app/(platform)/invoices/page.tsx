@@ -15,6 +15,7 @@ import { getBillingCustomers, getInvoices, getNextInvoiceNumber } from "@/lib/in
 import { CustomersSection } from "./customers-section";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 import { InvoiceRowActions } from "./invoice-row-actions";
+import { UploadPoDialog } from "./upload-po-dialog";
 
 export const metadata: Metadata = {
   title: "Invoices",
@@ -42,7 +43,12 @@ export default async function InvoicesPage() {
       <PageHeader
         title="Invoices"
         description="Every AMC and sales invoice raised on the company format, in one shared numbering sequence, with the workbook each one produced."
-        actions={<GenerateInvoiceDialog customers={customers} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <UploadPoDialog customers={customers} />
+            <GenerateInvoiceDialog customers={customers} />
+          </div>
+        }
       />
 
       <div className="grid gap-4 md:grid-cols-3">
