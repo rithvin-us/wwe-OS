@@ -347,9 +347,20 @@ class InsightFaceEngine(FaceEngine):
             rgb = self._preprocess(data, normalize=False)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
-        # Texture gate on every frame (catches low-detail screens/prints).
-        for gray in grays:
-            if float(cv2.Laplacian(gray, cv2.CV_64F).var()) < self._liveness_min_var:
+        # Texture gate on every frame (catches low-detail screens/prints). This
+        # was previously silent on rejection — every real check-in was failing
+        # here with zero diagnostic trace, logged only as the caller's generic
+        # "liveness=False". Log the actual variance so a miscalibrated
+        # threshold is visible instead of indistinguishable from a real spoof.
+        for i, gray in enumerate(grays):
+            variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            if variance < self._liveness_min_var:
+                logger.warning(
+                    "liveness fail: frame %d texture too low (variance=%.1f, min=%.1f)",
+                    i,
+                    variance,
+                    self._liveness_min_var,
+                )
                 return False
 
         if len(grays) < 2:

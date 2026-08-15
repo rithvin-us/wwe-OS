@@ -484,9 +484,21 @@ class InsightFaceService(FaceRecognitionService):
             rgb = self._preprocess(data, normalize=False)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
-        # Texture gate on every frame (catches low-detail screens/prints).
-        for gray in grays:
-            if float(cv2.Laplacian(gray, cv2.CV_64F).var()) < self._liveness_min_var:
+        # Texture gate on every frame (catches low-detail screens/prints). Was
+        # silent on rejection with no diagnostic trace — see services/face-ai's
+        # engine.py (the actual production engine, FACE_ENGINE=http) for the
+        # full incident: a 60.0 threshold silently rejected every real
+        # check-in, confirmed via logs to never be reaching the motion-band
+        # checks below. Kept in sync here.
+        for i, gray in enumerate(grays):
+            variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            if variance < self._liveness_min_var:
+                logger.warning(
+                    "liveness fail: frame %d texture too low (variance=%.1f, min=%.1f)",
+                    i,
+                    variance,
+                    self._liveness_min_var,
+                )
                 return False
 
         if len(grays) < 2:

@@ -55,7 +55,16 @@ class Settings(BaseSettings):
 
     # -- liveness --------------------------------------------------------
     FACE_ENABLE_LIVENESS: bool = True
-    FACE_LIVENESS_MIN_VAR: float = 60.0
+    # 60.0 was calibrated against sharp, uncompressed reference images and
+    # silently rejected every real check-in attempt in production — a live
+    # webcam JPEG frame at normal quality/lighting routinely lands well below
+    # that on variance-of-Laplacian, especially against a plain background.
+    # Confirmed via server logs: with the new per-frame logging above (added
+    # alongside this change), zero "static frames" or "frame change too
+    # large" motion-check warnings ever fired, only silent texture-gate
+    # rejections, on every single failed attempt — so this was the sole
+    # blocker, not spoofing. Still well above a flat/blank image's ~0-5.
+    FACE_LIVENESS_MIN_VAR: float = 20.0
     # Multi-frame liveness (burst frames ~400 ms apart): consecutive-frame
     # mean |Δ| band [MIN_MOTION, MAX_MOTION]; eye-patch change ≥ EYE_DELTA and
     # ≥ 2× global motion counts as a blink (mirror the backend defaults).

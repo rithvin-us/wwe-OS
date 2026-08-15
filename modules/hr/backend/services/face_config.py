@@ -127,8 +127,10 @@ class FaceSettings:
     FACE_ENABLE_LIVENESS: bool = field(
         default_factory=lambda: _bool("HR_FACE_ENABLE_LIVENESS", True)
     )
+    # 60.0 silently rejected every real check-in in production — see
+    # services/face-ai/app/config.py for the incident writeup. Kept in sync.
     FACE_LIVENESS_MIN_VAR: float = field(
-        default_factory=lambda: _float("HR_FACE_LIVENESS_MIN_VAR", 60.0)
+        default_factory=lambda: _float("HR_FACE_LIVENESS_MIN_VAR", 20.0)
     )
     FACE_LIVENESS_MIN_MOTION: float = field(
         default_factory=lambda: _float("HR_FACE_LIVENESS_MIN_MOTION", 0.003)
