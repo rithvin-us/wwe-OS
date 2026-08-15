@@ -2,20 +2,73 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, CheckCircle2, AlertCircle, RefreshCw } from "@bop/icons";
+import {
+  MapPin,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  LogIn,
+  LogOut,
+  ShieldAlert,
+} from "@bop/icons";
 
 import { useFaceCapture } from "@/hooks/use-face-capture";
 
 // Matches CheckInResponseSerializer (modules/hr/backend/serializers/checkin.py)
-// exactly — the Route Handler now forwards this object as-is on success.
+// field-for-field — the Route Handler forwards this object as-is on success.
 interface CheckInResult {
   recognized: boolean;
+  employee_id: string | null;
   employee_name: string | null;
   employee_code: string | null;
   decision: "auto_approved" | "flagged";
   direction: "in" | "out";
+  shift: string;
   time: string;
+  within_geofence: boolean;
+  face_score: number;
+  confidence: number;
   message: string;
+}
+
+// The app's existing status-chip signature (design-bible.md §"signature"):
+// monospace, uppercase, 1px ring, tinted fill — reused here rather than
+// invented fresh, so this page still reads as the same product.
+function StatusChip({
+  tone,
+  children,
+}: {
+  tone: "success" | "warning" | "error";
+  children: React.ReactNode;
+}) {
+  const toneClasses = {
+    success: "bg-emerald-500/10 text-emerald-700 ring-emerald-600/30",
+    warning: "bg-amber-500/10 text-amber-700 ring-amber-600/30",
+    error: "bg-rose-500/10 text-rose-700 ring-rose-600/30",
+  }[tone];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-semibold tracking-[0.08em] uppercase ring-1 ${toneClasses}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-100 py-2.5 last:border-b-0">
+      <span className="font-mono text-[11px] tracking-[0.06em] text-slate-500 uppercase">
+        {label}
+      </span>
+      <span className="text-sm font-semibold text-slate-900">{value}</span>
+    </div>
+  );
+}
+
+function formatShift(shift: string): string {
+  if (!shift) return "—";
+  return shift.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function PublicMobileCheckIn() {
@@ -24,7 +77,6 @@ export function PublicMobileCheckIn() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const resultRef = useRef<HTMLDivElement | null>(null);
   const { cameraActive, geo, startCamera, stopCamera, captureBurst } = useFaceCapture(videoRef);
 
   useEffect(() => {
@@ -34,16 +86,10 @@ export function PublicMobileCheckIn() {
     };
   }, []);
 
-  // The page used to vertically auto-center its content (my-auto below) —
-  // once a result banner made the page taller than a short mobile viewport,
-  // the header+banner could center-scroll above the fold while the camera
-  // and button stayed put, so a real success/failure looked like nothing
-  // happened. Force it into view explicitly on every result/error change.
-  useEffect(() => {
-    if (result || errorMessage) {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [result, errorMessage]);
+  function reset() {
+    setResult(null);
+    setErrorMessage(null);
+  }
 
   async function captureAndPunch() {
     if (!videoRef.current || !cameraActive) {
@@ -86,7 +132,7 @@ export function PublicMobileCheckIn() {
       } else {
         // The Route Handler's error field is `error`, not `message`/`detail` —
         // those never existed on this response shape, so every failure was
-        // silently falling through to the generic fallback below.
+        // silently falling through to a generic fallback.
         setErrorMessage(data.error || "Check-in failed. Please try again.");
       }
     } catch (err) {
@@ -95,10 +141,11 @@ export function PublicMobileCheckIn() {
     }
   }
 
+  const showResult = Boolean(result || errorMessage);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center p-4 sm:p-6 font-sans">
       <main className="w-full max-w-md mx-auto space-y-4 py-6">
-        {/* Header Title matching exact user screenshot */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance check-in</h1>
           <p className="text-sm text-slate-600 leading-relaxed">
@@ -106,82 +153,119 @@ export function PublicMobileCheckIn() {
           </p>
         </div>
 
-        {/* Result Banner — scroll-anchored so it can't render off-screen on a
-            short mobile viewport (see the scrollIntoView effect above). */}
-        <div ref={resultRef} className="scroll-mt-4">
-          {result?.recognized && result.decision === "auto_approved" ? (
-            <div className="p-4 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 space-y-1 animate-in fade-in">
-              <div className="flex items-center gap-2 font-bold text-base text-emerald-800">
-                <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
-                Marked {result.direction?.toUpperCase() || "PUNCH"} Successfully
+        {showResult ? (
+          // Result REPLACES the camera view entirely, rather than sharing the
+          // page with it — a banner squeezed above the viewfinder could end up
+          // scrolled out of view on a short mobile screen with no way to tell
+          // it had ever appeared. This can't be missed.
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {result?.decision === "auto_approved" ? (
+              <div className="p-6 text-center space-y-4">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10">
+                  <CheckCircle2 className="size-8 text-emerald-600" />
+                </div>
+                <div className="space-y-1">
+                  <StatusChip tone="success">
+                    {result.direction === "in" ? (
+                      <LogIn className="size-3" />
+                    ) : (
+                      <LogOut className="size-3" />
+                    )}
+                    Checked {result.direction}
+                  </StatusChip>
+                  <p className="pt-2 text-xl font-bold text-slate-900">{result.employee_name}</p>
+                  <p className="font-mono text-xs text-slate-500">{result.employee_code}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-4 text-left">
+                  <DetailRow label="Attendance" value="Marked" />
+                  <DetailRow label="Direction" value={result.direction === "in" ? "In" : "Out"} />
+                  <DetailRow label="Shift" value={formatShift(result.shift)} />
+                  <DetailRow label="Time" value={result.time} />
+                  <DetailRow label="Match confidence" value={`${result.confidence.toFixed(0)}%`} />
+                </div>
               </div>
-              <p className="text-sm font-semibold text-slate-900">
-                {result.employee_name} ({result.employee_code})
-              </p>
-              <p className="text-xs text-slate-600">{result.message || result.time}</p>
-            </div>
-          ) : result?.recognized ? (
-            // Identified, but flagged (liveness/geofence/marginal score) — the
-            // punch was NOT recorded. Distinct from "no face matched at all":
-            // the employee needs to retry, not assume they're unenrolled.
-            <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-900 text-xs space-y-1">
-              <p className="font-bold text-sm text-amber-800">
-                {result.employee_name} — Flagged for Review
-              </p>
-              <p className="text-slate-700">{result.message}</p>
-            </div>
-          ) : errorMessage ? (
-            <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs flex items-start gap-2">
-              <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
-              <div>{errorMessage}</div>
-            </div>
-          ) : null}
-        </div>
+            ) : result?.recognized ? (
+              // Identified, but flagged (liveness/geofence/marginal score) —
+              // the punch was NOT recorded. Distinct from "no match at all":
+              // this person is enrolled and needs to retry, not re-enroll.
+              <div className="p-6 text-center space-y-4">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-amber-500/10">
+                  <ShieldAlert className="size-8 text-amber-600" />
+                </div>
+                <div className="space-y-1">
+                  <StatusChip tone="warning">Flagged for review</StatusChip>
+                  <p className="pt-2 text-xl font-bold text-slate-900">{result.employee_name}</p>
+                  <p className="font-mono text-xs text-slate-500">{result.employee_code}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-4 text-left">
+                  <DetailRow label="Attendance" value="Not recorded" />
+                  <DetailRow label="Shift" value={formatShift(result.shift)} />
+                  <DetailRow label="Match confidence" value={`${result.confidence.toFixed(0)}%`} />
+                </div>
+                <p className="text-sm text-amber-800 leading-relaxed">{result.message}</p>
+              </div>
+            ) : (
+              <div className="p-6 text-center space-y-4">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-rose-500/10">
+                  <AlertCircle className="size-8 text-rose-600" />
+                </div>
+                <StatusChip tone="error">Not verified</StatusChip>
+                <p className="text-sm text-slate-700 leading-relaxed">{errorMessage}</p>
+              </div>
+            )}
 
-        {/* Camera Viewfinder (Clean Rounded Box, NO green circle overlay) */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm aspect-[3/4] flex items-center justify-center">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className={`w-full h-full object-cover rounded-2xl ${cameraActive ? "block" : "hidden"}`}
-            style={{ transform: "none" }}
-          />
+            <button
+              onClick={reset}
+              className="w-full border-t border-slate-100 py-3.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Scan again
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm aspect-[3/4] flex items-center justify-center">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover rounded-2xl ${cameraActive ? "block" : "hidden"}`}
+                style={{ transform: "none" }}
+              />
 
-          {!cameraActive ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center text-slate-300 space-y-3">
-              <p className="text-xs text-slate-400">Camera feed initializing...</p>
-              <button
-                onClick={startCamera}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition-colors cursor-pointer"
-              >
-                <RefreshCw className="size-3.5" /> Enable Camera
-              </button>
+              {!cameraActive ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-slate-300 space-y-3">
+                  <p className="text-xs text-slate-400">Camera feed initializing...</p>
+                  <button
+                    onClick={startCamera}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="size-3.5" /> Enable Camera
+                  </button>
+                </div>
+              ) : null}
+
+              {scanning ? (
+                <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
+                  <RefreshCw className="size-8 animate-spin text-emerald-400" />
+                  <span className="text-sm font-semibold tracking-wide">
+                    Hold still, checking in...
+                  </span>
+                </div>
+              ) : null}
             </div>
-          ) : null}
 
-          {scanning ? (
-            <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
-              <RefreshCw className="size-8 animate-spin text-emerald-400" />
-              <span className="text-sm font-semibold tracking-wide">
-                Hold still, checking in...
-              </span>
-            </div>
-          ) : null}
-        </div>
+            <button
+              onClick={() => captureAndPunch()}
+              disabled={scanning || !cameraActive}
+              className="w-full py-3.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              <MapPin className="size-5" />
+              {scanning ? "Checking in..." : "Check in / out"}
+            </button>
+          </>
+        )}
 
-        {/* Check in / out Button (Matching exact green button from screenshot) */}
-        <button
-          onClick={() => captureAndPunch()}
-          disabled={scanning || !cameraActive}
-          className="w-full py-3.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-        >
-          <MapPin className="size-5" />
-          {scanning ? "Checking in..." : "Check in / out"}
-        </button>
-
-        {/* Notice text matching exact screenshot */}
         <p className="text-center text-xs text-slate-500 pt-1">
           Your photo is used only to verify identity and is not stored.{" "}
           <Link href="/privacy" className="underline hover:text-slate-700">
