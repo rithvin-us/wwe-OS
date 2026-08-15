@@ -402,9 +402,9 @@ export function GenerateInvoiceDialog({
 
               <div className="space-y-2">
                 <div className="hidden grid-cols-12 gap-2 px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase sm:grid">
-                  <span className="col-span-5">Description</span>
+                  <span className="col-span-4">Description</span>
                   <span className="col-span-2">HSN</span>
-                  <span className="col-span-1">Qty</span>
+                  <span className="col-span-2">Qty</span>
                   <span className="col-span-1">UOM</span>
                   <span className="col-span-2">Rate</span>
                   <span className="col-span-1" />
@@ -412,7 +412,7 @@ export function GenerateInvoiceDialog({
                 {lines.map((line, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2">
                     <Input
-                      className="col-span-12 sm:col-span-5"
+                      className="col-span-12 sm:col-span-4"
                       placeholder="Description"
                       value={line.description}
                       onChange={(event) => updateLine(index, "description", event.target.value)}
@@ -424,10 +424,11 @@ export function GenerateInvoiceDialog({
                       onChange={(event) => updateLine(index, "hsn", event.target.value)}
                     />
                     <Input
-                      className="col-span-2 sm:col-span-1"
+                      className="col-span-3 sm:col-span-2"
                       type="number"
                       min="0"
                       step="0.001"
+                      placeholder="Qty"
                       value={line.quantity}
                       onChange={(event) => updateLine(index, "quantity", event.target.value)}
                     />
