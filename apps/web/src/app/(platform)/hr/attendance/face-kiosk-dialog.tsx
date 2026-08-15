@@ -15,17 +15,21 @@ import { toast } from "sonner";
 
 import { useFaceCapture } from "@/hooks/use-face-capture";
 
+// Matches CheckInResponseSerializer (modules/hr/backend/serializers/checkin.py).
+interface CheckInResult {
+  recognized: boolean;
+  employee_name: string | null;
+  employee_code: string | null;
+  decision: "auto_approved" | "flagged";
+  direction: "in" | "out";
+  time: string;
+  message: string;
+}
+
 export function FaceKioskDialog() {
   const [open, setOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<{
-    matched: boolean;
-    employee_code?: string;
-    employee_name?: string;
-    action?: string;
-    timestamp?: string;
-    message?: string;
-  } | null>(null);
+  const [result, setResult] = useState<CheckInResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -76,15 +80,13 @@ export function FaceKioskDialog() {
       setScanning(false);
 
       if (resp.ok && res?.ok && res.data) {
-        setResult(res.data);
-        if (res.data.matched) {
+        setResult(res.data as CheckInResult);
+        if (res.data.recognized && res.data.decision === "auto_approved") {
           toast.success(
-            `Punch Registered! ${res.data.employee_name} marked ${res.data.action || "IN"}`,
+            `Punch Registered! ${res.data.employee_name} marked ${res.data.direction?.toUpperCase() || "IN"}`,
           );
         } else {
-          toast.warning(
-            res.data.message || "Face not recognized. Please stand clearly in front of camera.",
-          );
+          toast.warning(res.data.message || "Recognized but flagged for review.");
         }
       } else {
         toast.error(res?.error || "Face recognition check-in failed.");
@@ -120,23 +122,21 @@ export function FaceKioskDialog() {
 
         <div className="space-y-4 py-2">
           {/* Result Banner */}
-          {result?.matched ? (
+          {result?.recognized && result.decision === "auto_approved" ? (
             <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 space-y-1 animate-in fade-in zoom-in-95">
               <div className="flex items-center gap-2 font-semibold text-base">
                 <CheckCircle2 className="size-5 text-emerald-500" />
-                Attendance Marked — {result.action || "PUNCH"}
+                Attendance Marked — {result.direction?.toUpperCase() || "PUNCH"}
               </div>
               <p className="text-sm font-medium">
                 {result.employee_name} ({result.employee_code})
               </p>
-              <p className="text-xs text-muted-foreground">{result.message || result.timestamp}</p>
+              <p className="text-xs text-muted-foreground">{result.message || result.time}</p>
             </div>
-          ) : result && !result.matched ? (
+          ) : result?.recognized ? (
             <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs">
-              <p className="font-medium">Face Not Recognized</p>
-              <p className="mt-0.5 opacity-90">
-                {result.message || "Ensure your face is well-lit and enrolled in the system."}
-              </p>
+              <p className="font-medium">{result.employee_name} — Flagged for Review</p>
+              <p className="mt-0.5 opacity-90">{result.message}</p>
             </div>
           ) : errorMessage ? (
             <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs flex items-start gap-2">

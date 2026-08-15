@@ -6,16 +6,21 @@ import { MapPin, CheckCircle2, AlertCircle, RefreshCw } from "@bop/icons";
 
 import { useFaceCapture } from "@/hooks/use-face-capture";
 
+// Matches CheckInResponseSerializer (modules/hr/backend/serializers/checkin.py)
+// exactly — the Route Handler now forwards this object as-is on success.
+interface CheckInResult {
+  recognized: boolean;
+  employee_name: string | null;
+  employee_code: string | null;
+  decision: "auto_approved" | "flagged";
+  direction: "in" | "out";
+  time: string;
+  message: string;
+}
+
 export function PublicMobileCheckIn() {
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<{
-    matched: boolean;
-    employee_code?: string;
-    employee_name?: string;
-    action?: string;
-    timestamp?: string;
-    message?: string;
-  } | null>(null);
+  const [result, setResult] = useState<CheckInResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -63,7 +68,8 @@ export function PublicMobileCheckIn() {
       setScanning(false);
 
       if (res.ok) {
-        setResult(data);
+        // route.ts wraps the real payload as { ok: true, data: <checkin result> }.
+        setResult(data.data as CheckInResult);
       } else {
         // The Route Handler's error field is `error`, not `message`/`detail` —
         // those never existed on this response shape, so every failure was
@@ -88,23 +94,26 @@ export function PublicMobileCheckIn() {
         </div>
 
         {/* Result Banner */}
-        {result?.matched ? (
+        {result?.recognized && result.decision === "auto_approved" ? (
           <div className="p-4 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 space-y-1 animate-in fade-in">
             <div className="flex items-center gap-2 font-bold text-base text-emerald-800">
               <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
-              Marked {result.action || "PUNCH"} Successfully
+              Marked {result.direction?.toUpperCase() || "PUNCH"} Successfully
             </div>
             <p className="text-sm font-semibold text-slate-900">
               {result.employee_name} ({result.employee_code})
             </p>
-            <p className="text-xs text-slate-600">{result.message || result.timestamp}</p>
+            <p className="text-xs text-slate-600">{result.message || result.time}</p>
           </div>
-        ) : result && !result.matched ? (
+        ) : result?.recognized ? (
+          // Identified, but flagged (liveness/geofence/marginal score) — the
+          // punch was NOT recorded. Distinct from "no face matched at all":
+          // the employee needs to retry, not assume they're unenrolled.
           <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-900 text-xs space-y-1">
-            <p className="font-bold text-sm text-amber-800">Face Not Recognized</p>
-            <p className="text-slate-700">
-              {result.message || "Please face the camera directly with good lighting."}
+            <p className="font-bold text-sm text-amber-800">
+              {result.employee_name} — Flagged for Review
             </p>
+            <p className="text-slate-700">{result.message}</p>
           </div>
         ) : errorMessage ? (
           <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs flex items-start gap-2">

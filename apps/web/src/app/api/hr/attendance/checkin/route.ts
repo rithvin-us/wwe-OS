@@ -52,7 +52,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!upstream.ok || !(body as { success?: boolean })?.success) {
+    // CheckInView returns CheckInResponseSerializer's payload directly on
+    // success (no {success, data} envelope — that's only the shared error
+    // handler's shape, used solely on failure). Checking body.success here
+    // was always undefined on a real 200, so this branch used to swallow
+    // every successful check-in and fabricate "Face check-in failed." while
+    // still passing through the upstream 200 status.
+    if (!upstream.ok) {
       const err = (body as { error?: { message?: string; details?: Record<string, unknown> } })
         ?.error;
       // The platform's generic handler collapses any multi-field ValidationError
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true, data: (body as { data?: unknown })?.data });
+    return NextResponse.json({ ok: true, data: body });
   } catch (err: unknown) {
     console.error("[/api/hr/attendance/checkin] Upstream fetch error:", err);
     return NextResponse.json(
