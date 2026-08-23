@@ -304,7 +304,7 @@ export function CommandPalette({
                     <app.icon aria-hidden />
                     <span className="flex-1">{app.name}</span>
                     {count > 0 && (
-                      <span className="ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[10px] font-bold tabular-nums text-white">
+                      <span className="ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1 font-mono text-[10px] font-bold tabular-nums text-white">
                         {count > 99 ? "99+" : count}
                       </span>
                     )}
@@ -336,10 +336,6 @@ export function CommandPalette({
               <CommandItem value="platform-dashboard" onSelect={() => go("/")}>
                 <LayoutDashboard aria-hidden />
                 Dashboard
-              </CommandItem>
-              <CommandItem value="platform-services" onSelect={() => go("/services")}>
-                <Layers aria-hidden />
-                Services
               </CommandItem>
               {ADMIN_PAGES.map((page) => (
                 <CommandItem

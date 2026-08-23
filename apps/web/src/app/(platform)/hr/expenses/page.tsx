@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Receipt } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
@@ -6,6 +7,10 @@ import { getExpenseClaims } from "@/lib/hr";
 import { HrNav } from "../hr-nav";
 
 import { ExpenseClaimList } from "./expense-claims";
+
+export const metadata: Metadata = {
+  title: "Expense claims",
+};
 
 export default async function ExpensesPage() {
   const claims = await getExpenseClaims().catch(() => []);

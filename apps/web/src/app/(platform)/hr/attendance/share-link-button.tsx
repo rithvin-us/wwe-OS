@@ -23,7 +23,7 @@ export function ShareCheckInLinkButton() {
       onClick={handleCopy}
       className="gap-1.5 cursor-pointer text-xs"
     >
-      {copied ? <Check className="size-3.5 text-emerald-500" /> : <Share2 className="size-3.5" />}
+      {copied ? <Check className="size-3.5 text-blue-500" /> : <Share2 className="size-3.5" />}
       {copied ? "Link Copied!" : "Share Mobile Link"}
     </Button>
   );

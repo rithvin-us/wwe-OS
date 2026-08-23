@@ -17,9 +17,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "File is over the 8MB limit." }, { status: 413 });
   }
 
+  // "name:token" per entry (platform/shared/service_auth.py partitions on the
+  // FIRST colon only) — the token itself may contain colons, as the Telegram
+  // bot token does, so a naive split(":")[1] silently truncates it and every
+  // request gets rejected as "Invalid service token."
+  const firstEntry = process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0] ?? "";
+  const colonIndex = firstEntry.indexOf(":");
   const serviceToken =
-    process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0]?.split(":")?.[1] ||
-    "default-service-token";
+    colonIndex !== -1 ? firstEntry.slice(colonIndex + 1).trim() : "default-service-token";
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());

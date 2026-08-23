@@ -7,15 +7,19 @@ import { getAccessToken, internalApiUrl } from "@/lib/api/server";
  * them straight back to the browser.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params;
+  const inline = new URL(request.url).searchParams.get("inline");
   const token = await getAccessToken();
-  const upstream = await fetch(`${internalApiUrl()}/api/v1/documents/documents/${id}/download/`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    cache: "no-store",
-  });
+  const upstream = await fetch(
+    `${internalApiUrl()}/api/v1/documents/documents/${id}/download/${inline ? "?inline=1" : ""}`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    },
+  );
 
   if (!upstream.ok) {
     return new Response("Unable to download this document.", { status: upstream.status });

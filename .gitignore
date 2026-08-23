@@ -53,3 +53,6 @@ logs/
 
 .vercel
 .env*
+
+# Local pre-change safety copies (never committed).
+.backups/

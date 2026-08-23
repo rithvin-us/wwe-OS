@@ -19,7 +19,6 @@ import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
-  attachContractFileAction,
   deleteContractAction,
   summarizeContractAction,
   terminateContractAction,
@@ -54,18 +53,25 @@ export function ContractActions({
     });
   }
 
-  function attach(event: FormEvent<HTMLFormElement>) {
+  async function attach(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    startTransition(async () => {
-      const result = await attachContractFileAction(id, formData);
-      if (result.ok) {
-        toast.success(result.message);
+    try {
+      const response = await fetch(`/api/contracts/${id}/attach`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json().catch(() => null);
+      if (response.ok && result?.ok) {
+        toast.success(result.message ?? "File attached.");
         setAttachOpen(false);
+        router.refresh();
       } else {
-        toast.error(result.message);
+        toast.error(result?.message ?? `Attachment failed (HTTP ${response.status}).`);
       }
-    });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Network error — check your connection.");
+    }
   }
 
   function terminate() {

@@ -74,6 +74,52 @@ def test_store_rejects_empty_file(tenant):
         _store(tenant, data=b"")
 
 
+def test_store_rejects_executable_disguised_as_pdf(tenant):
+    """An ELF binary sent with content_type=application/pdf is refused —
+    the allow-list passes but content inspection catches the mismatch."""
+    elf = b"\x7fELF\x02\x01\x01\x00" + b"\x00" * 64
+    with pytest.raises(ValidationError):
+        _store(tenant, data=elf, content_type="application/pdf", filename="invoice.pdf")
+
+
+def test_store_rejects_windows_pe_executable(tenant):
+    """A real PE (MZ...PE\\0\\0) is blocked regardless of declared type."""
+    pe = bytearray(b"MZ" + b"\x00" * 0x3E)
+    pe[0x3C:0x40] = (0x40).to_bytes(4, "little")
+    pe += b"PE\x00\x00" + b"\x00" * 16
+    with pytest.raises(ValidationError):
+        _store(tenant, data=bytes(pe), content_type="application/pdf", filename="report.pdf")
+
+
+def test_store_rejects_content_type_mismatch(tenant):
+    """PNG bytes declared as a JPEG are rejected — both are fingerprinted."""
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+    with pytest.raises(ValidationError):
+        _store(tenant, data=png, content_type="image/jpeg", filename="photo.jpg")
+
+
+def test_store_accepts_matching_png(tenant):
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+    stored = _store(tenant, data=png, content_type="image/png", filename="photo.png")
+    assert stored.content_type == "image/png"
+
+
+def test_store_allows_unverifiable_types_through(tenant):
+    """text/plain has no reliable signature — content inspection must not
+    block it. Regression guard for CSV/JSON/text callers."""
+    stored = _store(
+        tenant, data=b"hello,world\n1,2\n", content_type="text/plain", filename="notes.txt"
+    )
+    assert stored.content_type == "text/plain"
+
+
+def test_store_verify_content_can_be_disabled(tenant, settings):
+    settings.STORAGE_VERIFY_CONTENT = False
+    elf = b"\x7fELF" + b"\x00" * 64
+    stored = _store(tenant, data=elf, content_type="application/pdf", filename="x.pdf")
+    assert stored.size_bytes == len(elf)
+
+
 def test_traversal_filenames_are_neutralized(tenant, settings):
     stored = _store(tenant, filename="..\\..\\..\\evil.pdf")
     assert ".." not in stored.key

@@ -3,9 +3,10 @@ import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { PageHeader } from "@bop/ui/components/page-header";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+import { cache, type ReactNode } from "react";
 
 import { StockActions } from "@/app/(platform)/inventory/[id]/stock-actions";
 import { ApiRequestError } from "@/lib/api/envelope";
@@ -18,6 +19,9 @@ import {
   type InventoryItemRecord,
   type StockMovementRecord,
 } from "@/lib/inventory";
+
+// Deduped per request so generateMetadata and the page body share one fetch.
+const getItemCached = cache(getItem);
 
 function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -51,11 +55,25 @@ function MovementRow({ movement }: { movement: StockMovementRecord }) {
   );
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const item = await getItemCached(id);
+    return { title: item.name };
+  } catch {
+    return { title: "Inventory item" };
+  }
+}
+
 export default async function InventoryItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let item: InventoryItemRecord;
   try {
-    item = await getItem(id);
+    item = await getItemCached(id);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;

@@ -55,7 +55,7 @@ Everything is ENV-driven (`app/config.py`, template in `.env.example`). Key vars
 | var                                              | default         | meaning                                                      |
 | ------------------------------------------------ | --------------- | ------------------------------------------------------------ |
 | `FACE_ENGINE`                                    | `insightface`   | engine selector                                              |
-| `FACE_MODEL`                                     | `buffalo_s`     | ArcFace pack (`buffalo_s` light / `buffalo_l` accurate)      |
+| `FACE_MODEL`                                     | `buffalo_l`     | ArcFace pack (`buffalo_s` light / `buffalo_l` accurate)      |
 | `FACE_AI_API_KEY`                                | _(empty)_       | shared secret required in `X-API-Key`; **set in production** |
 | `FACE_DETECT_MIN_CONFIDENCE`                     | `0.90`          | MTCNN accept threshold                                       |
 | `FACE_BLUR_MIN_VAR`                              | `40.0`          | enrol blur gate (Laplacian variance)                         |

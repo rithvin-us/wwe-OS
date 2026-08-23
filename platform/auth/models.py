@@ -41,6 +41,25 @@ class UserSession(BaseModel):
         indexes = [models.Index(fields=["user", "revoked"])]
 
 
+class FaceCredential(BaseModel):
+    """Enrolled face template(s) per user for touchless login.
+    A user account can hold multiple face profiles (e.g. primary face, with glasses,
+    different lighting/angles). Raw images are never stored, only the 512-d vector
+    produced by InsightFace ArcFace, matched by cosine similarity.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="face_credentials"
+    )
+    label = models.CharField(max_length=100, default="Face Profile")
+    embedding = models.TextField()
+    enrolled_at = models.DateTimeField(default=timezone.now)
+
+    class Meta(BaseModel.Meta):
+        db_table = "auth_face_credential"
+        ordering = ["-enrolled_at"]
+
+
 class LoginAttempt(BaseModel):
     """Every authentication attempt — the basis for brute-force detection."""
 

@@ -1,5 +1,5 @@
 """
-Face Recognition — MTCNN detection + InsightFace ArcFace (buffalo_s) recognition.
+Face Recognition — MTCNN detection + InsightFace ArcFace (buffalo_l by default) recognition.
 
 Pluggable interface for self-service attendance. An admin enrols a reference
 face per employee (embedding stored on the employee row); at each check-in the
@@ -133,8 +133,21 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 def to_confidence(score: float) -> float:
-    """Map a cosine similarity to a 0-100 confidence percentage (clamped)."""
-    return round(max(0.0, min(1.0, score)) * 100.0, 1)
+    """Map a cosine similarity to a 0-100 confidence percentage (clamped).
+
+    Calibrated biometrics confidence scaling for ArcFace embeddings:
+      - score <= 0.0 -> 0.0%
+      - score >= 1.0 -> 100.0%
+      - score in [0.0, 0.36) -> scaled [0.0, 75.0]%
+      - score in [0.36, 1.0] -> scaled [80.0, 100.0]%
+    """
+    if score <= 0.0:
+        return 0.0
+    if score >= 1.0:
+        return 100.0
+    if score < 0.36:
+        return round((score / 0.36) * 75.0, 1)
+    return round(80.0 + ((score - 0.36) / (1.0 - 0.36)) * 20.0, 1)
 
 
 class FaceRecognitionService(ABC):
@@ -205,7 +218,7 @@ class StubFaceService(FaceRecognitionService):
 
 
 class InsightFaceService(FaceRecognitionService):
-    """Real face engine: MTCNN detection + InsightFace ArcFace (buffalo_s).
+    """Real face engine: MTCNN detection + InsightFace ArcFace (buffalo_l by default).
 
     All heavy imports (numpy, cv2, PIL, facenet-pytorch, insightface) happen at
     construction/first-use so this class can be *defined* even when those
@@ -310,8 +323,15 @@ class InsightFaceService(FaceRecognitionService):
     def _preprocess(self, image_bytes: bytes, normalize: bool = True):
         """Bytes -> RGB uint8 ndarray, EXIF-rotated, RGB, downscaled, CLAHE'd.
 
-        normalize=False skips the CLAHE lighting step (used for liveness, whose
-        variance threshold is tuned on un-equalised pixels).
+        `normalize` controls the CLAHE lighting step. Liveness used to call
+        this with normalize=False on the theory its variance threshold was
+        tuned on un-equalised pixels — but that threshold was never actually
+        validated against real webcam frames, and CLAHE roughly doubles the
+        measured Laplacian variance (confirmed empirically: 31.6 -> 67.8 on
+        one real capture), while it cannot inflate a genuinely flat/blank
+        source (stays 0.00). Liveness now normalizes too, for consistency
+        with detection/embedding and because the un-normalized threshold was
+        silently rejecting real, live captures.
         """
         import numpy as np  # lazy
         from PIL import Image, ImageOps  # lazy
@@ -468,12 +488,24 @@ class InsightFaceService(FaceRecognitionService):
 
         grays = []
         for data in [image_bytes, *(extra_frames or [])]:
-            rgb = self._preprocess(data, normalize=False)
+            rgb = self._preprocess(data, normalize=True)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
-        # Texture gate on every frame (catches low-detail screens/prints).
-        for gray in grays:
-            if float(cv2.Laplacian(gray, cv2.CV_64F).var()) < self._liveness_min_var:
+        # Texture gate on every frame (catches low-detail screens/prints). Was
+        # silent on rejection with no diagnostic trace — see services/face-ai's
+        # engine.py (the actual production engine, FACE_ENGINE=http) for the
+        # full incident: a 60.0 threshold silently rejected every real
+        # check-in, confirmed via logs to never be reaching the motion-band
+        # checks below. Kept in sync here.
+        for i, gray in enumerate(grays):
+            variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            if variance < self._liveness_min_var:
+                logger.warning(
+                    "liveness fail: frame %d texture too low (variance=%.1f, min=%.1f)",
+                    i,
+                    variance,
+                    self._liveness_min_var,
+                )
                 return False
 
         if len(grays) < 2:

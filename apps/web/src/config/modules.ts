@@ -1,14 +1,8 @@
 import {
-  BarChart3,
-  Bell,
-  Bot,
   FileSearch,
   FileText,
   History,
   Landmark,
-  Mail,
-  ScanText,
-  Send,
   ShoppingCart,
   Users,
   Workflow,
@@ -76,13 +70,6 @@ export const APPS: PlatformApp[] = [
     availability: "ready",
   },
   {
-    slug: "analytics",
-    name: "Analytics",
-    icon: BarChart3,
-    tagline: "Numbers and trends across the company.",
-    availability: "coming-soon",
-  },
-  {
     slug: "reports",
     name: "Reports",
     icon: FileSearch,
@@ -110,58 +97,6 @@ export const AVAILABILITY_LABEL: Record<Availability, string | null> = {
   "in-progress": "In progress",
   "coming-soon": "Coming soon",
 };
-
-/**
- * Background services — the machinery behind the apps. Kept off the main
- * navigation on purpose: one quiet "Services" page explains what runs in
- * the background, in plain language. Nothing to click, nothing to manage.
- */
-export interface PlatformService {
-  slug: string;
-  name: string;
-  icon: LucideIcon;
-  /** Plain-language line: what it does for the user, not how it works. */
-  plain: string;
-  availability: Availability;
-}
-
-export const SERVICES: PlatformService[] = [
-  {
-    slug: "notifications",
-    name: "Notifications",
-    icon: Bell,
-    plain: "Makes sure the right person is alerted — in the app, by email, or in chat.",
-    availability: "in-progress",
-  },
-  {
-    slug: "ai-assistant",
-    name: "AI Assistant",
-    icon: Bot,
-    plain: "Will answer questions and help with routine tasks across the platform.",
-    availability: "coming-soon",
-  },
-  {
-    slug: "ocr",
-    name: "Document scanning",
-    icon: ScanText,
-    plain: "Turns paper scans and photos into searchable, usable text.",
-    availability: "coming-soon",
-  },
-  {
-    slug: "email",
-    name: "Email delivery",
-    icon: Mail,
-    plain: "Sends platform updates and reports to inboxes reliably.",
-    availability: "coming-soon",
-  },
-  {
-    slug: "telegram",
-    name: "Telegram alerts",
-    icon: Send,
-    plain: "Delivers urgent updates straight to the team's phones.",
-    availability: "coming-soon",
-  },
-];
 
 export function getApp(slug: string): PlatformApp | undefined {
   return APPS.find((a) => a.slug === slug);

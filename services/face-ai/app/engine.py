@@ -1,5 +1,5 @@
 """
-Face engine — MTCNN detection + InsightFace ArcFace (buffalo_s) embeddings.
+Face engine — MTCNN detection + InsightFace ArcFace (buffalo_l by default) embeddings.
 
 Self-contained copy of the recognition pipeline (ported from the HR backend's
 `app.services.face_recognition`), so this microservice shares NO code with the
@@ -110,7 +110,7 @@ class StubEngine(FaceEngine):
 
 
 class InsightFaceEngine(FaceEngine):
-    """Real engine: MTCNN detection + InsightFace ArcFace (buffalo_s).
+    """Real engine: MTCNN detection + InsightFace ArcFace (buffalo_l by default).
 
     Models load once in `load()` (called at startup) and are reused for every
     request. All heavy imports are lazy so this class can be *defined* without
@@ -171,11 +171,19 @@ class InsightFaceEngine(FaceEngine):
             providers=providers,
         )
         ctx_id = 0 if self._use_gpu else -1
+        # 640 is the proven baseline (matches the backend's in-process engine and
+        # the model's own training/eval convention). Measured empirically against
+        # both a multi-face reference photo and a reproduction of this service's
+        # exact enroll-photo pipeline (browser canvas crop -> 512x512 JPEG): 1024
+        # detects the same faces but consistently at 5-10 points lower confidence
+        # (e.g. 0.887 vs 0.920 on an easy case), and on a borderline-quality crop
+        # it was the deciding factor between a real face being found or not. Do
+        # not raise this again without a same-pipeline A/B showing a net gain.
         app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         self._app = app
         self.ready = True
         logger.info(
-            "Face models loaded: native InsightFace FaceAnalysis pack=%s (%.0f ms)",
+            "Face models loaded: native InsightFace FaceAnalysis pack=%s det_size=(640, 640) (%.0f ms)",
             self._model_name,
             (time.perf_counter() - t0) * 1000,
         )
@@ -205,6 +213,15 @@ class InsightFaceEngine(FaceEngine):
 
     @staticmethod
     def _normalize_lighting(rgb):
+        """CLAHE on the L channel, unconditionally.
+
+        A conditional skip (only apply when mean L looks under/over-exposed)
+        was tried and reverted: on a normally-lit portrait it removed contrast
+        enhancement that was providing real detection margin on borderline
+        crops (a browser canvas export is rarely as clean as a native photo),
+        turning a working enrollment into a "no face detected" 422 with no
+        code or lighting change on the user's end. Always apply it.
+        """
         import cv2  # lazy
 
         lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
@@ -236,6 +253,7 @@ class InsightFaceEngine(FaceEngine):
     def embed(self, image_bytes: bytes, enroll: bool = False) -> list[float]:
         import numpy as np  # lazy
         import cv2  # lazy
+        from insightface.utils import face_align  # lazy
 
         t0 = time.perf_counter()
         try:
@@ -272,13 +290,27 @@ class InsightFaceEngine(FaceEngine):
                 if hasattr(face, "kps"):
                     self._check_side_profile(face.kps)
 
-            feat = np.asarray(face.embedding).flatten()
+            # Test-Time Augmentation (TTA): Ensemble original + horizontally flipped crops
+            feat_orig = np.asarray(face.embedding).flatten()
+            if hasattr(face, "kps") and "recognition" in getattr(self._app, "models", {}):
+                try:
+                    aligned = face_align.norm_crop(bgr, landmark=face.kps, image_size=112)
+                    aligned_flip = cv2.flip(aligned, 1)
+                    feat_flip = np.asarray(
+                        self._app.models["recognition"].get_feat(aligned_flip)
+                    ).flatten()
+                    feat = feat_orig + feat_flip
+                except Exception:  # noqa: BLE001 - fallback to single embedding
+                    feat = feat_orig
+            else:
+                feat = feat_orig
+
             norm = float(np.linalg.norm(feat))
             vec = (feat / norm) if norm else feat  # L2-normalise -> cosine == dot
             self._dim = int(vec.shape[0])
 
             logger.info(
-                "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms",
+                "embed ok: enroll=%s det_conf=%.3f face_px=%d dim=%d time=%.0fms (TTA ensemble)",
                 enroll,
                 det_conf,
                 int(side),
@@ -310,14 +342,33 @@ class InsightFaceEngine(FaceEngine):
         import cv2  # lazy
         import numpy as np  # lazy
 
+        # normalize=True (CLAHE), matching embed()'s preprocessing. Was False —
+        # measured empirically (same real check-in frame) that CLAHE roughly
+        # doubles the Laplacian variance the texture gate below reads (31.6 ->
+        # 67.8 on one test capture), which is exactly why detection/matching
+        # worked reliably while the raw, non-enhanced liveness gate silently
+        # rejected the same real frame as "too low texture" every time.
+        # Confirmed CLAHE cannot inflate a genuinely flat/blank source (stays
+        # 0.00), so this doesn't weaken the flat-photo/print rejection.
         grays = []
         for data in [image_bytes, *(extra_frames or [])]:
-            rgb = self._preprocess(data, normalize=False)
+            rgb = self._preprocess(data, normalize=True)
             grays.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
 
-        # Texture gate on every frame (catches low-detail screens/prints).
-        for gray in grays:
-            if float(cv2.Laplacian(gray, cv2.CV_64F).var()) < self._liveness_min_var:
+        # Texture gate on every frame (catches low-detail screens/prints). This
+        # was previously silent on rejection — every real check-in was failing
+        # here with zero diagnostic trace, logged only as the caller's generic
+        # "liveness=False". Log the actual variance so a miscalibrated
+        # threshold is visible instead of indistinguishable from a real spoof.
+        for i, gray in enumerate(grays):
+            variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            if variance < self._liveness_min_var:
+                logger.warning(
+                    "liveness fail: frame %d texture too low (variance=%.1f, min=%.1f)",
+                    i,
+                    variance,
+                    self._liveness_min_var,
+                )
                 return False
 
         if len(grays) < 2:
@@ -342,6 +393,38 @@ class InsightFaceEngine(FaceEngine):
             logger.warning("liveness fail: static frames (motion=%.5f)", motion)
             return False
         return True
+
+    def _detect(self, rgb):
+        """Run detection on one RGB frame, returning (box, kps, det_conf) for
+        the primary (largest) face. Raises NoFaceDetectedError /
+        FaceTooSmallError on failure — mirrors the inline detection in
+        embed(), factored out because _blink_detected needs landmarks alone
+        without running the full embed pipeline.
+
+        This method didn't exist until now — _blink_detected referenced it
+        unconditionally, so every liveness check that got past the texture
+        gate and wasn't an obvious "too much motion" reject crashed with
+        AttributeError, surfaced to the caller as a 500 that HttpFaceService
+        silently retried (see the check-in latency/liveness incident).
+        """
+        import cv2  # lazy
+
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        faces = self._app.get(bgr)
+        if not faces:
+            raise NoFaceDetectedError()
+        face = max(faces, key=lambda f: float((f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])))
+        det_conf = float(face.det_score) if hasattr(face, "det_score") else 1.0
+        if det_conf < self._det_min_conf:
+            raise NoFaceDetectedError()
+        box = face.bbox
+        side = min(float(box[2] - box[0]), float(box[3] - box[1]))
+        if side < self._min_face_px:
+            raise FaceTooSmallError()
+        kps = getattr(face, "kps", None)
+        if kps is None:
+            raise NoFaceDetectedError()
+        return box, kps, det_conf
 
     def _blink_detected(self, grays, global_motion: float) -> bool:
         """Blink / non-rigid facial movement: the eye-landmark patches changing

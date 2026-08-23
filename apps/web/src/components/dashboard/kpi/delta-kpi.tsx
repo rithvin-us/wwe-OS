@@ -49,7 +49,7 @@ export function DeltaKpi({
   );
 
   const classes =
-    "rounded-xl border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md";
+    "rounded-xl border border-border bg-card p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:shadow-md";
 
   if (href) {
     return (

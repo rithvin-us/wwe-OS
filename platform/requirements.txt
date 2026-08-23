@@ -1,8 +1,8 @@
 # WWE OS platform kernel — runtime dependencies.
 python-dotenv>=1.0    # loads repo-root .env for local (non-Docker) runs
-Django>=6.0,<6.1
-djangorestframework>=3.17
-djangorestframework-simplejwt>=5.5
+Django>=6.1,<6.2
+djangorestframework>=3.18.0
+djangorestframework-simplejwt>=5.5.1
 drf-spectacular>=0.30
 django-cors-headers>=4.9
 django-filter>=26
@@ -14,8 +14,12 @@ gunicorn>=23.0
 # Platform services
 httpx>=0.28          # AI gateway provider calls
 openpyxl>=3.1        # reporting: Excel renderer
-reportlab>=4.2       # reporting: PDF renderer
+reportlab>=5.0.0       # reporting: PDF renderer
 pypdf>=5.0           # auditor: merges PDFs into one package
-# boto3 is intentionally NOT listed: install it only when STORAGE_BACKEND is
-# s3/r2/minio (see storage/providers.py — the import is lazy).
-docxtpl==0.16.8
+# storage/providers.py imports boto3 lazily, but production (and any dev env
+# pointed at real S3/R2 storage) sets STORAGE_BACKEND=s3, so it's not truly
+# optional — Render's build only runs this file, with no conditional install
+# step, so leaving it out here means every upload 500s in production.
+boto3>=1.35.0
+docxtpl==0.20.2
+pywebpush>=2.0        # notifications: Web Push delivery + VAPID signing

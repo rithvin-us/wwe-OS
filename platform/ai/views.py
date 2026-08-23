@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -163,3 +164,63 @@ class HealthView(APIView):
     )
     def get(self, request: Request) -> Response:
         return Response({"providers": AIService().provider_health()})
+
+
+class OperationsView(APIView):
+    """Real gateway health for the Maintenance dashboard — not just "is a key
+    configured" (that's HealthView), but "are calls actually succeeding".
+
+    `AIUsage.success`/`.error` are recorded on every call (see
+    ai/services.py) but were never surfaced anywhere before this — the
+    documents-summary "gemini-2.5-flash is no longer available" 404 storm sat
+    in this table, per-row, with the exact provider error message, the whole
+    time it was silently failing in production.
+    """
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "ai.manage"
+
+    @extend_schema(
+        tags=["ai"],
+        responses={200: OpenApiResponse(description="Recent AI call outcomes and failures.")},
+    )
+    def get(self, request: Request) -> Response:
+        qs = AIUsage.objects.all()
+        if not request.user.is_superuser and request.user.tenant_id is not None:
+            qs = qs.filter(tenant_id=request.user.tenant_id)
+
+        since_24h = timezone.now() - timezone.timedelta(hours=24)
+        recent = qs.filter(created_at__gte=since_24h)
+        totals_24h = recent.aggregate(
+            calls=Count("id"),
+            failures=Count("id", filter=Q(success=False)),
+        )
+        calls_24h = totals_24h["calls"] or 0
+        failures_24h = totals_24h["failures"] or 0
+        success_rate_24h = round((calls_24h - failures_24h) / calls_24h, 4) if calls_24h else None
+
+        by_model = list(
+            recent.values("model")
+            .annotate(
+                calls=Count("id"),
+                failures=Count("id", filter=Q(success=False)),
+            )
+            .order_by("-calls")
+        )
+
+        failures = list(
+            qs.filter(success=False)
+            .order_by("-created_at")[:25]
+            .values("module", "use_case", "provider", "model", "error", "created_at")
+        )
+
+        return Response(
+            {
+                "window": "24h",
+                "calls": calls_24h,
+                "failures": failures_24h,
+                "success_rate": success_rate_24h,
+                "by_model": by_model,
+                "recent_failures": failures,
+            }
+        )

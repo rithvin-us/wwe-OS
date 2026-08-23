@@ -82,7 +82,7 @@ class TestConfidence:
         assert to_confidence(-0.3) == 0.0
 
     def test_mid_score(self):
-        assert to_confidence(0.45) == 45.0
+        assert to_confidence(0.45) == 82.8
 
 
 class TestFaceErrors:

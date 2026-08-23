@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bop/ui/components/card";
+import Link from "next/link";
 import { PageHeader } from "@bop/ui/components/page-header";
 
-import { CompanyForm } from "@/app/(platform)/settings/company-form";
-import { PasswordForm } from "@/app/(platform)/settings/password-form";
-import { ProfileForm } from "@/app/(platform)/settings/profile-form";
+import { SettingsWorkspace } from "@/app/(platform)/settings/settings-workspace";
 import { getCompany, getMyProfile } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -15,45 +13,22 @@ export default async function SettingsPage() {
   const [profile, company] = await Promise.all([getMyProfile(), getCompany()]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl">
       <PageHeader
-        title="Settings"
-        description="Manage your profile, your company details, and security."
+        title="Settings & Governance"
+        description="Manage your account profile, biometric face enrollment, organization details, security rules, and platform architecture topology."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Your profile</CardTitle>
-          <CardDescription>How you appear and your personal preferences.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm profile={profile} />
-        </CardContent>
-      </Card>
+      {/* Tabbed Executive Settings Workspace */}
+      <SettingsWorkspace profile={profile} company={company} />
 
-      {company ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Company</CardTitle>
-            <CardDescription>
-              Your company details, used across the platform and on reports.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CompanyForm basics={company.basics} profile={company.profile} />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Security</CardTitle>
-          <CardDescription>Change the password you use to sign in.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PasswordForm />
-        </CardContent>
-      </Card>
+      {/* Footer Legal Link */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border/40">
+        <span>WWE OS Operations Platform</span>
+        <Link href="/privacy" className="hover:text-foreground hover:underline font-medium">
+          Platform Privacy Policy & Biometric Compliance →
+        </Link>
+      </div>
     </div>
   );
 }

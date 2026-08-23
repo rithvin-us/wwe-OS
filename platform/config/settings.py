@@ -41,12 +41,31 @@ if str(REPO_ROOT / "modules") not in sys.path:
 # --------------------------------------------------------------------------- #
 # Core
 # --------------------------------------------------------------------------- #
-SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str(
-    "SECRET_KEY", default="django-insecure-development-placeholder-key-change-in-production-12345"
-)
+_INSECURE_SECRET_KEY = "django-insecure-development-placeholder-key-change-in-production-12345"
+SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", default=_INSECURE_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")
+
+# Fail fast in production rather than silently shipping the development
+# placeholder secret (which would let anyone forge a valid JWT — it is the JWT
+# signing key). Scoped to APP_ENV=production so tests and local dev, which
+# legitimately run on the placeholder, are unaffected. A guard here beats a
+# runtime surprise: the process refuses to boot instead of coming up insecure.
+if APP_ENV == "production":
+    from config.env import ImproperlyConfigured
+
+    if (
+        not SECRET_KEY
+        or SECRET_KEY == _INSECURE_SECRET_KEY
+        or SECRET_KEY.startswith("django-insecure-")
+    ):
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set to a strong, unique value in production "
+            "(the development placeholder is not allowed when APP_ENV=production)."
+        )
+    if DEBUG:
+        raise ImproperlyConfigured("DJANGO_DEBUG must be off (0) when APP_ENV=production.")
 
 # Shared secrets for service-to-service ingestion (Telegram bot, email
 # service, …). Format: "name:token,name:token". See shared/service_auth.py.
@@ -179,7 +198,10 @@ if _database_url:
             conn_health_checks=True,
         ),
     }
-    # Neon Postgres & PgBouncer pooler compatibility
+    # Required by any PgBouncer transaction-mode pooler — which is what the
+    # Supabase connection string in render.yaml is. Server-side cursors do not
+    # survive a pooler handing the connection to another session between
+    # statements, so they are turned off rather than left to fail at runtime.
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     DATABASES["default"]["OPTIONS"] = DATABASES["default"].get("OPTIONS", {})
     # Enable keepalive to prevent SSL SYSCALL connection aborts
@@ -218,12 +240,46 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "shared.validators.PasswordComplexityValidator"},
 ]
 
-# Brute-force / account-locking policy (enforced in auth services).
+# Brute-force / account-locking policy (enforced in auth services). Failures
+# are counted per identity (email, or IP for face login) within
+# AUTH_LOCKOUT_WINDOW_SECONDS; once AUTH_LOCKOUT_MAX_ATTEMPTS is reached the
+# identity is throttled with an *exponential backoff* rather than a fixed hard
+# lock: the wait starts at the base, multiplies by the factor on each further
+# failure, and is capped by the max so a real account can never be locked out
+# permanently. All thresholds are configurable.
 AUTH_LOCKOUT_MAX_ATTEMPTS = env_int("AUTH_LOCKOUT_MAX_ATTEMPTS", 5)
 AUTH_LOCKOUT_WINDOW_SECONDS = env_int("AUTH_LOCKOUT_WINDOW_SECONDS", 900)
+# The first backoff, applied the moment the threshold is crossed. Kept as
+# AUTH_LOCKOUT_DURATION_SECONDS for backward compatibility with existing
+# deployments/env files that already set it.
 AUTH_LOCKOUT_DURATION_SECONDS = env_int("AUTH_LOCKOUT_DURATION_SECONDS", 900)
+AUTH_LOCKOUT_BASE_BACKOFF_SECONDS = env_int(
+    "AUTH_LOCKOUT_BASE_BACKOFF_SECONDS", AUTH_LOCKOUT_DURATION_SECONDS
+)
+AUTH_LOCKOUT_BACKOFF_FACTOR = float(env_str("AUTH_LOCKOUT_BACKOFF_FACTOR", "2.0"))
+AUTH_LOCKOUT_MAX_BACKOFF_SECONDS = env_int("AUTH_LOCKOUT_MAX_BACKOFF_SECONDS", 86400)
 PASSWORD_RESET_TOKEN_TTL_SECONDS = env_int("PASSWORD_RESET_TOKEN_TTL_SECONDS", 3600)
 EMAIL_VERIFICATION_TTL_SECONDS = env_int("EMAIL_VERIFICATION_TTL_SECONDS", 86400)
+
+# Touchless Owner face login — same face-ai microservice HR check-in uses
+# (services/face-ai; InsightFace ArcFace, model buffalo_l by default). An
+# unset FACE_AI_URL means every face request fails with 503 rather than
+# silently accepting any face — there is no client-only fallback.
+#
+# Falls back to HR_FACE_AI_URL/HR_FACE_AI_API_KEY (modules/hr's own config,
+# periods/face_config.py) when the bare FACE_AI_* vars aren't set — every
+# real deployment configures only the HR-prefixed ones (that's the client
+# that's actually been exercised and proven reachable), so without this
+# fallback this Owner-login client always fell through to the localhost:9000
+# default and 503'd in production, unrelated to whether the tunnel was up.
+FACE_AI_URL = env_str("FACE_AI_URL", env_str("HR_FACE_AI_URL", "http://localhost:9000"))
+FACE_AI_API_KEY = env_str("FACE_AI_API_KEY", env_str("HR_FACE_AI_API_KEY", ""))
+FACE_AI_TIMEOUT = env_int("FACE_AI_TIMEOUT", 10)
+FACE_AI_CONNECT_TIMEOUT = env_int("FACE_AI_CONNECT_TIMEOUT", 3)
+# Deliberately stricter than HR's 1:N attendance threshold (0.36) — this
+# match fully replaces a password for the platform Owner account.
+FACE_LOGIN_MATCH_THRESHOLD = float(env_str("FACE_LOGIN_MATCH_THRESHOLD", "0.45"))
+FACE_LOGIN_MARGIN = float(env_str("FACE_LOGIN_MARGIN", "0.05"))
 
 # --------------------------------------------------------------------------- #
 # REST framework
@@ -255,6 +311,10 @@ REST_FRAMEWORK = {
         # Public, unauthenticated self-service attendance check-in (HR). Each
         # request runs face matching, so it is capped well below "anon".
         "hr_checkin": env_str("THROTTLE_HR_CHECKIN", "20/minute"),
+        # Public, unauthenticated touchless Owner login — each request runs
+        # face matching, so it is capped well below "anon".
+        "face_login": env_str("THROTTLE_FACE_LOGIN", "10/minute"),
+        "face_enroll": env_str("THROTTLE_FACE_ENROLL", "10/minute"),
     },
 }
 
@@ -343,6 +403,16 @@ TELEGRAM_BOT_TOKEN = env_str("TELEGRAM_BOT_TOKEN", "") or ""
 TELEGRAM_ALERT_CHAT_ID = env_str("TELEGRAM_ALERT_CHAT_ID", "") or ""
 
 # --------------------------------------------------------------------------- #
+# Web Push (platform/notifications) — every Notification fans out to every
+# browser the recipient has granted permission on, regardless of `channel`.
+# Keypair generated once for this deployment; the private half never leaves
+# the backend, the public half is served to the frontend to subscribe with.
+# --------------------------------------------------------------------------- #
+VAPID_PUBLIC_KEY = env_str("VAPID_PUBLIC_KEY", "") or ""
+VAPID_PRIVATE_KEY = env_str("VAPID_PRIVATE_KEY", "") or ""
+VAPID_CLAIM_EMAIL = env_str("VAPID_CLAIM_EMAIL", "admin@wwe-os.local")
+
+# --------------------------------------------------------------------------- #
 # CORS
 # --------------------------------------------------------------------------- #
 CORS_ALLOWED_ORIGINS = env_list(
@@ -391,6 +461,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGE_BACKEND = env_str("STORAGE_BACKEND", "local")
 STORAGE_LOCAL_PATH = env_str("STORAGE_LOCAL_PATH", str(BASE_DIR / ".storage"))
 STORAGE_MAX_UPLOAD_MB = env_int("STORAGE_MAX_UPLOAD_MB", 25)
+# Inspect uploaded bytes (magic numbers), not just the caller-declared MIME:
+# block native executables and reject files whose content contradicts their
+# declared type. On by default; disable only for a backend that must accept
+# genuinely opaque bytes.
+STORAGE_VERIFY_CONTENT = env_bool("STORAGE_VERIFY_CONTENT", default=True)
 STORAGE_ALLOWED_TYPES = set(
     env_list(
         "STORAGE_ALLOWED_TYPES",
@@ -442,10 +517,23 @@ INVOICE_LOCAL_ARCHIVE_PATH = env_str("INVOICE_LOCAL_ARCHIVE_PATH", "") or STORAG
 # --------------------------------------------------------------------------- #
 GEMINI_API_KEY = env_str("GEMINI_API_KEY", "") or ""
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
-# Auto-switch to gemini-2.5-flash if GEMINI_API_KEY is configured
-_default_ai_model = "gemini-2.5-flash" if GEMINI_API_KEY else "mock"
+# gemini-flash-latest tracks Google's current model; pinned versions (e.g.
+# gemini-2.5-flash) get retired and start 404ing without warning.
+_default_ai_model = "gemini-flash-latest" if GEMINI_API_KEY else "mock"
 AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", _default_ai_model)
 AI_FALLBACK_MODEL = env_str("AI_FALLBACK_MODEL", "") or ""
+# Document/bill OCR is held to a different standard than chat: it reads
+# handwriting, faded thermal receipts and stamped invoices, and a misread digit
+# becomes a wrong number in the ledger. The Pro tier is materially better at
+# this than Flash, so OCR routes there by default even though it costs more.
+# "-latest" is deliberate — pinned versions get retired and start 404ing.
+_default_ocr_model = "gemini-pro-latest" if GEMINI_API_KEY else "mock"
+AI_OCR_MODEL = env_str("AI_OCR_MODEL", _default_ocr_model)
+AI_OCR_FALLBACK_MODEL = env_str("AI_OCR_FALLBACK_MODEL", "gemini-flash-latest")
+# OCR answers are long structured JSON over many line items; the chat default
+# truncates multi-page bills mid-object.
+AI_OCR_MAX_TOKENS = env_int("AI_OCR_MAX_TOKENS", 16384)
+AI_OCR_TIMEOUT_SECONDS = env_int("AI_OCR_TIMEOUT_SECONDS", 180)
 AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 30)
 AI_MAX_RETRIES = env_int("AI_MAX_RETRIES", 2)
 # Per-tenant calls per clock hour; 0 disables the limit.

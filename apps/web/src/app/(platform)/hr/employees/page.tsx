@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Users } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
@@ -9,6 +10,10 @@ import { AddEmployeeDialog } from "./add-employee-dialog";
 import { EmployeeTable } from "./employee-table";
 
 import { ShareCheckInLinkButton } from "../attendance/share-link-button";
+
+export const metadata: Metadata = {
+  title: "Employees",
+};
 
 export default async function EmployeesPage() {
   const employees = await getEmployees().catch(() => []);

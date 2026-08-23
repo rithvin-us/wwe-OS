@@ -80,11 +80,11 @@ export function ChartCard({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {MappedIcon ? (
-              <MappedIcon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <MappedIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
             ) : React.isValidElement(Icon) ? (
               Icon
             ) : IconComp ? (
-              <IconComp className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <IconComp className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
             ) : null}
             <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
           </div>

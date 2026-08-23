@@ -3,7 +3,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 
 import { DocumentsTable } from "@/app/(platform)/dms/documents-table";
 import { UploadDialog } from "@/app/(platform)/dms/upload-dialog";
-import { DMSDashboard } from "@/app/(platform)/dms/dms-dashboard";
+import { DMSStatTiles, DMSCharts } from "@/app/(platform)/dms/dms-dashboard";
 import { getDocuments } from "@/lib/dms";
 
 export const metadata: Metadata = {
@@ -21,9 +21,11 @@ export default async function DmsPage() {
         actions={<UploadDialog />}
       />
 
-      <DMSDashboard documents={documents} />
+      <DMSStatTiles documents={documents} />
 
       <DocumentsTable documents={documents} />
+
+      <DMSCharts documents={documents} />
     </div>
   );
 }

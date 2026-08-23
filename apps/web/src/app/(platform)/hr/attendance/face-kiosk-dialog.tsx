@@ -13,24 +13,27 @@ import {
 } from "@bop/ui/components/dialog";
 import { toast } from "sonner";
 
-import { checkInFace } from "../actions";
+import { useFaceCapture } from "@/hooks/use-face-capture";
+
+// Matches CheckInResponseSerializer (modules/hr/backend/serializers/checkin.py).
+interface CheckInResult {
+  recognized: boolean;
+  employee_name: string | null;
+  employee_code: string | null;
+  decision: "auto_approved" | "flagged";
+  direction: "in" | "out";
+  time: string;
+  message: string;
+}
 
 export function FaceKioskDialog() {
   const [open, setOpen] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<{
-    matched: boolean;
-    employee_code?: string;
-    employee_name?: string;
-    action?: string;
-    timestamp?: string;
-    message?: string;
-  } | null>(null);
+  const [result, setResult] = useState<CheckInResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const { cameraActive, geo, startCamera, stopCamera, captureBurst } = useFaceCapture(videoRef);
 
   // Start webcam when modal opens
   useEffect(() => {
@@ -43,78 +46,55 @@ export function FaceKioskDialog() {
     }
   }, [open]);
 
-  async function startCamera() {
-    try {
-      setErrorMessage(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraActive(true);
-    } catch (err) {
-      console.warn("Camera access failed:", err);
-      setCameraActive(false);
-    }
-  }
-
-  function stopCamera() {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  }
-
   async function captureAndPunch() {
     if (!videoRef.current || !cameraActive) {
       toast.error("Webcam is not active.");
       return;
     }
 
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    setScanning(true);
+    setErrorMessage(null);
+    setResult(null);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const selfieBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.92),
-    );
-
-    if (!selfieBlob) {
+    const burst = await captureBurst();
+    if (!burst) {
+      setScanning(false);
       toast.error("Failed to capture webcam frame.");
       return;
     }
 
-    setScanning(true);
-    setErrorMessage(null);
-
     const formData = new FormData();
-    formData.append("file", selfieBlob, "selfie.jpg");
+    formData.append("file", burst.primary, "selfie.jpg");
+    burst.frames.forEach((frame, i) => formData.append("frames", frame, `frame-${i}.jpg`));
+    if (geo) {
+      formData.append("lat", String(geo.lat));
+      formData.append("lon", String(geo.lon));
+      formData.append("accuracy", String(geo.accuracy));
+    }
 
-    const res = await checkInFace(formData);
-    setScanning(false);
+    try {
+      const resp = await fetch("/api/hr/attendance/checkin", {
+        method: "POST",
+        body: formData,
+      });
+      const res = await resp.json().catch(() => null);
+      setScanning(false);
 
-    if (res.ok) {
-      setResult(res.data);
-      if (res.data.matched) {
-        toast.success(
-          `Punch Registered! ${res.data.employee_name} marked ${res.data.action || "IN"}`,
-        );
+      if (resp.ok && res?.ok && res.data) {
+        setResult(res.data as CheckInResult);
+        if (res.data.recognized && res.data.decision === "auto_approved") {
+          toast.success(
+            `Punch Registered! ${res.data.employee_name} marked ${res.data.direction?.toUpperCase() || "IN"}`,
+          );
+        } else {
+          toast.warning(res.data.message || "Recognized but flagged for review.");
+        }
       } else {
-        toast.warning(
-          res.data.message || "Face not recognized. Please stand clearly in front of camera.",
-        );
+        toast.error(res?.error || "Face recognition check-in failed.");
       }
-    } else {
-      setErrorMessage(res.error || "Attendance punch failed.");
-      toast.error(res.error || "Attendance punch failed.");
+    } catch (err: unknown) {
+      setScanning(false);
+      toast.error(err instanceof Error ? err.message : "Network error.");
     }
   }
 
@@ -123,7 +103,7 @@ export function FaceKioskDialog() {
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer shadow-sm"
+          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium cursor-pointer shadow-sm"
         >
           <Camera className="size-4" />
           Face AI Kiosk Check-In
@@ -132,7 +112,7 @@ export function FaceKioskDialog() {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ScanFace className="size-5 text-emerald-600 dark:text-emerald-400" />
+            <ScanFace className="size-5 text-blue-600 dark:text-blue-400" />
             AI Face Recognition Kiosk
           </DialogTitle>
           <DialogDescription>
@@ -143,23 +123,21 @@ export function FaceKioskDialog() {
 
         <div className="space-y-4 py-2">
           {/* Result Banner */}
-          {result?.matched ? (
-            <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 space-y-1 animate-in fade-in zoom-in-95">
+          {result?.recognized && result.decision === "auto_approved" ? (
+            <div className="p-4 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 space-y-1 animate-in fade-in zoom-in-95">
               <div className="flex items-center gap-2 font-semibold text-base">
-                <CheckCircle2 className="size-5 text-emerald-500" />
-                Attendance Marked — {result.action || "PUNCH"}
+                <CheckCircle2 className="size-5 text-blue-500" />
+                Attendance Marked — {result.direction?.toUpperCase() || "PUNCH"}
               </div>
               <p className="text-sm font-medium">
                 {result.employee_name} ({result.employee_code})
               </p>
-              <p className="text-xs text-muted-foreground">{result.message || result.timestamp}</p>
+              <p className="text-xs text-muted-foreground">{result.message || result.time}</p>
             </div>
-          ) : result && !result.matched ? (
+          ) : result?.recognized ? (
             <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs">
-              <p className="font-medium">Face Not Recognized</p>
-              <p className="mt-0.5 opacity-90">
-                {result.message || "Ensure your face is well-lit and enrolled in the system."}
-              </p>
+              <p className="font-medium">{result.employee_name} — Flagged for Review</p>
+              <p className="mt-0.5 opacity-90">{result.message}</p>
             </div>
           ) : errorMessage ? (
             <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs flex items-start gap-2">
@@ -175,7 +153,7 @@ export function FaceKioskDialog() {
               autoPlay
               playsInline
               muted
-              className={`w-full h-64 object-cover rounded-lg border border-emerald-500/40 ${cameraActive ? "block" : "hidden"}`}
+              className={`w-full h-64 object-cover rounded-lg border border-blue-500/40 ${cameraActive ? "block" : "hidden"}`}
               style={{ transform: "none" }}
             />
 
@@ -190,7 +168,7 @@ export function FaceKioskDialog() {
             ) : null}
 
             {scanning ? (
-              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-emerald-400 space-y-2">
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-blue-400 space-y-2">
                 <ScanFace className="size-10 animate-bounce" />
                 <span className="text-xs font-semibold">Matching Face Biometrics...</span>
               </div>
@@ -206,7 +184,7 @@ export function FaceKioskDialog() {
               size="sm"
               onClick={() => captureAndPunch()}
               disabled={scanning || !cameraActive}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 cursor-pointer"
             >
               <Camera className="size-4" />
               {scanning ? "Scanning..." : "Scan & Punch"}

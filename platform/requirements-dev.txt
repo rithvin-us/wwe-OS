@@ -1,4 +1,4 @@
 # Development / test dependencies (installed on top of requirements.txt).
 -r requirements.txt
 pytest>=8
-pytest-django>=4.9
+pytest-django>=4.14.0

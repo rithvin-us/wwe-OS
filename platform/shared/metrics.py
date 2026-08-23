@@ -39,6 +39,24 @@ def _incr(key: str, delta: int = 1) -> None:
                 cache.incr(full, delta)
 
 
+def summary_dict() -> dict:
+    """Current counters as JSON — same source as `prometheus_text()`, for the
+    Maintenance dashboard rather than a scraper."""
+    keys = [f"{PREFIX}requests:{m}:{c}" for m in METHODS for c in STATUS_CLASSES]
+    values = cache.get_many(keys)
+    by_status: dict[str, int] = {c: 0 for c in STATUS_CLASSES}
+    for key, value in values.items():
+        _, _, _method, status_class = key.split(":")
+        by_status[status_class] = by_status.get(status_class, 0) + value
+    duration_sum = cache.get(PREFIX + "duration_ms_sum") or 0
+    duration_count = cache.get(PREFIX + "duration_ms_count") or 0
+    return {
+        "requests_by_status": by_status,
+        "total_requests": sum(by_status.values()),
+        "avg_duration_ms": round(duration_sum / duration_count, 1) if duration_count else None,
+    }
+
+
 def prometheus_text() -> str:
     """Render current counters in Prometheus exposition format."""
     lines = ["# TYPE wweos_requests_total counter"]

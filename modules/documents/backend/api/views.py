@@ -139,7 +139,8 @@ class DocumentViewSet(BaseModelViewSet):
         document = self.get_object()
         payload = StorageService().open(document.file)
         response = HttpResponse(payload, content_type=document.file.content_type)
-        response["Content-Disposition"] = f'attachment; filename="{document.file.filename}"'
+        disposition = "inline" if request.query_params.get("inline") else "attachment"
+        response["Content-Disposition"] = f'{disposition}; filename="{document.file.filename}"'
         return response
 
     # Content types safe to render inline in a browser tab; everything else is

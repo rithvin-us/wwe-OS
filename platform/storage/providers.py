@@ -102,6 +102,7 @@ class S3CompatibleProvider(StorageProvider):
         else:
             try:
                 import boto3
+                from botocore.config import Config
             except ImportError as exc:  # pragma: no cover - environment-specific
                 raise ImproperlyConfigured(
                     "STORAGE_BACKEND=s3 requires boto3 (pip install boto3)."
@@ -112,6 +113,12 @@ class S3CompatibleProvider(StorageProvider):
                 region_name=settings.STORAGE_S3_REGION or None,
                 aws_access_key_id=settings.STORAGE_S3_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.STORAGE_S3_SECRET_ACCESS_KEY,
+                # R2's cert only covers *.r2.cloudflarestorage.com (one level) —
+                # boto3's default virtual-hosted addressing puts the bucket as
+                # a second subdomain level (bucket.account.r2.cloudflarestorage.com),
+                # which R2 rejects at the TLS handshake. Path-style keeps the
+                # bucket in the URL path instead.
+                config=Config(s3={"addressing_style": "path"}),
             )
         self.bucket = settings.STORAGE_S3_BUCKET
 

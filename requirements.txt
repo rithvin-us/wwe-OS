@@ -1,0 +1,47 @@
+# WWE OS Platform & Services Master Requirements
+# Single-file installation for all backend, AI, ML, bot, and storage dependencies.
+
+# --- Core Platform & Django Backend ---
+python-dotenv>=1.0.0
+Django>=6.0,<6.1
+djangorestframework>=3.17.0
+djangorestframework-simplejwt>=5.5.0
+drf-spectacular>=0.30.0
+django-cors-headers>=4.9.0
+django-filter>=26.0.0
+argon2-cffi>=25.0.0
+dj-database-url>=3.1.0
+psycopg[binary]>=3.2.0
+redis>=5.2.0
+gunicorn>=23.0.0
+httpx>=0.28.1
+openpyxl>=3.1.0
+reportlab>=4.2.0
+pypdf>=5.0.0
+docxtpl==0.16.8
+boto3>=1.35.0
+
+# --- Face-AI Microservice & FastAPI Stack ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.11.0
+pydantic-settings>=2.9.0
+python-multipart>=0.0.20
+slowapi>=0.1.9
+
+# --- Biometric Machine Learning & Vision Stack (MTCNN + InsightFace + ArcFace) ---
+numpy>=1.26.0
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+onnxruntime>=1.16.0
+insightface>=0.7.3
+facenet-pytorch>=2.6.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# --- Telegram Bot & Ingestion Services ---
+python-telegram-bot>=21.4.0
+
+# --- Testing & Quality Assurance ---
+pytest>=8.0.0
+pytest-django>=4.9.0

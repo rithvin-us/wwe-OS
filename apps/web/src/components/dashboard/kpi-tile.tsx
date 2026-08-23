@@ -81,7 +81,7 @@ export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
             className={cn(
               "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums shadow-xs",
               up
-                ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                ? "bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
                 : "bg-rose-500/10 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
             )}
           >
@@ -102,7 +102,7 @@ export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
         )}
       >
         {kpi.status === "live" && (
-          <span className="size-1.5 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="size-1.5 shrink-0 rounded-full bg-blue-500 animate-pulse" />
         )}
         {hasValue
           ? kpi.source
@@ -114,8 +114,15 @@ export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
   );
 
   const containerClasses =
-    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs max-md:backdrop-blur-none animate-in fade-in slide-in-from-bottom-2 fill-mode-both";
-  const containerStyle = { animationDelay: `${index * 60}ms`, animationDuration: "300ms" };
+    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:border-blue-500/30 hover:shadow-md backdrop-blur-xs max-md:backdrop-blur-none animate-in fade-in slide-in-from-bottom-2 fill-mode-both";
+  // Design bible §7: stagger is capped around 40ms/item so a five-plus row
+  // never reads as sluggish, and the tail is clamped so a long grid does not
+  // keep accumulating delay. Duration comes from the motion token, not a
+  // literal, so a change to the register moves this with it.
+  const containerStyle = {
+    animationDelay: `${Math.min(index, 6) * 40}ms`,
+    animationDuration: "var(--duration-slow)",
+  };
 
   if (kpi.href) {
     return (

@@ -3,9 +3,10 @@ import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { PageHeader } from "@bop/ui/components/page-header";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+import { cache, type ReactNode } from "react";
 
 import { DocumentActions } from "@/app/(platform)/dms/[id]/document-actions";
 import { DocumentTags } from "@/app/(platform)/dms/[id]/document-tags";
@@ -19,6 +20,9 @@ import {
   type DocumentRecord,
 } from "@/lib/dms";
 import { listTags } from "@/lib/tags";
+
+// Deduped per request so generateMetadata and the page body share one fetch.
+const getDocumentCached = cache(getDocument);
 
 function StatusBadge({ document }: { document: DocumentRecord }) {
   if (document.status === "archived")
@@ -35,11 +39,25 @@ function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const document = await getDocumentCached(id);
+    return { title: document.title };
+  } catch {
+    return { title: "Document" };
+  }
+}
+
 export default async function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let document: DocumentRecord;
   try {
-    document = await getDocument(id);
+    document = await getDocumentCached(id);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;

@@ -97,13 +97,24 @@ export function AppHeader({
         </kbd>
       </button>
 
+      <div
+        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-[10px] font-mono font-medium text-blue-600 dark:text-blue-400"
+        title="5-second live data auto-refresh active across all modules"
+      >
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" />
+          <span className="relative inline-flex size-2 rounded-full bg-blue-500" />
+        </span>
+        <span>Live (5s)</span>
+      </div>
+
       <div className="ml-auto flex items-center gap-2">
         <ActivityTicker />
 
         {/* Live Date / Time Clock Pill */}
         {timeString && (
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-md border border-border bg-card text-xs font-mono tabular-nums text-foreground">
-            <Clock className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Clock className="size-3.5 text-blue-600 dark:text-blue-400" />
             <span>{timeString}</span>
           </div>
         )}

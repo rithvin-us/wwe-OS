@@ -119,6 +119,7 @@ def render_invoice_pdf(
     watermark: str = "",
 ) -> bytes:
     from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
@@ -133,10 +134,37 @@ def render_invoice_pdf(
 
     letterhead = renderer.read_letterhead()
     base = getSampleStyleSheet()
-    small = ParagraphStyle("small", parent=base["Normal"], fontSize=7.5, leading=9.5)
+    # Sized and faced to match templates/invoice_template.xlsx, not guessed —
+    # the actual workbook prints body text in Arial 10pt and the company name
+    # in Bookman Old Style 10pt bold (read via openpyxl: ws['A15'].font,
+    # ws['A3'].font). This engine previously used Helvetica at 7.5pt across
+    # the board — a real, measurable ~25% undersize plus a mismatched family
+    # that's exactly why a hand-drawn redraw read as "off" next to the actual
+    # LibreOffice-converted workbook. Reportlab ships no Arial/Bookman, so
+    # Helvetica (metrically closest to Arial) and Times-Bold (closest serif
+    # to Bookman Old Style) stand in.
+    small = ParagraphStyle(
+        "small", parent=base["Normal"], fontName="Helvetica", fontSize=9, leading=11
+    )
     small_bold = ParagraphStyle("smallBold", parent=small, fontName="Helvetica-Bold")
+    company_style = ParagraphStyle("company", parent=small, fontName="Times-Bold", fontSize=10)
+    # Excel fits "Quantity" and an HSN code like "KI9900" on one line inside
+    # narrow columns via its own character-width column-fitting, which a
+    # pixel-measured Paragraph doesn't replicate at the prose size above — a
+    # half-point smaller in just the dense item grid is enough to match that
+    # without shrinking the letterhead/footer text that had no such problem.
+    table_small = ParagraphStyle("tableSmall", parent=small, fontSize=8.5, leading=10)
+    table_small_bold = ParagraphStyle(
+        "tableSmallBold", parent=table_small, fontName="Helvetica-Bold"
+    )
     title = ParagraphStyle(
-        "invoiceTitle", parent=base["Title"], fontSize=13, leading=16, spaceAfter=2
+        "invoiceTitle",
+        parent=base["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=16,
+        leading=19,
+        spaceAfter=4,
+        alignment=TA_CENTER,
     )
 
     def cell(text: str, style=small) -> Paragraph:
@@ -166,12 +194,15 @@ def render_invoice_pdf(
         canvas.drawCentredString(0, 0, watermark)
         canvas.restoreState()
 
-    grid = colors.HexColor("#334155")
+    # The template's borders are Excel's "automatic" black (indexed=64), not
+    # a designed slate tint — matching plain black here removed a visible,
+    # unintended color difference from every ruled line on the page.
+    grid = colors.black
     story: list = [cell(letterhead.title, title)]
 
     # --- Seller / buyer header ------------------------------------------- #
     left = [
-        cell(letterhead.company, small_bold),
+        cell(letterhead.company, company_style),
         cell(letterhead.address),
         cell(letterhead.seller_gst, small_bold),
         Spacer(1, 3 * mm),
@@ -205,16 +236,31 @@ def render_invoice_pdf(
     story += [header, Spacer(1, 0)]
 
     # --- Items ------------------------------------------------------------ #
-    columns = [12 * mm, width - 126 * mm, 18 * mm, 18 * mm, 15 * mm, 22 * mm, 26 * mm]
+    # Column widths as proportions of the page, taken from the template's own
+    # Excel column widths (A / B:F merged / G / H / I / J / K) as a starting
+    # point — computed from openpyxl's column_dimensions on
+    # templates/invoice_template.xlsx: 10 / 46.32 / 8.33 / 8.11 / 7.55 / 13.11
+    # / 13.33 out of a 106.75 total — then nudged: Excel fits "Quantity" and
+    # an HSN code like "KI9900" on one line via its own character-width
+    # column-fitting, which a Paragraph's pixel wrapping doesn't match at the
+    # same ratio, so HSN/Qty get a bit more room here (paid for by
+    # Description, which has plenty to spare) rather than reproducing a wrap
+    # the source workbook never shows.
+    _COL_RATIOS = (0.08, 0.39, 0.10, 0.10, 0.07, 0.13, 0.13)
+    columns = [width * ratio for ratio in _COL_RATIOS]
+
+    def table_cell(text: str, *, bold: bool = False) -> Paragraph:
+        return cell(text, table_small_bold if bold else table_small)
+
     rows: list[list] = [
         [
-            cell("S.No.", small_bold),
-            cell("Description", small_bold),
-            cell("HSN", small_bold),
-            cell("Quantity", small_bold),
-            cell("UOM", small_bold),
-            cell("Rate", small_bold),
-            cell("Value", small_bold),
+            table_cell("S.No.", bold=True),
+            table_cell("Description", bold=True),
+            table_cell("HSN", bold=True),
+            table_cell("Quantity", bold=True),
+            table_cell("UOM", bold=True),
+            table_cell("Rate", bold=True),
+            table_cell("Value", bold=True),
         ]
     ]
     style_commands = [
@@ -230,26 +276,26 @@ def render_invoice_pdf(
     if period_text:
         rows.append(
             [
-                cell(""),
-                cell(period_text, small_bold),
-                cell(""),
-                cell(""),
-                cell(""),
-                cell(""),
-                cell(""),
+                table_cell(""),
+                table_cell(period_text, bold=True),
+                table_cell(""),
+                table_cell(""),
+                table_cell(""),
+                table_cell(""),
+                table_cell(""),
             ]
         )
         style_commands.append(("SPAN", (1, 1), (6, 1)))
 
     rows.extend(
         [
-            cell(line.position),
-            cell(line.description),
-            cell(line.hsn),
-            cell(_trim_quantity(line.quantity)),
-            cell(line.uom),
-            cell(_inr(line.rate)),
-            cell(_inr(line.amount)),
+            table_cell(line.position),
+            table_cell(line.description),
+            table_cell(line.hsn),
+            table_cell(_trim_quantity(line.quantity)),
+            table_cell(line.uom),
+            table_cell(_inr(line.rate)),
+            table_cell(_inr(line.amount)),
         ]
         for line in lines
     )
@@ -262,15 +308,14 @@ def render_invoice_pdf(
         tax_rows.append((secondary_label, totals.cgst_amount))
 
     def figure_row(label: str, value, bold: bool = False) -> list:
-        style = small_bold if bold else small
         return [
-            cell(""),
-            cell(""),
-            cell(""),
-            cell(""),
-            cell(""),
-            cell(label, style),
-            cell(_inr(value), style),
+            table_cell(""),
+            table_cell(""),
+            table_cell(""),
+            table_cell(""),
+            table_cell(""),
+            table_cell(label, bold=bold),
+            table_cell(_inr(value), bold=bold),
         ]
 
     for label, value in tax_rows:

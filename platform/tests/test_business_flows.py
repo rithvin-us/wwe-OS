@@ -151,7 +151,7 @@ def test_invoice_numbers_increment_and_never_repeat(tenant):
 def tagged_asset(tenant):
     tag = TagService().create_tag(tenant=tenant, name="For Auditor")
     stored = StorageService().store(
-        data=b"warranty pdf bytes",
+        data=b"%PDF-1.4 warranty pdf bytes",
         filename="warranty.pdf",
         content_type="application/pdf",
         module="assets",

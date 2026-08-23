@@ -29,6 +29,8 @@ class Events:
     USER_LOGGED_IN = "user.logged_in"
     USER_LOGGED_OUT = "user.logged_out"
     PASSWORD_CHANGED = "user.password_changed"
+    FACE_ENROLLED = "user.face_enrolled"
+    FACE_REVOKED = "user.face_revoked"
     ROLE_CREATED = "role.created"
     ROLE_CHANGED = "role.changed"
     ROLE_ASSIGNED = "role.assigned"

@@ -60,17 +60,17 @@ export function GstTaxBar({ totalGst, cgst, sgst, igst, billsCount }: GstTaxBarP
         <div className="flex h-3 w-full rounded-full overflow-hidden bg-muted">
           <div
             title={`CGST: ${formatINR(cgst)} (${cgstPct}%)`}
-            className="h-full bg-blue-600 transition-all duration-500"
+            className="h-full bg-blue-600 transition-[width] duration-(--duration-slow) ease-out-quart"
             style={{ width: `${cgstPct}%` }}
           />
           <div
             title={`SGST: ${formatINR(sgst)} (${sgstPct}%)`}
-            className="h-full bg-teal-500 transition-all duration-500"
+            className="h-full bg-teal-500 transition-[width] duration-(--duration-slow) ease-out-quart"
             style={{ width: `${sgstPct}%` }}
           />
           <div
             title={`IGST: ${formatINR(igst)} (${igstPct}%)`}
-            className="h-full bg-indigo-500 transition-all duration-500"
+            className="h-full bg-indigo-500 transition-[width] duration-(--duration-slow) ease-out-quart"
             style={{ width: `${igstPct}%` }}
           />
         </div>

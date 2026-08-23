@@ -19,7 +19,7 @@ export function FunnelChartComponent({ data }: FunnelChartProps) {
         <div key={item.step} className="space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-medium text-foreground">
-              <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <CheckCircle2 className="size-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
               {item.step}
             </span>
             <span className="font-mono text-muted-foreground">
@@ -29,7 +29,7 @@ export function FunnelChartComponent({ data }: FunnelChartProps) {
           </div>
           <div className="h-2 w-full rounded-full bg-muted/60 overflow-hidden">
             <div
-              className="h-full rounded-full bg-emerald-600 transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-blue-600 transition-[width] duration-(--duration-slow) ease-out-quart"
               style={{ width: `${item.percentage}%`, opacity: 1 - idx * 0.15 }}
             />
           </div>

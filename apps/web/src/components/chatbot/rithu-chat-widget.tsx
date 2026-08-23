@@ -114,6 +114,7 @@ export function RithuChatWidget() {
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function onAttachEvent(e: Event) {
@@ -151,6 +152,13 @@ export function RithuChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  // Keep the caret in the input at all times: on open, after Rithu replies,
+  // and after a slash/@ command is picked from the popover (which otherwise
+  // steals focus to the clicked button).
+  useEffect(() => {
+    if (open && !busy) inputRef.current?.focus();
+  }, [open, busy]);
+
   function handleInputChange(text: string) {
     setInput(text);
     if (text.startsWith("/") || text.includes("@")) {
@@ -171,6 +179,7 @@ export function RithuChatWidget() {
       });
     }
     setShowCommandMenu(false);
+    inputRef.current?.focus();
   }
 
   async function triggerSendWithAttachment(
@@ -195,12 +204,20 @@ export function RithuChatWidget() {
     setBusy(true);
 
     try {
+      const history = messages.slice(-8).map((m) => ({
+        sender: m.sender,
+        text: m.text,
+        fileAttachment: m.fileAttachment
+          ? { name: m.fileAttachment.name, type: m.fileAttachment.type }
+          : undefined,
+      }));
       const res = await fetch("/api/ai/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: promptText,
           fileAttachment: fileToAttach || undefined,
+          history,
         }),
       });
       const data: ChatMessage = await res.json();
@@ -241,6 +258,7 @@ export function RithuChatWidget() {
         dataUrl,
       });
       toast.success(`Attached "${file.name}"`);
+      inputRef.current?.focus();
     };
     reader.readAsDataURL(file);
   }
@@ -267,51 +285,43 @@ export function RithuChatWidget() {
     <>
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileInputChange} />
 
-      {/* Floating Action Trigger Button */}
-      <div className="fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40">
-        {/* Persistent glow ring — a genuine floating overlay, the one place
-            the design bible's "quiet depth" rule allows an escalated glow. */}
+      {/* Floating Action Trigger Button - Compact & Non-Intrusive */}
+      <div className="fixed right-4 bottom-4 z-30">
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-emerald-500/40 blur-xl animate-pulse max-md:hidden"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-blue-500/30 blur-md animate-pulse"
         />
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className={cn(
-            "group flex size-13 items-center justify-center rounded-full border border-emerald-500/40 bg-card text-foreground shadow-xl backdrop-blur-md max-md:backdrop-blur-none transition-all duration-200 hover:scale-105 hover:border-emerald-500 hover:shadow-emerald-500/25 focus-visible:ring-[3px] focus-visible:ring-emerald-500/50 focus-visible:outline-none sm:size-auto sm:px-4 sm:py-3",
-            open && "ring-2 ring-emerald-500 border-emerald-500",
+            "group flex size-11 items-center justify-center rounded-full border border-blue-500/40 bg-card text-foreground shadow-lg backdrop-blur-md transition duration-(--duration-base) ease-out-quart hover:scale-105 hover:border-blue-500 hover:shadow-blue-500/30 focus-visible:ring-[3px] focus-visible:ring-blue-500/50 focus-visible:outline-none",
+            open && "ring-2 ring-blue-500 border-blue-500 bg-blue-950/80 text-white",
           )}
-          title="Open Rithu AI Assistant"
+          title="Rithu AI Assistant (Click to open)"
         >
-          <div className="relative flex size-8 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs shrink-0">
-            <Bot className="size-4.5" />
-            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-card animate-pulse" />
-          </div>
-          <div className="hidden text-left sm:ml-2.5 sm:block">
-            <p className="font-display text-xs font-bold leading-none tracking-tight text-foreground">
-              Rithu AI
-            </p>
-            <p className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">
-              Agent Online
-            </p>
+          <div className="relative flex size-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs shrink-0">
+            {open ? <X className="size-4" /> : <Bot className="size-4" />}
+            {!open && (
+              <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-blue-400 ring-2 ring-card animate-pulse" />
+            )}
           </div>
         </button>
       </div>
 
       {/* Floating Chat Window Drawer - Sleek Circular Rounded Design */}
       {open && (
-        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[520px] max-h-[calc(100svh-7rem)] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-emerald-500/30 bg-card/95 shadow-2xl backdrop-blur-xl max-md:bg-card max-md:backdrop-blur-none animate-in slide-in-from-bottom-4 duration-200 overflow-hidden">
+        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex h-[520px] max-h-[calc(100svh-7rem)] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-[28px] border border-blue-500/30 bg-card/95 shadow-2xl backdrop-blur-xl max-md:bg-card max-md:backdrop-blur-none animate-in slide-in-from-bottom-4 duration-(--duration-base) ease-out-quart overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/40 backdrop-blur-md">
             <div className="flex items-center gap-2.5">
-              <div className="flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shrink-0 shadow-xs">
+              <div className="flex size-7 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs shrink-0 shadow-xs">
                 <Sparkles className="size-3.5" />
               </div>
               <div>
                 <h3 className="font-display text-xs font-bold tracking-tight text-foreground flex items-center gap-1.5">
                   <span>Rithu AI</span>
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span className="size-1.5 rounded-full bg-blue-500" />
                 </h3>
                 <p className="text-[9px] text-muted-foreground font-mono">Agent Connected</p>
               </div>
@@ -351,11 +361,11 @@ export function RithuChatWidget() {
 
                 {/* User Attachment Badge in Thread */}
                 {msg.fileAttachment && (
-                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-foreground font-mono max-w-[85%]">
+                  <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs text-foreground font-mono max-w-[85%]">
                     {msg.fileAttachment.type.startsWith("image/") ? (
-                      <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
+                      <ImageIcon className="size-3.5 text-blue-600 shrink-0" />
                     ) : (
-                      <FileText className="size-3.5 text-emerald-600 shrink-0" />
+                      <FileText className="size-3.5 text-blue-600 shrink-0" />
                     )}
                     <span className="truncate font-semibold text-[11px]">
                       {msg.fileAttachment.name}
@@ -370,7 +380,7 @@ export function RithuChatWidget() {
                   className={cn(
                     "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-xs",
                     msg.sender === "user"
-                      ? "bg-emerald-600 text-white rounded-br-xs"
+                      ? "bg-blue-600 text-white rounded-br-xs"
                       : "bg-muted/70 text-foreground border border-border/70 rounded-bl-xs",
                   )}
                 >
@@ -379,13 +389,13 @@ export function RithuChatWidget() {
 
                 {/* Email Draft Card */}
                 {msg.emailDraft && (
-                  <div className="mt-1 w-full max-w-[94%] space-y-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs dark:bg-emerald-500/10">
-                    <div className="flex items-center justify-between border-b border-emerald-500/20 pb-1.5">
-                      <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                  <div className="mt-1 w-full max-w-[94%] space-y-2 rounded-2xl border border-blue-500/30 bg-blue-500/5 p-3 text-xs dark:bg-blue-500/10">
+                    <div className="flex items-center justify-between border-b border-blue-500/20 pb-1.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-blue-700 dark:text-blue-400">
                         <Mail className="size-3.5" />
                         <span>Generated Email Draft</span>
                       </div>
-                      <span className="font-mono text-[9px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded">
+                      <span className="font-mono text-[9px] bg-blue-500/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                         Ready
                       </span>
                     </div>
@@ -420,7 +430,7 @@ export function RithuChatWidget() {
                       </Button>
                       <Button
                         size="sm"
-                        className="h-6 text-[10px] gap-1 px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="h-6 text-[10px] gap-1 px-2 bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => handleSendEmail(msg.emailDraft!.to)}
                       >
                         <Send className="size-3" />
@@ -434,7 +444,7 @@ export function RithuChatWidget() {
                 {msg.relatedDocs && (
                   <div className="mt-1 w-full max-w-[94%] space-y-1.5 rounded-2xl border border-border bg-card p-2.5 text-xs">
                     <div className="flex items-center gap-1.5 font-semibold text-foreground border-b border-border pb-1">
-                      <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
+                      <FileText className="size-3 text-blue-600 dark:text-blue-400" />
                       <span>Rithu Knowledge Files</span>
                     </div>
 
@@ -451,7 +461,7 @@ export function RithuChatWidget() {
                               {doc.title}
                             </p>
                           </div>
-                          <span className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase shrink-0">
+                          <span className="font-mono text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase shrink-0">
                             View
                           </span>
                         </Link>
@@ -464,7 +474,7 @@ export function RithuChatWidget() {
 
             {busy && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Bot className="size-4 animate-spin text-emerald-600" />
+                <Bot className="size-4 animate-spin text-blue-600" />
                 <span>Rithu is analyzing context…</span>
               </div>
             )}
@@ -473,9 +483,9 @@ export function RithuChatWidget() {
 
           {/* Autocomplete Menu Popover for / and @ */}
           {showCommandMenu && (
-            <div className="mx-3 mb-1 rounded-2xl border border-emerald-500/40 bg-card p-1.5 shadow-xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-150">
+            <div className="mx-3 mb-1 rounded-2xl border border-blue-500/40 bg-card p-1.5 shadow-xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-(--duration-fast) ease-out-quart">
               <div className="flex items-center gap-1 border-b border-border/60 pb-1 px-2 text-[9px] font-mono font-semibold text-muted-foreground uppercase">
-                <Command className="size-3 text-emerald-500" />
+                <Command className="size-3 text-blue-500" />
                 <span>Commands & Context Mentions</span>
               </div>
               <div className="max-h-36 overflow-y-auto space-y-0.5 pt-1">
@@ -484,10 +494,10 @@ export function RithuChatWidget() {
                     key={cmd.key}
                     type="button"
                     onClick={() => selectCommand(cmd)}
-                    className="w-full flex items-center justify-between rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    className="w-full flex items-center justify-between rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     <div className="flex items-center gap-1.5">
-                      <Terminal className="size-3 text-emerald-500 shrink-0" />
+                      <Terminal className="size-3 text-blue-500 shrink-0" />
                       <span className="font-mono font-bold">{cmd.key}</span>
                     </div>
                     <span className="text-[9px] text-muted-foreground truncate max-w-[170px]">
@@ -500,10 +510,10 @@ export function RithuChatWidget() {
                     key={cmd.key}
                     type="button"
                     onClick={() => selectCommand(cmd)}
-                    className="w-full flex items-center justify-between rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    className="w-full flex items-center justify-between rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     <div className="flex items-center gap-1.5">
-                      <AtSign className="size-3 text-emerald-500 shrink-0" />
+                      <AtSign className="size-3 text-blue-500 shrink-0" />
                       <span className="font-mono font-bold">{cmd.key}</span>
                     </div>
                     <span className="text-[9px] text-muted-foreground truncate max-w-[170px]">
@@ -517,9 +527,9 @@ export function RithuChatWidget() {
 
           {/* Attached File Bar Preview */}
           {attachedFile && (
-            <div className="mx-3 mb-1 flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-foreground font-mono">
+            <div className="mx-3 mb-1 flex items-center justify-between rounded-xl border border-blue-500/40 bg-blue-500/10 px-2.5 py-1.5 text-xs text-foreground font-mono">
               <div className="flex items-center gap-2 min-w-0">
-                <Paperclip className="size-3.5 text-emerald-500 shrink-0" />
+                <Paperclip className="size-3.5 text-blue-500 shrink-0" />
                 <span className="truncate font-semibold text-[11px]">{attachedFile.name}</span>
                 <span className="text-[9px] text-muted-foreground shrink-0">
                   ({(attachedFile.size / 1024).toFixed(0)}KB)
@@ -550,22 +560,24 @@ export function RithuChatWidget() {
                 variant="ghost"
                 onClick={() => fileInputRef.current?.click()}
                 title="Attach file"
-                className="shrink-0 text-muted-foreground hover:text-emerald-500"
+                className="shrink-0 text-muted-foreground hover:text-blue-500"
               >
                 <Paperclip className="size-3.5" />
               </Button>
               <Input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="Type / for commands, @ for mentions..."
                 className="flex-1 text-xs h-8 border-border/70 rounded-xl"
                 disabled={busy}
+                autoFocus
               />
               <Button
                 type="submit"
                 size="icon-xs"
                 disabled={(!input.trim() && !attachedFile) || busy}
-                className="size-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                className="size-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shrink-0"
               >
                 <Send className="size-3.5" />
               </Button>

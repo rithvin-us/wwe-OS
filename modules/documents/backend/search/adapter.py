@@ -23,8 +23,22 @@ def to_document(doc: Document) -> dict:
         )
         .values_list("name", flat=True)
     )
+    file_text = ""
+    if doc.file:
+        try:
+            from ai.rag_service import extract_text_from_file
+            from storage.services import StorageService
+
+            raw_bytes = StorageService().open(doc.file)
+            file_text = extract_text_from_file(raw_bytes, doc.file.content_type, doc.file.filename)
+        except Exception:
+            file_text = ""
+
     body = " ".join(
-        filter(None, [doc.description, doc.ai_summary, doc.get_category_display(), *tag_names])
+        filter(
+            None,
+            [doc.description, doc.ai_summary, doc.get_category_display(), file_text, *tag_names],
+        )
     )
     return {
         "doc_id": str(doc.id),

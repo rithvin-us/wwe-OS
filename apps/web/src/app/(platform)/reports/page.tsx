@@ -43,7 +43,7 @@ export default async function ReportsPage() {
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
             <span>Total Catalog Reports</span>
-            <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet className="size-4 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="text-2xl font-bold font-display">
             <AnimatedCounter value={catalog.length || 12} />
@@ -54,7 +54,7 @@ export default async function ReportsPage() {
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
             <span>Exports Generated</span>
-            <History className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <History className="size-4 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="text-2xl font-bold font-display">
             <AnimatedCounter value={history.length || 148} />
@@ -65,9 +65,9 @@ export default async function ReportsPage() {
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
             <span>Most Active Category</span>
-            <TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <p className="text-2xl font-bold font-display text-emerald-600 dark:text-emerald-400">
+          <p className="text-2xl font-bold font-display text-blue-600 dark:text-blue-400">
             HR & Payroll
           </p>
           <p className="text-[11px] text-muted-foreground">42% of total platform downloads</p>

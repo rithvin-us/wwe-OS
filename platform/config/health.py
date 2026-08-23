@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import os
 
 from django.conf import settings
 from django.core.cache import cache
@@ -16,7 +17,7 @@ from rest_framework.decorators import (
     permission_classes,
     throttle_classes,
 )
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 
@@ -61,6 +62,68 @@ def readiness(_request) -> Response:
     return Response(
         {"status": "ready" if ready else "not-ready", "checks": checks},
         status=200 if ready else 503,
+    )
+
+
+@extend_schema(
+    tags=["health"],
+    responses={
+        200: OpenApiResponse(description="Deploy identity, effective config, request counts.")
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def runtime_status(request) -> Response:
+    """What's actually running, right now — for the Maintenance dashboard.
+
+    Render auto-injects RENDER_GIT_COMMIT/RENDER_GIT_BRANCH/RENDER_SERVICE_ID
+    into every service's environment with no configuration needed, so "which
+    commit is live" is free. The AI model fields exist because a wrong one
+    (a retired Gemini snapshot silently used as the default) took a while to
+    trace back to platform/config/settings.py — this makes that value
+    visible instead of implicit.
+    """
+    from shared.metrics import summary_dict
+
+    checks: dict[str, str] = {}
+    try:
+        connections["default"].cursor().execute("SELECT 1")
+        checks["database"] = "ok"
+    except OperationalError:
+        checks["database"] = "error"
+    try:
+        cache.set("readyz", "1", timeout=5)
+        checks["cache"] = "ok" if cache.get("readyz") == "1" else "error"
+    except Exception:  # noqa: BLE001 - status must never raise
+        checks["cache"] = "error"
+
+    commit = os.environ.get("RENDER_GIT_COMMIT", "")
+    return Response(
+        {
+            "deploy": {
+                "commit": commit[:12] if commit else None,
+                "branch": os.environ.get("RENDER_GIT_BRANCH") or None,
+                "service": os.environ.get("RENDER_SERVICE_NAME") or None,
+                "on_render": bool(commit),
+            },
+            "config": {
+                "debug": settings.DEBUG,
+                "ai_default_model": settings.AI_DEFAULT_MODEL,
+                "ai_fallback_model": settings.AI_FALLBACK_MODEL or None,
+                "invoice_pdf_engine": settings.INVOICE_PDF_ENGINE,
+                "metrics_scrape_configured": bool(getattr(settings, "METRICS_TOKEN", "")),
+            },
+            "checks": checks,
+            "requests": {
+                **summary_dict(),
+                "note": (
+                    "Aggregated across workers via Redis; resets on deploy/restart."
+                    if "redis" in settings.CACHES["default"]["BACKEND"].lower()
+                    else "Per-process counters (no Redis cache configured) — reset on "
+                    "deploy/restart and not summed across gunicorn workers."
+                ),
+            },
+        }
     )
 
 

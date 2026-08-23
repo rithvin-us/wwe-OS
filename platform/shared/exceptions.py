@@ -97,7 +97,15 @@ def standard_exception_handler(exc: Exception, context: dict[str, Any]) -> Respo
     if isinstance(detail, dict) and "detail" in detail and len(detail) == 1:
         message = str(detail["detail"])
     elif isinstance(detail, dict):
-        message = "One or more fields are invalid."
+        first_msg = None
+        for val in detail.values():
+            if isinstance(val, list) and val and isinstance(val[0], str):
+                first_msg = val[0]
+                break
+            elif isinstance(val, str):
+                first_msg = val
+                break
+        message = first_msg if first_msg else "One or more fields are invalid."
         details = detail
     elif isinstance(detail, list):
         message = "; ".join(str(item) for item in detail)

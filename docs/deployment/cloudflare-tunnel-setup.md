@@ -2,6 +2,17 @@
 
 This guide explains how to expose your desktop services (**Face-AI** on port 9000 & **Telegram Bot** on port 9001) securely to the web using Cloudflare Tunnels once you register your domain.
 
+> **Required on every machine that hosts these services**, not optional: the
+> production backend on Render calls `https://ai.water-works.in` and
+> `https://bot.water-works.in` directly and has no fallback path if the
+> tunnel is down (HR face check-in/enrollment fails outright). Step 5 below
+> must end with the tunnel installed as a **Windows service** — running it
+> as a foreground process in a terminal (`start-tunnel.ps1`) is fine for a
+> one-off test, but it dies the moment that terminal or session closes,
+> which silently breaks production. `start-all-services-and-tunnel.ps1` at
+> the repo root does NOT install the service either — it only launches the
+> foreground process, same caveat applies.
+
 ---
 
 ## 📌 Ports Summary
@@ -36,14 +47,14 @@ cloudflared tunnel login
 ## 🛠️ Step 3: Create Cloudflare Tunnel
 
 ```bash
-cloudflared tunnel create wwe-desktop-tunnel
+cloudflared tunnel create wwe-tunnel
 ```
 
 ---
 
 ## 🛠️ Step 4: Configure Tunnel (`config.yml`)
 
-Save the following configuration as `~/.cloudflared/config.yml` (replace `<TUNNEL-ID>` and `yourdomain.com` with your actual domain):
+Save the following configuration as `~/.cloudflared/config.yml` (replace `<TUNNEL-ID>` with the ID printed by Step 3 — the hostnames below already match the registered `water-works.in` domain, no need to change them unless you're pointing at a different domain):
 
 ```yaml
 tunnel: <TUNNEL-ID>
@@ -51,11 +62,11 @@ credentials-file: C:\Users\<Username>\.cloudflared\<TUNNEL-ID>.json
 
 ingress:
   # 1. Face-AI Microservice Subdomain
-  - hostname: face-ai.yourdomain.com
+  - hostname: ai.water-works.in
     service: http://localhost:9000
 
   # 2. Telegram Bot Webhook / Health Subdomain
-  - hostname: bot.yourdomain.com
+  - hostname: bot.water-works.in
     service: http://localhost:9001
 
   # Catch-all
@@ -64,16 +75,25 @@ ingress:
 
 ---
 
-## 🛠️ Step 5: Route Subdomains & Start Tunnel
+## 🛠️ Step 5: Route Subdomains & Install as a Windows Service
 
 ```bash
 # Route DNS entries in Cloudflare
-cloudflared tunnel route dns wwe-desktop-tunnel face-ai.yourdomain.com
-cloudflared tunnel route dns wwe-desktop-tunnel bot.yourdomain.com
-
-# Start the tunnel as a Windows Service (auto-starts on boot)
-cloudflared service install
+cloudflared tunnel route dns wwe-tunnel ai.water-works.in
+cloudflared tunnel route dns wwe-tunnel bot.water-works.in
 ```
+
+Then, from an **elevated** ("Run as Administrator") PowerShell, run:
+
+```powershell
+.\services\face-ai\cloudflare\install-tunnel-service.ps1
+```
+
+This installs `cloudflared` as an actual Windows service (`Get-Service
+cloudflared`) set to auto-start on boot — the required end state, not a
+manual `cloudflared tunnel run` in a terminal window (see the callout at the
+top of this doc for why). It self-elevates if you forgot the "Run as
+Administrator" step.
 
 ---
 
@@ -81,5 +101,8 @@ cloudflared service install
 
 Once your Cloudflare domain is routed:
 
-1. Update `WEBHOOK_URL=https://bot.yourdomain.com` in `.env` so Telegram Bot automatically switches to Webhook mode.
-2. Update `FACE_AI_URL=https://face-ai.yourdomain.com` in your cloud app settings.
+1. Update `WEBHOOK_URL=https://bot.water-works.in` in `.env` so Telegram Bot automatically switches to Webhook mode.
+2. Update `HR_FACE_AI_URL=https://ai.water-works.in` — locally in `.env`, and in the
+   `wwe-os-backend` Render service's environment (Render is what actually depends on
+   this being reachable in production; `localhost:9000` only works when the backend
+   runs on the same machine as the tunnel).

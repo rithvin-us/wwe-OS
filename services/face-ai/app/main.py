@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI):
     loader = getattr(_engine, "load", None)
     if loader is not None:  # stub engine has none
         try:
-            loader()
+            await run_in_threadpool(loader)
             logger.info("engine '%s' warmed up", settings.FACE_ENGINE)
         except Exception:  # noqa: BLE001 - boot anyway; /health reports not-ready
             logger.exception("engine warm-up failed; will lazily retry on first request")

@@ -19,11 +19,11 @@ const MODULE_THEMES: Record<
 > = {
   purchase: {
     label: "Purchase",
-    color: "text-emerald-500 dark:text-emerald-400",
-    border: "border-emerald-500/30",
-    bg: "bg-emerald-500/10",
-    dot: "bg-emerald-500 shadow-emerald-500/50",
-    trackColor: "#10b981",
+    color: "text-blue-500 dark:text-blue-400",
+    border: "border-blue-500/30",
+    bg: "bg-blue-500/10",
+    dot: "bg-blue-500 shadow-blue-500/50",
+    trackColor: "#3b82f6",
   },
   hr: {
     label: "HR & Payroll",
@@ -59,11 +59,11 @@ const MODULE_THEMES: Record<
   },
   automation: {
     label: "Automation",
-    color: "text-teal-500 dark:text-teal-400",
-    border: "border-teal-500/30",
-    bg: "bg-teal-500/10",
-    dot: "bg-teal-500 shadow-teal-500/50",
-    trackColor: "#06b6d4",
+    color: "text-sky-500 dark:text-sky-400",
+    border: "border-sky-500/30",
+    bg: "bg-sky-500/10",
+    dot: "bg-sky-500 shadow-sky-500/50",
+    trackColor: "#0284c7",
   },
   system: {
     label: "System",
@@ -207,8 +207,8 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
           <div className="relative flex h-3 w-3 items-center justify-center">
             {isLive ? (
               <>
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500" />
               </>
             ) : (
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-slate-400" />
@@ -248,7 +248,7 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
             size="sm"
             onClick={handleSimulateEvent}
             disabled={simulating}
-            className="h-8 gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-xs text-white shadow-xs hover:from-emerald-500 hover:to-teal-500"
+            className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-sky-600 text-xs text-white shadow-xs hover:from-blue-500 hover:to-sky-500"
           >
             <Zap className={`h-3.5 w-3.5 ${simulating ? "animate-spin" : ""}`} />
             Simulate Live Event
@@ -353,7 +353,7 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
 
           {/* Graph Commit Nodes */}
           <div className="relative space-y-4">
-            <div className="absolute left-6 top-3 bottom-3 w-0.5 bg-gradient-to-b from-emerald-500 via-sky-500 to-purple-500 opacity-30" />
+            <div className="absolute left-6 top-3 bottom-3 w-0.5 bg-gradient-to-b from-blue-600 via-sky-500 to-indigo-500 opacity-30" />
 
             {filteredEntries.map((entry, index) => {
               const theme = getModuleTheme(entry.module);
@@ -366,8 +366,10 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
               return (
                 <div
                   key={entry.id}
-                  className={`group relative flex items-start gap-4 transition-all duration-300 ${
-                    isNew ? "animate-in fade-in slide-in-from-top-3 duration-500" : ""
+                  className={`group relative flex items-start gap-4 transition duration-(--duration-slow) ease-out-quart ${
+                    isNew
+                      ? "animate-in fade-in slide-in-from-top-3 duration-(--duration-slow) ease-out-quart"
+                      : ""
                   }`}
                 >
                   <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center">
@@ -376,10 +378,10 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
                         setSelectedEntry(entry);
                         setDialogOpen(true);
                       }}
-                      className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-transform duration-200 group-hover:scale-115 ${
+                      className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-transform duration-(--duration-base) ease-out-quart group-hover:scale-115 ${
                         theme.border
                       } ${theme.bg} backdrop-blur-md shadow-sm ${
-                        isNew ? "ring-4 ring-emerald-500/40 animate-pulse" : ""
+                        isNew ? "ring-4 ring-blue-500/40 animate-pulse" : ""
                       }`}
                     >
                       <span className={`h-3 w-3 rounded-full ${theme.dot}`} />
@@ -405,8 +407,8 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
                       setSelectedEntry(entry);
                       setDialogOpen(true);
                     }}
-                    className={`flex-1 cursor-pointer rounded-xl border border-border/70 bg-card p-4 transition-all duration-200 group-hover:border-primary/40 group-hover:shadow-md ${
-                      isNew ? "border-emerald-500/60 bg-emerald-500/5 shadow-emerald-500/10" : ""
+                    className={`flex-1 cursor-pointer rounded-xl border border-border/70 bg-card p-4 transition duration-(--duration-base) ease-out-quart group-hover:border-primary/40 group-hover:shadow-md ${
+                      isNew ? "border-blue-500/60 bg-blue-500/5 shadow-blue-500/10" : ""
                     }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">

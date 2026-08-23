@@ -42,4 +42,6 @@ HR_PERMISSIONS: list[PermissionDef] = [
     # Expense claims
     PermissionDef("hr.expense.read", "View expense claims", "HR"),
     PermissionDef("hr.expense.manage", "Approve or reject expense claims", "HR"),
+    # Diagnostics
+    PermissionDef("hr.diagnostics.read", "View face check-in engine diagnostics", "HR"),
 ]

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { ApiRequestError } from "@/lib/api/envelope";
-import { djangoFetch, getAccessToken, internalApiUrl } from "@/lib/api/server";
+import { djangoFetch } from "@/lib/api/server";
 import type { ContractCreateInput } from "@/lib/contracts-constants";
 
 export interface ActionResult {
@@ -24,36 +24,6 @@ export async function createContractAction(input: ContractCreateInput): Promise<
     return { ok: true, message: "Contract created.", id: contract.id };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
-  }
-}
-
-/** Multipart: attaching the signed file goes out as form-data, not JSON. */
-export async function attachContractFileAction(
-  id: string,
-  formData: FormData,
-): Promise<ActionResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: "Choose a file to attach." };
-  }
-  try {
-    const token = await getAccessToken();
-    const forward = new FormData();
-    forward.append("file", file);
-    const response = await fetch(`${internalApiUrl()}${BASE}/${id}/attach/`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: forward,
-      cache: "no-store",
-    });
-    const envelope = await response.json();
-    if (!envelope.success) {
-      return { ok: false, message: envelope.error?.message ?? "Attach failed." };
-    }
-    revalidatePath(`/contracts/${id}`);
-    return { ok: true, message: "File attached." };
-  } catch {
-    return { ok: false, message: "Something went wrong. Try again." };
   }
 }
 

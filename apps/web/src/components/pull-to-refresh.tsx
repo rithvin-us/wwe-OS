@@ -58,8 +58,8 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
     <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <div
         className={cn(
-          "flex items-center justify-center overflow-hidden text-emerald-600 transition-[height] duration-150 dark:text-emerald-400",
-          !indicatorVisible && "duration-200",
+          "flex items-center justify-center overflow-hidden text-blue-600 transition-[height] duration-(--duration-fast) ease-out-quart dark:text-blue-400",
+          !indicatorVisible && "duration-(--duration-base) ease-out-quart",
         )}
         style={{ height: refreshing ? 40 : pull }}
         aria-hidden={!indicatorVisible}

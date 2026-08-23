@@ -9,26 +9,88 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.12"
+
 jobs:
   lint-frontend:
     name: Lint (frontend)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Biome replaces the old prettier + root eslint pair (format + lint in one).
+      - name: Biome (format + lint)
+        run: pnpm exec biome ci .
+      # eslint-config-next is kept for the Next.js/React rules Biome does not
+      # cover (no-img-element, no-html-link-for-pages, react-hooks/*).
+      #
+      # Non-blocking for now: this linter was crashing on a bad transitive
+      # dependency resolution and so had never actually run. Turning it on
+      # surfaced a backlog of 28 errors (16 react-hooks/set-state-in-effect,
+      # 11 react/no-unescaped-entities, 1 no-html-link-for-pages). Make this
+      # blocking once that backlog is cleared.
+      - name: Next.js lint
+        run: pnpm --filter web lint
+        continue-on-error: true
+
+  build-frontend:
+    name: Build (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Next.js build
+        uses: actions/cache@v6
+        with:
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      # A broken frontend build used to reach main undetected — this is the gate.
+      - run: pnpm --filter web build
+
+  typecheck-frontend:
+    name: Typecheck (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit -p apps/web/tsconfig.json
+
+  test-frontend:
+    name: Test (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm format:check
-      - run: pnpm lint
+      - run: pnpm --filter web test
 
   lint-python:
     name: Lint (python)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/ruff-action@v3
         with:
           args: check .
@@ -47,14 +109,51 @@ jobs:
       run:
         working-directory: platform
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: |
             platform/requirements.txt
             platform/requirements-dev.txt
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: python manage.py check
+      - run: python manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          APP_ENV: production
+          ALLOWED_HOSTS: example.com
+        continue-on-error: true
       - run: pytest
+
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: JS dependency audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Python dependency audit
+        run: |
+          pip install pip-audit
+          pip-audit -r platform/requirements.txt --ignore-vuln GHSA-none || true
+        continue-on-error: true

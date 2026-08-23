@@ -3,13 +3,17 @@ import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { PageHeader } from "@bop/ui/components/page-header";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+import { cache, type ReactNode } from "react";
 
 import { ContractActions } from "@/app/(platform)/contracts/[id]/contract-actions";
 import { ApiRequestError } from "@/lib/api/envelope";
 import { type ContractRecord, formatDate, formatMoney, getContract } from "@/lib/contracts";
+
+// Deduped per request so generateMetadata and the page body share one fetch.
+const getContractCached = cache(getContract);
 
 function StatusBadge({ contract }: { contract: ContractRecord }) {
   if (contract.status === "active") return <Badge variant="success">{contract.status_label}</Badge>;
@@ -30,11 +34,25 @@ function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const contract = await getContractCached(id);
+    return { title: contract.title };
+  } catch {
+    return { title: "Contract" };
+  }
+}
+
 export default async function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let contract: ContractRecord;
   try {
-    contract = await getContract(id);
+    contract = await getContractCached(id);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;

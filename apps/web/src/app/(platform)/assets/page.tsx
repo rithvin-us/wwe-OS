@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@bop/ui/components/page-header";
 import { getDCs, getSites } from "@/lib/assets";
 import { DCTable } from "./dc-table";
 import { GenerateDCDialog } from "./generate-dc-dialog";
 import { DCAnalytics } from "./dc-analytics";
+
+export const metadata: Metadata = {
+  title: "Delivery Challans",
+};
 
 export default async function DeliveryChallansPage() {
   const [dcs, sites] = await Promise.all([getDCs(), getSites()]);

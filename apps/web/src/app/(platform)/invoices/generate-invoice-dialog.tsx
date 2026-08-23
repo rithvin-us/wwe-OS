@@ -81,12 +81,23 @@ function linesOf(invoice: Invoice): InvoiceLineDraft[] {
 export function GenerateInvoiceDialog({
   customers,
   invoice,
+  initialDraft,
+  openOverride,
+  onOpenChangeOverride,
   trigger,
   triggerLabel = "Generate invoice",
   triggerVariant = "default",
 }: {
   customers: BillingCustomer[];
   invoice?: Invoice;
+  initialDraft?: {
+    customerId?: string;
+    invoiceType?: InvoiceType;
+    gstRate?: string;
+    lines?: InvoiceLineDraft[];
+  };
+  openOverride?: boolean;
+  onOpenChangeOverride?: (open: boolean) => void;
   trigger?: ReactNode;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "secondary";
@@ -94,28 +105,36 @@ export function GenerateInvoiceDialog({
   const editing = invoice != null;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openOverride !== undefined;
+  const open = isControlled ? openOverride : internalOpen;
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (searchParams?.get("action") === "new" || searchParams?.get("action") === "generate") {
-      setOpen(true);
+      if (isControlled && onOpenChangeOverride) onOpenChangeOverride(true);
+      else setInternalOpen(true);
     }
-  }, [searchParams]);
+  }, [searchParams, isControlled, onOpenChangeOverride]);
 
   const initial = useMemo(
     () => ({
-      invoiceType: (invoice?.invoice_type ?? "amc") as InvoiceType,
-      customerId: invoice?.customer ?? "",
+      invoiceType: (initialDraft?.invoiceType ?? invoice?.invoice_type ?? "sales") as InvoiceType,
+      customerId: initialDraft?.customerId ?? invoice?.customer ?? "",
       invoiceDate: invoice?.invoice_date ?? today(),
       billedMonth:
         invoice?.period_year && invoice?.period_month
           ? monthValue(invoice.period_year, invoice.period_month)
           : previousMonth(invoice?.invoice_date ?? today()),
-      gstRate: invoice?.gst_rate ?? "18",
-      lines: invoice ? linesOf(invoice) : [emptyLine()],
+      gstRate: initialDraft?.gstRate ?? invoice?.gst_rate ?? "18",
+      lines:
+        initialDraft?.lines && initialDraft.lines.length > 0
+          ? initialDraft.lines
+          : invoice
+            ? linesOf(invoice)
+            : [emptyLine()],
     }),
-    [invoice],
+    [invoice, initialDraft],
   );
 
   const [invoiceType, setInvoiceType] = useState<InvoiceType>(initial.invoiceType);
@@ -155,8 +174,18 @@ export function GenerateInvoiceDialog({
     clearDerived();
   }
 
+  useEffect(() => {
+    if (initialDraft) {
+      if (initialDraft.invoiceType) setInvoiceType(initialDraft.invoiceType);
+      if (initialDraft.customerId) setCustomerId(initialDraft.customerId);
+      if (initialDraft.gstRate) setGstRate(initialDraft.gstRate);
+      if (initialDraft.lines && initialDraft.lines.length > 0) setLines(initialDraft.lines);
+    }
+  }, [initialDraft]);
+
   function handleOpenChange(next: boolean) {
-    setOpen(next);
+    if (isControlled && onOpenChangeOverride) onOpenChangeOverride(next);
+    else setInternalOpen(next);
     if (!next) reset();
   }
 
@@ -260,14 +289,20 @@ export function GenerateInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button size="sm" variant={triggerVariant}>
-            <Plus className="mr-2 size-4" />
-            {triggerLabel}
-          </Button>
-        )}
-      </DialogTrigger>
+      {/* A controlled instance (openOverride set, e.g. driven from a scanned
+          PO draft) has no button of its own to click — only the caller's
+          state opens it. Rendering a trigger here regardless would put a
+          second, unwanted default "Generate invoice" button on the page. */}
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button size="sm" variant={triggerVariant}>
+              <Plus className="mr-2 size-4" />
+              {triggerLabel}
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[760px]">
         <DialogHeader>
           <DialogTitle>
@@ -402,9 +437,9 @@ export function GenerateInvoiceDialog({
 
               <div className="space-y-2">
                 <div className="hidden grid-cols-12 gap-2 px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase sm:grid">
-                  <span className="col-span-5">Description</span>
+                  <span className="col-span-4">Description</span>
                   <span className="col-span-2">HSN</span>
-                  <span className="col-span-1">Qty</span>
+                  <span className="col-span-2">Qty</span>
                   <span className="col-span-1">UOM</span>
                   <span className="col-span-2">Rate</span>
                   <span className="col-span-1" />
@@ -412,22 +447,24 @@ export function GenerateInvoiceDialog({
                 {lines.map((line, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2">
                     <Input
-                      className="col-span-12 sm:col-span-5"
+                      className="col-span-12 sm:col-span-4"
                       placeholder="Description"
                       value={line.description}
                       onChange={(event) => updateLine(index, "description", event.target.value)}
                     />
                     <Input
-                      className="col-span-4 sm:col-span-2"
-                      placeholder="HSN"
+                      className="col-span-4 sm:col-span-2 font-mono"
+                      placeholder="998714"
+                      title="HSN / SAC Code (e.g. 998714 for AMC/Services, 8421 for Goods)"
                       value={line.hsn}
                       onChange={(event) => updateLine(index, "hsn", event.target.value)}
                     />
                     <Input
-                      className="col-span-2 sm:col-span-1"
+                      className="col-span-3 sm:col-span-2"
                       type="number"
                       min="0"
                       step="0.001"
+                      placeholder="Qty"
                       value={line.quantity}
                       onChange={(event) => updateLine(index, "quantity", event.target.value)}
                     />

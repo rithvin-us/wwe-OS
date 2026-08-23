@@ -16,10 +16,10 @@ import { Label } from "@bop/ui/components/label";
 import { TagPill, type TagColor } from "@bop/ui/components/tag-pill";
 import { Textarea } from "@bop/ui/components/textarea";
 import { cn } from "@bop/ui/lib/utils";
-import { type FormEvent, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 
-import { uploadDocumentAction } from "@/app/(platform)/dms/actions";
 import { DOCUMENT_CATEGORIES } from "@/lib/dms-constants";
 
 // Native select styled to match the platform Input — @bop/ui has no Select
@@ -48,8 +48,9 @@ function getTagColor(name: string): TagColor {
 }
 
 export function UploadDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
@@ -81,23 +82,33 @@ export function UploadDialog() {
     setCustomTagInput("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedFile) {
       toast.error("Choose a file to upload.");
       return;
     }
+    setPending(true);
     const formData = new FormData(event.currentTarget);
-    startTransition(async () => {
-      const result = await uploadDocumentAction(formData);
-      if (result.ok) {
-        toast.success(result.message);
+    try {
+      const response = await fetch("/api/dms/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json().catch(() => null);
+      if (response.ok && result?.ok) {
+        toast.success(result.message ?? "Document uploaded.");
         resetFormState();
         setOpen(false);
+        router.refresh();
       } else {
-        toast.error(result.message);
+        toast.error(result?.message ?? `Upload failed (HTTP ${response.status}).`);
       }
-    });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Network error — check your connection.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (

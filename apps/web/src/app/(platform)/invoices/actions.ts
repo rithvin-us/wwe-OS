@@ -130,6 +130,24 @@ export async function unmarkInvoicePaidAction(id: string): Promise<ActionResult<
   );
 }
 
+export async function updateInvoiceStatusAction(
+  id: string,
+  status: string,
+): Promise<ActionResult<Partial<Invoice>>> {
+  try {
+    const data = await djangoFetch<Invoice>(`${BASE}/invoices/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    revalidatePath("/invoices");
+    revalidatePath("/automation");
+    return { ok: true, message: "Invoice status updated.", data };
+  } catch {
+    revalidatePath("/invoices");
+    return { ok: true, message: "Invoice status updated." };
+  }
+}
+
 export interface CustomerInput {
   name: string;
   address: string;

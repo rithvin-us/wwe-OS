@@ -32,7 +32,7 @@ export function QuickActionsMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           size="sm"
-          className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
+          className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
         >
           <PlusCircle className="size-3.5" />
           <span className="hidden sm:inline">Quick Action</span>
@@ -50,7 +50,7 @@ export function QuickActionsMenu() {
               className="flex items-center justify-between cursor-pointer text-xs"
             >
               <div className="flex items-center gap-2">
-                <action.icon className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <action.icon className="size-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span>{action.name}</span>
               </div>
               <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">

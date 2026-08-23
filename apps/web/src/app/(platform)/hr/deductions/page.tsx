@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MinusCircle } from "@bop/icons";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
@@ -18,6 +19,10 @@ interface DeductionRecord {
   notes?: string;
   created_at?: string;
 }
+
+export const metadata: Metadata = {
+  title: "Deductions",
+};
 
 export default async function DeductionsPage({
   searchParams,
@@ -74,7 +79,7 @@ export default async function DeductionsPage({
             </span>
             <span>
               Total Deducted:{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+              <strong className="text-blue-600 dark:text-blue-400 font-mono text-sm">
                 ₹{totalDeductions.toLocaleString("en-IN")}
               </strong>
             </span>

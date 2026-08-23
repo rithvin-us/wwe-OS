@@ -67,9 +67,11 @@ export function PurchaseUploadCard() {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        toast.error(data?.message || "Couldn't read that bill. Try again.");
+        toast.error(
+          data?.message || `Upload failed (HTTP ${response.status}). Check your connection.`,
+        );
         setStatus("idle");
         return;
       }

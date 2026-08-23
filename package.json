@@ -2,20 +2,37 @@
   "name": "business-operations-platform",
   "version": "0.0.0",
   "private": true,
-  "description": "Enterprise Business Operations Platform — modular monorepo",
+  "description": "Enterprise Business Operations Platform \u2014 modular monorepo",
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "dev": "node scripts/dev.js",
+    "dev:all": "node scripts/dev.js",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
+    "lint:next": "pnpm --filter web lint",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "build:web": "pnpm --filter web build"
   },
   "devDependencies": {
-    "eslint": "^9.20.0",
-    "prettier": "^3.5.0",
-    "typescript": "^5.7.0",
-    "typescript-eslint": "^8.24.0"
+    "@biomejs/biome": "^2.5.10",
+    "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "next": "16.2.12",
+      "sharp": ">=0.35.0",
+      "postcss@8": ">=8.5.23 <9",
+      "nanoid@3": ">=3.3.18 <4",
+      "js-yaml@4": ">=4.3.1 <5",
+      "minimatch@3": ">=3.1.4 <4",
+      "brace-expansion@1": ">=1.1.12 <2",
+      "brace-expansion@2": ">=2.0.2 <3",
+      "brace-expansion@5": ">=5.0.9 <6"
+    }
   }
 }
