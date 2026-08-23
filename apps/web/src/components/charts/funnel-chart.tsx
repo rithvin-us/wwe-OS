@@ -29,7 +29,7 @@ export function FunnelChartComponent({ data }: FunnelChartProps) {
           </div>
           <div className="h-2 w-full rounded-full bg-muted/60 overflow-hidden">
             <div
-              className="h-full rounded-full bg-emerald-600 transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-emerald-600 transition-[width] duration-(--duration-slow) ease-out-quart"
               style={{ width: `${item.percentage}%`, opacity: 1 - idx * 0.15 }}
             />
           </div>

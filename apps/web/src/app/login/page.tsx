@@ -76,7 +76,7 @@ export default function LoginPage() {
             </div>
 
             {/* Glassmorphic Form Card Wrapper */}
-            <div className="rounded-2xl border border-border/60 bg-card/60 p-6 sm:p-7 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
+            <div className="rounded-2xl border border-border/60 bg-card/60 p-6 sm:p-7 backdrop-blur-xl shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition duration-(--duration-slow) ease-out-quart">
               <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted/40" />}>
                 <LoginForm />
               </Suspense>

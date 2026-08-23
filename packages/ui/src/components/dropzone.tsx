@@ -68,7 +68,7 @@ export function Dropzone({
           if (!disabled) acceptFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors duration-(--duration-base)",
+          "flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors duration-(--duration-base) ease-out-quart",
           isDragging
             ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/50 hover:bg-accent/40",

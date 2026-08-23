@@ -3,7 +3,11 @@
  * server-only fetchers in @/lib/automation. */
 
 export type AutomationDestination =
-  "downloaded_package" | "generate_report" | "auditor_folder" | "email" | "cloud_storage";
+  | "downloaded_package"
+  | "generate_report"
+  | "auditor_folder"
+  | "email"
+  | "cloud_storage";
 
 export type AutomationCadence = "once" | "daily" | "weekly" | "monthly";
 

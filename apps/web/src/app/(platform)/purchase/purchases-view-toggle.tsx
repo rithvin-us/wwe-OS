@@ -27,7 +27,7 @@ export function PurchasesViewToggle({
           <button
             type="button"
             onClick={() => setActiveTab("bills")}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
               activeTab === "bills"
                 ? "bg-background text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
@@ -40,7 +40,7 @@ export function PurchasesViewToggle({
           <button
             type="button"
             onClick={() => setActiveTab("vendors")}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
               activeTab === "vendors"
                 ? "bg-background text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"

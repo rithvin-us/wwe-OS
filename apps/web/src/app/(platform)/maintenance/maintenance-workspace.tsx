@@ -153,7 +153,7 @@ export function MaintenanceWorkspace({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-start p-3 rounded-xl transition-all duration-200 text-left relative overflow-hidden group ${
+              className={`flex flex-col items-start p-3 rounded-xl transition duration-(--duration-base) ease-out-quart text-left relative overflow-hidden group ${
                 isActive
                   ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-emerald-500/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/40"

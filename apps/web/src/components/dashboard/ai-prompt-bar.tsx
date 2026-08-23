@@ -51,23 +51,23 @@ export function AiPromptBar() {
             placeholder="Ask AI about operations, spend, or HR..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="text-xs h-8 pr-8 bg-background/50 border-emerald-500/20 focus-visible:ring-emerald-500/30"
+            className="text-xs h-8 pr-8 bg-background/50 border-blue-500/20 focus-visible:ring-blue-500/30"
           />
-          <Sparkles className="absolute right-2.5 top-2 size-3.5 text-emerald-600 dark:text-emerald-400 pointer-events-none" />
+          <Sparkles className="absolute right-2.5 top-2 size-3.5 text-blue-600 dark:text-blue-400 pointer-events-none" />
         </div>
         <Button
           type="submit"
           size="sm"
           disabled={loading || !prompt.trim()}
-          className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1"
+          className="h-8 px-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1"
         >
           {loading ? "..." : <Send className="size-3" />}
         </Button>
       </form>
 
       {answer && (
-        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-foreground animate-in fade-in duration-200">
-          <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase">
+        <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-foreground animate-in fade-in duration-(--duration-base) ease-out-quart">
+          <p className="font-medium text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase">
             <Sparkles className="size-3" /> Operational Insight
           </p>
           <p className="leading-relaxed text-[11px]">{answer}</p>

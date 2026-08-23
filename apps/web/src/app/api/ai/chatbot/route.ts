@@ -83,7 +83,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const prompt: string = (body.prompt || "").trim();
     const fileAttachment = body.fileAttachment as
-      { name: string; type: string; size: number; dataUrl?: string } | undefined;
+      | { name: string; type: string; size: number; dataUrl?: string }
+      | undefined;
     const history: HistoryTurn[] | undefined = Array.isArray(body.history)
       ? body.history.slice(-8)
       : undefined;

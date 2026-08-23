@@ -116,11 +116,11 @@ export function DCAnalytics({
           </div>
           <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary">
             <div
-              className="bg-emerald-500 transition-all duration-500"
+              className="bg-emerald-500 transition-[width] duration-(--duration-slow) ease-out-quart"
               style={{ width: `${returnablePct}%` }}
             />
             <div
-              className="bg-blue-500 transition-all duration-500"
+              className="bg-blue-500 transition-[width] duration-(--duration-slow) ease-out-quart"
               style={{ width: `${nonReturnablePct}%` }}
             />
           </div>

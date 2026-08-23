@@ -258,7 +258,7 @@ export function PublicMobileCheckIn() {
             <button
               onClick={() => captureAndPunch()}
               disabled={scanning || !cameraActive}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
             >
               <MapPin className="size-5" />
               {scanning ? "Checking in..." : "Check in / out"}

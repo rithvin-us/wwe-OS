@@ -13,7 +13,11 @@
  */
 
 export type AutomationDestination =
-  "downloaded_package" | "generate_report" | "auditor_folder" | "email" | "cloud_storage";
+  | "downloaded_package"
+  | "generate_report"
+  | "auditor_folder"
+  | "email"
+  | "cloud_storage";
 
 export const STUB_DESTINATIONS: AutomationDestination[] = ["email", "cloud_storage"];
 

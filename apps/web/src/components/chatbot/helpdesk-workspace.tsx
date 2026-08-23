@@ -222,7 +222,7 @@ export function HelpdeskWorkspace() {
                   key={preset.id}
                   onClick={() => setSelectedSeason(preset.id)}
                   className={cn(
-                    "cursor-pointer rounded-2xl border p-5 transition-all duration-200 hover:border-emerald-500/60",
+                    "cursor-pointer rounded-2xl border p-5 transition duration-(--duration-base) ease-out-quart hover:border-emerald-500/60",
                     isSelected
                       ? "border-emerald-500 bg-emerald-500/5 ring-2 ring-emerald-500/30 dark:bg-emerald-500/10"
                       : "border-border bg-card hover:bg-muted/40",
@@ -376,7 +376,7 @@ export function HelpdeskWorkspace() {
                     type="button"
                     onClick={() => setSelectedModel("gemini-2.5-flash")}
                     className={cn(
-                      "rounded-xl border p-3 text-left text-xs transition-all",
+                      "rounded-xl border p-3 text-left text-xs transition",
                       selectedModel === "gemini-2.5-flash"
                         ? "border-emerald-500 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400"
                         : "border-border bg-background text-muted-foreground hover:bg-muted/40",
@@ -392,7 +392,7 @@ export function HelpdeskWorkspace() {
                     type="button"
                     onClick={() => setSelectedModel("gemini-2.5-pro")}
                     className={cn(
-                      "rounded-xl border p-3 text-left text-xs transition-all",
+                      "rounded-xl border p-3 text-left text-xs transition",
                       selectedModel === "gemini-2.5-pro"
                         ? "border-emerald-500 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400"
                         : "border-border bg-background text-muted-foreground hover:bg-muted/40",

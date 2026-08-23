@@ -168,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-svh">
       {/* Global Drag & Drop Overlay Zone */}
       {isDraggingOver && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center border-4 border-dashed border-emerald-500 bg-background/90 backdrop-blur-xl animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center border-4 border-dashed border-emerald-500 bg-background/90 backdrop-blur-xl animate-in fade-in duration-(--duration-fast) ease-out-quart">
           <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-500/40 bg-card p-10 shadow-2xl text-center max-w-md mx-4">
             <div className="flex size-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg animate-bounce">
               <UploadCloud className="size-8" />
@@ -187,14 +187,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <aside
-        className="fixed inset-y-0 left-0 z-(--z-sticky) hidden border-r border-sidebar-border lg:block overflow-hidden transition-[width] duration-200 ease-out"
+        className="fixed inset-y-0 left-0 z-(--z-sticky) hidden border-r border-sidebar-border lg:block overflow-hidden transition-[width] duration-(--duration-base) ease-out-quart"
         style={{ width: sidebarWidth }}
       >
         <AppSidebar collapsed={sidebarCollapsed} />
       </aside>
 
       <div
-        className="flex min-h-svh flex-col transition-[padding-left] duration-200 ease-out"
+        className="flex min-h-svh flex-col transition-[padding-left] duration-(--duration-base) ease-out-quart"
         style={{ paddingLeft: undefined }}
       >
         {/* On lg screens, apply dynamic padding; below lg, no sidebar padding */}

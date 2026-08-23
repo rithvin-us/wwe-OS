@@ -34,7 +34,7 @@ function GaugeRing({ label, percentage, color }: ComplianceGaugeProps) {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            className="transition-all duration-700 ease-out"
+            className="transition-[stroke-dashoffset] duration-(--duration-slow) ease-out-quart"
           />
         </svg>
         <span className="absolute font-mono text-xs font-bold text-foreground">{percentage}%</span>

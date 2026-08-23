@@ -155,12 +155,12 @@ export function EmailIngestionCard() {
           <button
             type="button"
             onClick={() => saveSettings({ ...settings, enabled: !settings.enabled })}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-(--duration-base) ease-in-out focus:outline-none ${
               settings.enabled ? "bg-emerald-500" : "bg-muted-foreground/30"
             }`}
           >
             <span
-              className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+              className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-(--duration-base) ease-in-out ${
                 settings.enabled ? "translate-x-5" : "translate-x-0"
               }`}
             />

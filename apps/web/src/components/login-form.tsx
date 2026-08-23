@@ -184,7 +184,7 @@ export function LoginForm() {
         <button
           type="button"
           onClick={() => setLoginMethod("password")}
-          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 cursor-pointer ${
+          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition duration-(--duration-base) ease-out-quart cursor-pointer ${
             loginMethod === "password"
               ? "bg-background text-foreground shadow-sm font-semibold"
               : "text-muted-foreground hover:text-foreground"
@@ -196,7 +196,7 @@ export function LoginForm() {
         <button
           type="button"
           onClick={() => setLoginMethod("face_id")}
-          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 cursor-pointer ${
+          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition duration-(--duration-base) ease-out-quart cursor-pointer ${
             loginMethod === "face_id"
               ? "bg-primary text-primary-foreground shadow-sm font-semibold"
               : "text-muted-foreground hover:text-foreground"
@@ -234,7 +234,7 @@ export function LoginForm() {
                   autoComplete="email"
                   placeholder="you@company.com"
                   aria-invalid={!!errors.email}
-                  className="pl-9 transition-all focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="pl-9 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   {...register("email")}
                 />
               </div>
@@ -272,7 +272,7 @@ export function LoginForm() {
 
                     {resetSent ? (
                       <div className="space-y-4 py-4 text-center">
-                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
                           <CheckCircle2 className="size-6" />
                         </div>
                         <div className="space-y-1">
@@ -330,7 +330,7 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   aria-invalid={!!errors.password}
-                  className="pl-9 pr-10 transition-all focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="pl-9 pr-10 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   onKeyDown={handleKeyDownPassword}
                   {...register("password")}
                 />
@@ -392,7 +392,7 @@ export function LoginForm() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-10 font-semibold shadow-md transition-all active:scale-[0.99] cursor-pointer"
+              className="w-full h-10 font-semibold shadow-md transition active:scale-[0.99] cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -425,7 +425,7 @@ export function LoginForm() {
 
               {/* Status alerts */}
               {faceSuccessMessage ? (
-                <div className="p-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
+                <div className="p-3 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center justify-center gap-2">
                   <CheckCircle2 className="size-4" />
                   <span>{faceSuccessMessage}</span>
                 </div>

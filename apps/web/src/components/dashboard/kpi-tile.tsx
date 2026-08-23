@@ -114,8 +114,15 @@ export function KpiTile({ kpi, index = 0 }: { kpi: Kpi; index?: number }) {
   );
 
   const containerClasses =
-    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs max-md:backdrop-blur-none animate-in fade-in slide-in-from-bottom-2 fill-mode-both";
-  const containerStyle = { animationDelay: `${index * 60}ms`, animationDuration: "300ms" };
+    "group flex flex-col gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md backdrop-blur-xs max-md:backdrop-blur-none animate-in fade-in slide-in-from-bottom-2 fill-mode-both";
+  // Design bible §7: stagger is capped around 40ms/item so a five-plus row
+  // never reads as sluggish, and the tail is clamped so a long grid does not
+  // keep accumulating delay. Duration comes from the motion token, not a
+  // literal, so a change to the register moves this with it.
+  const containerStyle = {
+    animationDelay: `${Math.min(index, 6) * 40}ms`,
+    animationDuration: "var(--duration-slow)",
+  };
 
   if (kpi.href) {
     return (

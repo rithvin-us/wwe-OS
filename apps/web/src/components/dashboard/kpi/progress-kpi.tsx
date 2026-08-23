@@ -42,7 +42,7 @@ export function ProgressKpi({
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" role="presentation">
         <div
-          className="h-full rounded-full bg-emerald-500 transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-emerald-500 transition-[width] duration-(--duration-slow) ease-out-quart"
           style={{ width: `${known ? clamped : 0}%` }}
         />
       </div>
@@ -51,7 +51,7 @@ export function ProgressKpi({
   );
 
   const classes =
-    "rounded-xl border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md";
+    "rounded-xl border border-border bg-card p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:shadow-md";
 
   if (href) {
     return (

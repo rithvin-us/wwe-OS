@@ -40,7 +40,7 @@ export function HrNav({ activeTab: _activeTab }: { activeTab?: string }) {
               key={tab.href}
               href={tab.href}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shrink-0",
+                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition whitespace-nowrap shrink-0",
                 isActive
                   ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 font-semibold border-b-2 border-emerald-600 shadow-xs"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",

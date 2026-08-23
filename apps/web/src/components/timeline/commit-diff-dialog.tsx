@@ -71,7 +71,7 @@ export function CommitDiffDialog({ entry, open, onOpenChange }: CommitDiffDialog
                 title="Copy commit hash"
               >
                 {copied ? (
-                  <Check className="h-3 w-3 text-emerald-500" />
+                  <Check className="h-3 w-3 text-blue-500" />
                 ) : (
                   <Copy className="h-3 w-3" />
                 )}
@@ -142,7 +142,7 @@ export function CommitDiffDialog({ entry, open, onOpenChange }: CommitDiffDialog
 
               {entry.changes && Object.keys(entry.changes).length > 0 ? (
                 Object.entries(entry.changes).map(([key, val]) => (
-                  <div key={key} className="text-emerald-400 bg-emerald-950/30 px-1 py-0.5">
+                  <div key={key} className="text-blue-400 bg-blue-950/30 px-1 py-0.5">
                     + {key}: {typeof val === "object" ? JSON.stringify(val) : String(val)}
                   </div>
                 ))

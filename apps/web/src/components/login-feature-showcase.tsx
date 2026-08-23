@@ -33,7 +33,7 @@ const SLIDES: FeatureSlide[] = [
     badge: "Environmental Achievement",
     title: "88% Recycled Water Utilization",
     description:
-      "Closing the loop by returning tertiary-treated water back to industrial cooling towers and local green belts.",
+      "Closing the loop by returning tertiary-treated water back to industrial cooling towers and local water networks.",
     image: "/images/stp-water-reuse.jpg",
     icon: Droplets,
     metrics: [
@@ -170,7 +170,7 @@ export function LoginFeatureShowcase() {
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition duration-(--duration-slow) ease-out-quart ${
                 currentSlide === idx ? "w-7 bg-cyan-400" : "w-2 bg-white/30 hover:bg-white/60"
               }`}
               aria-label={`Go to slide ${idx + 1}`}

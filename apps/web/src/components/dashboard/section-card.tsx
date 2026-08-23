@@ -35,7 +35,7 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "flex flex-col rounded-lg border transition-shadow duration-(--duration-base)",
+        "flex flex-col rounded-lg border transition-shadow duration-(--duration-base) ease-out-quart",
         glass
           ? "bg-card/70 backdrop-blur-md max-md:bg-card max-md:backdrop-blur-none dark:border-white/10 dark:bg-card/50"
           : "bg-card",

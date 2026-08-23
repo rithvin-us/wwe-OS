@@ -182,7 +182,7 @@ export function SettingsTopologyDiagram() {
               size="sm"
               onClick={handleRunDiagnostics}
               disabled={refreshing}
-              className="gap-2 text-xs border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-500/10 hover:text-emerald-400 text-slate-200 transition-all duration-200"
+              className="gap-2 text-xs border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-500/10 hover:text-emerald-400 text-slate-200 transition duration-(--duration-base) ease-out-quart"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-emerald-400" : ""}`}
@@ -206,7 +206,7 @@ export function SettingsTopologyDiagram() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedNodeId(node.id)}
-                className={`text-left p-4 rounded-xl border transition-all duration-200 relative overflow-hidden group flex flex-col justify-between min-h-[140px] ${
+                className={`text-left p-4 rounded-xl border transition duration-(--duration-base) ease-out-quart relative overflow-hidden group flex flex-col justify-between min-h-[140px] ${
                   isSelected
                     ? `${node.borderColor} bg-slate-900/90 shadow-xl ${node.glowColor} ring-1 ring-emerald-500/30`
                     : "border-slate-800/80 bg-slate-900/40 hover:bg-slate-900/80 hover:border-slate-700"

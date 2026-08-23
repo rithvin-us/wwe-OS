@@ -111,7 +111,7 @@ export function AppSidebar({
                     title={collapsed ? item.name : undefined}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative flex items-center rounded-lg text-[13px] font-medium transition-all",
+                      "relative flex items-center rounded-lg text-[13px] font-medium transition",
                       "focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
                       collapsed ? "justify-center px-0 py-2" : "gap-2.5 px-2.5 py-1.5",
                       active
