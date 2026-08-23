@@ -199,6 +199,37 @@ export function RithuChatWidget() {
     return () => window.removeEventListener("rithu:attach-file", onAttachEvent);
   }, [triggerSendWithAttachment]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy]);
+
+  useEffect(() => {
+    if (open && !busy) inputRef.current?.focus();
+  }, [open, busy]);
+
+  function handleInputChange(text: string) {
+    setInput(text);
+    if (text.startsWith("/") || text.includes("@")) {
+      setShowCommandMenu(true);
+    } else {
+      setShowCommandMenu(false);
+    }
+  }
+
+  function selectCommand(cmd: CommandItem) {
+    if (cmd.type === "slash") {
+      setInput(`${cmd.key} `);
+    } else {
+      setInput((prev) => {
+        const lastAt = prev.lastIndexOf("@");
+        if (lastAt !== -1) return prev.slice(0, lastAt) + `${cmd.key} `;
+        return `${prev} ${cmd.key} `;
+      });
+    }
+    setShowCommandMenu(false);
+    inputRef.current?.focus();
+  }
+
   async function handleSend() {
     const promptText = input.trim();
     if (!promptText && !attachedFile) return;
