@@ -1,0 +1,102 @@
+name: Deploy (Render)
+
+# Gated auto-deploy: deploy the latest main commit to Render ONLY after the
+# "CI" workflow (lint, typecheck, build, backend tests, security scan) has
+# succeeded for that same commit. This makes Render deploys tests-first
+# instead of firing on every push.
+#
+# One-time setup to make this the single source of deploys:
+#   1. Add repo secret RENDER_API_KEY  (Render dashboard → Account Settings →
+#      API Keys). The key must belong to the workspace that owns the service.
+#   2. In the Render dashboard, set the wwe-os-backend service's Auto-Deploy to
+#      "Off" so Render's own git trigger does not ALSO deploy on push (which
+#      would double-deploy). Until you do, Render's native autodeploy keeps
+#      working, so deploys never stop even if the secret is missing.
+#
+# The backend service id is public (not a secret); keep it in sync with
+# render.yaml / the Render dashboard if the service is ever recreated.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # manual redeploy of current main from the Actions tab
+
+concurrency:
+  group: render-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-backend:
+    name: Deploy backend to Render
+    runs-on: ubuntu-latest
+    # Skip when triggered by a failed/cancelled CI run. workflow_dispatch has an
+    # empty workflow_run object, so allow it through explicitly.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    env:
+      SERVICE_ID: srv-d9ivshvavr4c73biri6g # wwe-os-backend
+      COMMIT: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Require RENDER_API_KEY
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -z "${RENDER_API_KEY}" ]; then
+            echo "::error::RENDER_API_KEY secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+
+      - name: Trigger Render deploy
+        id: trigger
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -euo pipefail
+          # For workflow_dispatch there is no head_sha; let Render pick the tip of main.
+          if [ -n "${COMMIT}" ]; then
+            body="{\"commitId\":\"${COMMIT}\",\"clearCache\":\"do_not_clear\"}"
+          else
+            body="{\"clearCache\":\"do_not_clear\"}"
+          fi
+          resp=$(curl -fsS -X POST \
+            "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            -H "content-type: application/json" \
+            -d "${body}")
+          echo "$resp"
+          deploy_id=$(echo "$resp" | jq -r '.id')
+          if [ -z "$deploy_id" ] || [ "$deploy_id" = "null" ]; then
+            echo "::error::Render did not return a deploy id."
+            exit 1
+          fi
+          echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+          echo "Triggered Render deploy $deploy_id for commit ${COMMIT:-main}"
+
+      - name: Wait for deploy to go live
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          DEPLOY_ID: ${{ steps.trigger.outputs.deploy_id }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 80); do
+            sleep 15
+            status=$(curl -fsS \
+              "https://api.render.com/v1/services/${SERVICE_ID}/deploys/${DEPLOY_ID}" \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${RENDER_API_KEY}" | jq -r '.status')
+            echo "[$i] deploy status: $status"
+            case "$status" in
+              live)
+                echo "Deploy $DEPLOY_ID is live."
+                exit 0 ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "::error::Render deploy $DEPLOY_ID ended as '$status'."
+                exit 1 ;;
+            esac
+          done
+          echo "::error::Timed out waiting for Render deploy $DEPLOY_ID."
+          exit 1
