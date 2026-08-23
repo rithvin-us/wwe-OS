@@ -1,0 +1,22 @@
+# Normalize line endings. The repo standard is LF (see .editorconfig);
+# 67 files had drifted to CRLF because nothing enforced it. Git now stores
+# LF for every text file regardless of the platform that committed it.
+* text=auto eol=lf
+
+# Binary — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.sqlite3 binary
+*.xlsx binary
+*.zip binary
+
+# Generated — keep out of diffs.
+pnpm-lock.yaml -diff linguist-generated

@@ -1,28 +1,43 @@
+# Local gates. Every hook here pins its own tool so the result never depends
+# on which interpreter happens to be on PATH — the previous `language: system`
+# ruff hooks silently failed with "No module named ruff" whenever a venv was
+# active, which meant the Python gate was not actually running.
+minimum_pre_commit_version: "3.5.0"
+
 repos:
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2
     hooks:
       - id: ruff-check
-        name: ruff check
-        entry: python -m ruff check --force-exclude
-        language: system
-        types: [python]
-
+        args: [--fix]
       - id: ruff-format
-        name: ruff format
-        entry: python -m ruff format --check --force-exclude
-        language: system
-        types: [python]
 
-      - id: prettier-check
-        name: prettier check
-        entry: pnpm exec prettier --check
-        language: system
-        types_or: [ts, tsx, javascript, jsx, json, css, markdown]
-        exclude: ^pnpm-lock\.yaml$
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.5.10
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@2.5.10"]
 
-      - id: eslint
-        name: eslint
-        entry: pnpm exec eslint
-        language: system
-        types_or: [ts, tsx, javascript, jsx]
-        pass_filenames: true
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: end-of-file-fixer
+        exclude: ^(pnpm-lock\.yaml|.*\.svg)$
+      - id: trailing-whitespace
+        exclude: ^(pnpm-lock\.yaml|.*\.md)$
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+        exclude: ^\.vscode/|^.*\.jsonc$
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
