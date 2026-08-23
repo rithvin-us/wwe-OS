@@ -6,11 +6,14 @@ Supports Gemini, OpenAI, Anthropic, or Mock seamlessly based on configured setti
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 from typing import Any
 
+from ai.providers import AIImage
 from ai.services import AIService
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,93 @@ The JSON object must contain EXACTLY the following keys:
 """
 
 
+# Vision prompt. Kept separate from SYSTEM_PROMPT because reading pixels is a
+# different job from parsing an already-transcribed string, and the failure
+# modes worth naming (handwriting, faded thermal paper, stamps over digits)
+# only exist on the image path.
+VISION_SYSTEM_PROMPT = (
+    SYSTEM_PROMPT
+    + """
+YOU ARE READING THE DOCUMENT IMAGE DIRECTLY. Transcribe before you interpret.
+
+Reading rules:
+- Read EVERY region: header, body table, stamps, margin notes, and anything
+  handwritten. A handwritten amendment usually overrides the printed value —
+  a struck-through printed figure with a handwritten one beside it means the
+  handwritten figure is authoritative.
+- Indian invoice conventions apply. Digits may be grouped lakh/crore style
+  (1,23,456.78) — normalise to a plain number (123456.78). Read a trailing
+  "/-" as an end-of-amount marker, not a digit.
+- Distinguish carefully: 0/O, 1/7/I, 5/S, 6/8, 2/Z. Re-read the digits of any
+  total before committing. If an amount appears in both words and figures and
+  they disagree, trust the words.
+- A GSTIN is exactly 15 alphanumeric characters. If what you read is not 15
+  characters, re-read it rather than emitting a malformed value.
+- Treat arithmetic as a checksum, not a guess: line totals should sum toward
+  the grand total. If they do not reconcile, re-read the digits that break it.
+
+Honesty rules — these outrank completeness:
+- NEVER invent a value to fill a field. If something is illegible, cropped, or
+  absent, return "" for strings and 0 for numbers.
+- Set "confidence_score" to what you could actually read. Lower it for
+  handwriting, glare, blur, skew, or a cropped page. Do not report high
+  confidence on a document you struggled with.
+- List anything you could not resolve in "unreadable_fields".
+
+In addition to the keys above, also return:
+- "document_type": String. One of "printed", "handwritten", "mixed".
+- "unreadable_fields": Array of Strings. Field names you could not read.
+"""
+)
+
+
 class PurchaseOCRService:
+    def extract_from_image(
+        self,
+        image_bytes: bytes,
+        *,
+        mime_type: str = "image/jpeg",
+        tenant=None,
+        document_text: str = "",
+    ) -> dict[str, Any]:
+        """Extract structured purchase fields straight from a page image.
+
+        Preferred over `extract_from_text` whenever the original scan exists:
+        handing the model only an upstream OCR transcript throws away layout,
+        and layout is what disambiguates which number on a bill is the grand
+        total. A transcript, when present, is passed alongside the image as a
+        hint rather than a replacement, and the image wins on conflict.
+        """
+        ai_service = AIService()
+        parts = ["Extract structured purchase invoice data from this document image."]
+        if document_text.strip():
+            parts.append(
+                "A separate OCR pass produced the transcript below. Treat it as a hint "
+                "only - the image is authoritative wherever they disagree.\n\n"
+                f"{document_text.strip()}"
+            )
+        try:
+            result = ai_service.generate(
+                module="purchase",
+                use_case="purchase-ocr-vision",
+                system=VISION_SYSTEM_PROMPT,
+                user="\n\n".join(parts),
+                tenant=tenant,
+                model=settings.AI_OCR_MODEL,
+                max_tokens=settings.AI_OCR_MAX_TOKENS,
+                # Deterministic on purpose: transcription has exactly one right
+                # answer, and sampling variance on a digit is a wrong number in
+                # the ledger.
+                temperature=0.0,
+                images=[AIImage(data=base64.b64encode(image_bytes).decode(), mime_type=mime_type)],
+            )
+            return self._parse_json_result(result.text.strip())
+        except Exception as exc:
+            logger.warning("Purchase OCR vision call failed or unparseable: %s", exc)
+            if document_text.strip():
+                return self.extract_from_text(document_text, tenant=tenant)
+            return self._fallback_extraction()
+
     def extract_from_text(self, document_text: str, tenant=None) -> dict[str, Any]:
         """Call AI Gateway to extract structured purchase fields from text."""
         ai_service = AIService()

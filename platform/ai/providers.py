@@ -25,6 +25,20 @@ from shared.exceptions import ValidationError
 
 
 @dataclass(frozen=True)
+class AIImage:
+    """One image to send alongside the prompt.
+
+    `data` is standard base64 (no data: URI prefix). Providers that cannot
+    accept images reject the request rather than silently dropping it — a
+    dropped page would produce a confident answer about a document the model
+    never saw, which is worse than an error.
+    """
+
+    data: str
+    mime_type: str = "image/jpeg"
+
+
+@dataclass(frozen=True)
 class AIRequest:
     model: str
     user: str
@@ -32,6 +46,7 @@ class AIRequest:
     max_tokens: int = 1024
     temperature: float | None = None
     timeout: float = 30.0
+    images: tuple[AIImage, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,7 +97,16 @@ class GeminiProvider(AIProvider):
             sys_text = f"System directive: {request.system}"
             contents.append({"role": "user", "parts": [{"text": sys_text}]})
             contents.append({"role": "model", "parts": [{"text": "Understood."}]})
-        contents.append({"role": "user", "parts": [{"text": request.user}]})
+        user_parts: list[dict] = [{"text": request.user}]
+        # Gemini takes images as inline_data parts on the user turn. Order
+        # matters for OCR: the image goes first so the instruction that
+        # follows is read as being about it.
+        for image in request.images:
+            user_parts.insert(
+                -1,
+                {"inline_data": {"mime_type": image.mime_type, "data": image.data}},
+            )
+        contents.append({"role": "user", "parts": user_parts})
 
         payload: dict = {
             "contents": contents,
@@ -137,10 +161,28 @@ class AnthropicProvider(AIProvider):
     def complete(self, request: AIRequest) -> AIResponse:
         if not self.configured:
             raise ProviderError("ANTHROPIC_API_KEY is not configured.", retryable=False)
+        # Anthropic takes images as content blocks. Image first, then the
+        # instruction — same ordering rationale as the Gemini provider.
+        if request.images:
+            content: list[dict] | str = [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image.mime_type,
+                        "data": image.data,
+                    },
+                }
+                for image in request.images
+            ]
+            content.append({"type": "text", "text": request.user})
+        else:
+            content = request.user
+
         payload: dict = {
             "model": request.model,
             "max_tokens": request.max_tokens,
-            "messages": [{"role": "user", "content": request.user}],
+            "messages": [{"role": "user", "content": content}],
         }
         if request.system:
             payload["system"] = request.system

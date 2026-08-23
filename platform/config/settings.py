@@ -515,6 +515,18 @@ ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "") or ""
 _default_ai_model = "gemini-flash-latest" if GEMINI_API_KEY else "mock"
 AI_DEFAULT_MODEL = env_str("AI_DEFAULT_MODEL", _default_ai_model)
 AI_FALLBACK_MODEL = env_str("AI_FALLBACK_MODEL", "") or ""
+# Document/bill OCR is held to a different standard than chat: it reads
+# handwriting, faded thermal receipts and stamped invoices, and a misread digit
+# becomes a wrong number in the ledger. The Pro tier is materially better at
+# this than Flash, so OCR routes there by default even though it costs more.
+# "-latest" is deliberate — pinned versions get retired and start 404ing.
+_default_ocr_model = "gemini-pro-latest" if GEMINI_API_KEY else "mock"
+AI_OCR_MODEL = env_str("AI_OCR_MODEL", _default_ocr_model)
+AI_OCR_FALLBACK_MODEL = env_str("AI_OCR_FALLBACK_MODEL", "gemini-flash-latest")
+# OCR answers are long structured JSON over many line items; the chat default
+# truncates multi-page bills mid-object.
+AI_OCR_MAX_TOKENS = env_int("AI_OCR_MAX_TOKENS", 16384)
+AI_OCR_TIMEOUT_SECONDS = env_int("AI_OCR_TIMEOUT_SECONDS", 180)
 AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 30)
 AI_MAX_RETRIES = env_int("AI_MAX_RETRIES", 2)
 # Per-tenant calls per clock hour; 0 disables the limit.

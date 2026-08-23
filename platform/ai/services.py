@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -22,7 +23,7 @@ from shared.services import BaseService
 
 from ai import prompts
 from ai.models import AIUsage
-from ai.providers import AIRequest, AIResponse, ProviderError, cost_usd, resolve
+from ai.providers import AIImage, AIRequest, AIResponse, ProviderError, cost_usd, resolve
 
 CACHE_PREFIX = "ai:response:"
 RATE_PREFIX = "ai:rate:"
@@ -53,6 +54,7 @@ class AIService(BaseService):
         max_tokens: int = 1024,
         temperature: float | None = None,
         cache_ttl: int = 0,
+        images: Sequence[AIImage] = (),
     ) -> AIResult:
         tenant = tenant or context.current_tenant()
         if tenant is None:
@@ -73,8 +75,17 @@ class AIService(BaseService):
 
         cache_key = ""
         if cache_ttl > 0:
-            digest = hashlib.sha256(f"{model}\x00{system}\x00{user}".encode()).hexdigest()
-            cache_key = f"{CACHE_PREFIX}{digest}"
+            # Images are part of the identity of the request. Without them in
+            # the key, two different scanned bills sent with the same prompt
+            # text would collide and the second would be answered with the
+            # first one's extraction.
+            hasher = hashlib.sha256(f"{model}\x00{system}\x00{user}".encode())
+            for image in images:
+                hasher.update(b"\x00")
+                hasher.update(image.mime_type.encode())
+                hasher.update(b"\x00")
+                hasher.update(image.data.encode())
+            cache_key = f"{CACHE_PREFIX}{hasher.hexdigest()}"
             cached_text = cache.get(cache_key)
             if cached_text is not None:
                 usage = self._record(
@@ -98,6 +109,7 @@ class AIService(BaseService):
             max_tokens=max_tokens,
             temperature=temperature,
             timeout=settings.AI_TIMEOUT_SECONDS,
+            images=tuple(images),
         )
         try:
             response = self._complete_with_retry(provider, request)
@@ -127,6 +139,10 @@ class AIService(BaseService):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 cache_ttl=cache_ttl,
+                # Must carry the images across. Falling back without them
+                # would hand the fallback model the instruction but not the
+                # document, and it would answer confidently about nothing.
+                images=images,
             )
 
         if cache_key:

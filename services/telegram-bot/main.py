@@ -23,7 +23,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-OCR_MODEL = os.getenv("OCR_MODEL", "gemini-flash-latest")
+# Bill OCR reads handwriting, faded thermal paper and stamped invoices, and a
+# misread digit lands in the ledger. The Pro tier is materially better at this
+# than Flash, so it is the default despite costing more. "-latest" is
+# deliberate: pinned versions get retired and start 404ing (see c9f71cb).
+OCR_MODEL = os.getenv("OCR_MODEL", "gemini-pro-latest")
+# A Pro-tier vision pass over a dense multi-page bill routinely exceeds the
+# 30s that was hardcoded here, which surfaced as a silent extraction failure.
+OCR_TIMEOUT_SECONDS = float(os.getenv("OCR_TIMEOUT_SECONDS", "180"))
 PLATFORM_API_URL = os.getenv("PLATFORM_API_URL", "http://localhost:8000")
 PLATFORM_SERVICE_TOKEN = os.getenv("PLATFORM_SERVICE_TOKEN")
 
@@ -236,11 +243,15 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             },
         ]
 
+    # Ordered strongest-first, then degrading. The old chain listed
+    # gemini-1.5-* and gemini-2.0-flash, which are far weaker at handwriting
+    # than anything current; a fallback that quietly misreads a bill is worse
+    # than one more retry against a good model.
     models_to_try = [
         OCR_MODEL,
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
+        "gemini-pro-latest",
+        "gemini-3.1-pro-preview",
+        "gemini-2.5-pro",
         "gemini-flash-latest",
     ]
     deduped_models: list[str] = []
@@ -249,7 +260,7 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
             deduped_models.append(m)
 
     response = None
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=OCR_TIMEOUT_SECONDS) as client:
         for idx, m in enumerate(deduped_models):
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             payload = {
