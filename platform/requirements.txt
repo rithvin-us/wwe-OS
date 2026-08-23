@@ -14,7 +14,7 @@ gunicorn>=23.0
 # Platform services
 httpx>=0.28          # AI gateway provider calls
 openpyxl>=3.1        # reporting: Excel renderer
-reportlab>=4.2       # reporting: PDF renderer
+reportlab>=5.0.0       # reporting: PDF renderer
 pypdf>=5.0           # auditor: merges PDFs into one package
 # storage/providers.py imports boto3 lazily, but production (and any dev env
 # pointed at real S3/R2 storage) sets STORAGE_BACKEND=s3, so it's not truly
