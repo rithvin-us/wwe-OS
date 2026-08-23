@@ -91,22 +91,24 @@ export function EmailIngestionCard() {
   const handleTestIngest = async () => {
     setTesting(true);
     try {
-      // Simulate sending an incoming email with an attached PDF document
+      // Drives the REAL ingest webhook end to end. Every field is labelled
+      // as a connection test so the resulting document can never be mistaken
+      // for a genuine contract sitting in the document store.
       const samplePdfBase64 =
         "JVBERi0xLjQKJcOkw7zDtsOfCjEgMCBvYmoKPDwvTGVuZ3RoIDQ2Pj5zdHJlYW0KQlQKL0YxIDEyIFRmCjcwIDczMCBUZCAoV1dFIE9TIFRlc3QgRG9jdW1lbnQgQXR0YWNobWVudCkgVGoKRUQKZW5kc3RyZWFtCmVuZG9iaiB0cmFpbGVyCjw8L1Jvb3QgMSAwIFI+PgolJUVPRgo=";
 
-      const testSender = settings.allowedSenders[0] || "clients@cognizant.com";
+      const testSender = settings.allowedSenders[0] || "connection-test@wwe-os.local";
 
       const res = await fetch("/api/ingest/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sender: testSender,
-          subject: "PO Contract & Specification Document 2026",
-          body: "Please find attached the official purchase order contract document.",
+          subject: "WWE OS ingestion connection test",
+          body: "Automated connection test sent from Settings. Safe to delete.",
           attachments: [
             {
-              filename: "Cognizant_PO_Contract_2026.pdf",
+              filename: "WWE-OS-connection-test.pdf",
               content_type: "application/pdf",
               content_b64: samplePdfBase64,
             },

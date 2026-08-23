@@ -77,6 +77,7 @@ export default async function ReportsPage() {
       {/* Report Frequency Chart */}
       <ChartCard
         title="Report Generation Frequency"
+        empty={usageData.length === 0}
         description="Most requested company workbooks"
         badge="Usage Analytics"
         iconName="trending-up"

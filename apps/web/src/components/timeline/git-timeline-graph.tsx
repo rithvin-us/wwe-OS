@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { GitCommit, GitBranch, Play, Pause, Zap, Search, User } from "@bop/icons";
+import { GitCommit, GitBranch, Play, Pause, Search, User } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
 import { describeEntry, timelineHref, type TimelineEntry } from "@/lib/audit-helpers";
@@ -107,7 +107,6 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLive, setIsLive] = useState(true);
   const [pollIntervalSec, setPollIntervalSec] = useState(5);
-  const [simulating, setSimulating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedModuleFilter, setSelectedModuleFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"graph" | "compact">("graph");
@@ -152,31 +151,6 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
     const timer = setInterval(fetchLatest, pollIntervalSec * 1000);
     return () => clearInterval(timer);
   }, [isLive, pollIntervalSec, selectedModuleFilter]);
-
-  const handleSimulateEvent = async () => {
-    setSimulating(true);
-    try {
-      const res = await fetch("/api/timeline", { method: "POST" });
-      const json = await res.json();
-      if (json.success && json.data) {
-        const event: TimelineEntry = json.data;
-        setEntries((prev) => [event, ...prev]);
-        setNewlyAddedIds((prev) => new Set(prev).add(event.id));
-
-        setTimeout(() => {
-          setNewlyAddedIds((prev) => {
-            const updated = new Set(prev);
-            updated.delete(event.id);
-            return updated;
-          });
-        }, 5000);
-      }
-    } catch {
-      // ignore errors
-    } finally {
-      setSimulating(false);
-    }
-  };
 
   const filteredEntries = entries.filter((entry) => {
     if (selectedModuleFilter !== "all" && entry.module !== selectedModuleFilter) return false;
@@ -244,16 +218,6 @@ export function GitTimelineGraph({ initialEntries }: GitTimelineGraphProps) {
 
         {/* Right: Actions & View Switcher */}
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleSimulateEvent}
-            disabled={simulating}
-            className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-sky-600 text-xs text-white shadow-xs hover:from-blue-500 hover:to-sky-500"
-          >
-            <Zap className={`h-3.5 w-3.5 ${simulating ? "animate-spin" : ""}`} />
-            Simulate Live Event
-          </Button>
-
           <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
             <button
               onClick={() => setViewMode("graph")}

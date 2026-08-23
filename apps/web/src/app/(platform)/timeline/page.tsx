@@ -48,6 +48,7 @@ export default async function TimelinePage({
       {/* Activity Volume Chart */}
       <ChartCard
         title="Activity Volume by Module"
+        empty={mockData.other.MOCK_TIMELINE_ACTIVITY.length === 0}
         description="Recorded platform events across operations"
         badge="Platform Events"
         iconName="history"

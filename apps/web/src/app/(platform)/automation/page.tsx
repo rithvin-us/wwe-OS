@@ -55,6 +55,7 @@ export default async function AutomationPage() {
       {/* Rule Execution Health Chart */}
       <ChartCard
         title="Automation Execution Health"
+        empty={automationRuns.length === 0}
         description="Scheduled rule triggers and collection runs"
         badge="Weekly Execution"
         iconName="zap"
