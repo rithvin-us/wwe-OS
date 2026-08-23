@@ -2,7 +2,7 @@
 python-dotenv>=1.0    # loads repo-root .env for local (non-Docker) runs
 Django>=6.1,<6.2
 djangorestframework>=3.18.0
-djangorestframework-simplejwt>=5.5
+djangorestframework-simplejwt>=5.5.1
 drf-spectacular>=0.30
 django-cors-headers>=4.9
 django-filter>=26
