@@ -7,6 +7,7 @@ import {
   Newspaper,
   Settings,
   Sparkles,
+  Wrench,
   type LucideIcon,
 } from "@bop/icons";
 
@@ -88,7 +89,7 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
       { name: "Backups", href: "/backups", icon: DatabaseBackup, subtle: true },
-      { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
+      { name: "Maintenance", href: "/maintenance", icon: Wrench, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
     ],
   },

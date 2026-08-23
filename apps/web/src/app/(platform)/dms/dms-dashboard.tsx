@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CheckCircle2, FileText, HardDrive, PieChart, Sparkles } from "@bop/icons";
+import { Archive, CheckCircle2, Folder, HardDrive, PieChart, Sparkles } from "@bop/icons";
 
 import { ChartCard, DonutChartComponent } from "@/components/charts";
 import { formatFileSize, type DocumentRecord } from "@/lib/dms-constants";
@@ -22,7 +22,7 @@ export function DMSStatTiles({ documents }: { documents: DocumentRecord[] }) {
           <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
             Total Documents
           </span>
-          <FileText className="h-4 w-4 text-primary" />
+          <Folder className="h-4 w-4 text-primary" />
         </div>
         <div className="flex items-baseline justify-between">
           <span className="font-display text-2xl font-semibold tracking-tight tabular-nums text-foreground">

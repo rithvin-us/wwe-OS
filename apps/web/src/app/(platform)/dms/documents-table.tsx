@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Eye, FileText, Search, Sparkles } from "@bop/icons";
+import { Download, Eye, FileText, Folder, Search, Sparkles } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
@@ -285,7 +285,7 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
         data={rows}
         getRowId={(document) => document.id}
         empty={{
-          icon: FileText,
+          icon: Folder,
           title: documents.length === 0 ? "No documents yet" : "Nothing in this view",
           description:
             documents.length === 0

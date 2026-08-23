@@ -1,6 +1,7 @@
 import {
   FileSearch,
   FileText,
+  Folder,
   History,
   Landmark,
   ShoppingCart,
@@ -58,7 +59,7 @@ export const APPS: PlatformApp[] = [
   {
     slug: "dms",
     name: "Documents",
-    icon: FileText,
+    icon: Folder,
     tagline: "Outside incoming files, contracts, and email attachments.",
     availability: "ready",
   },
