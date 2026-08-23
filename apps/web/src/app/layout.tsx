@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 import { Providers } from "@/components/providers";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,6 +34,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  // Tints the browser/OS chrome around an installed window. Resolved sRGB of
+  // the --primary and --background tokens; see app/manifest.ts.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7fdff" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d10" },
+  ],
 };
 
 export default function RootLayout({
@@ -47,6 +54,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
