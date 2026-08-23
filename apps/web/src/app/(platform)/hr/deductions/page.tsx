@@ -79,7 +79,7 @@ export default async function DeductionsPage({
             </span>
             <span>
               Total Deducted:{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+              <strong className="text-blue-600 dark:text-blue-400 font-mono text-sm">
                 ₹{totalDeductions.toLocaleString("en-IN")}
               </strong>
             </span>

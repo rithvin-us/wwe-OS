@@ -65,7 +65,7 @@ export function AddDeductionDialog({ employees, year, month }: AddDeductionDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
           <PlusCircle className="size-3.5" />
           Record Deduction
         </Button>
@@ -162,7 +162,7 @@ export function AddDeductionDialog({ employees, year, month }: AddDeductionDialo
             <Button
               type="submit"
               disabled={loading || employees.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? "Saving..." : "Record Deduction"}
             </Button>

@@ -57,7 +57,7 @@ export function PushNotificationsCard() {
     <Card>
       <CardHeader className="border-b border-border/40 pb-4">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Bell className="h-4 w-4 text-emerald-400" />
+          <Bell className="h-4 w-4 text-blue-400" />
           Push Notifications
         </CardTitle>
         <CardDescription>

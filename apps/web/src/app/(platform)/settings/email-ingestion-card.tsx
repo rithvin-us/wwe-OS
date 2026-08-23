@@ -128,10 +128,10 @@ export function EmailIngestionCard() {
   };
 
   return (
-    <Card className="border border-emerald-500/20 shadow-sm">
+    <Card className="border border-blue-500/20 shadow-sm">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <Mail className="size-5 text-emerald-500" />
+          <Mail className="size-5 text-blue-500" />
           Email Ingestion & VIP Sender Rules
         </CardTitle>
         <CardDescription>
@@ -156,7 +156,7 @@ export function EmailIngestionCard() {
             type="button"
             onClick={() => saveSettings({ ...settings, enabled: !settings.enabled })}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-(--duration-base) ease-in-out focus:outline-none ${
-              settings.enabled ? "bg-emerald-500" : "bg-muted-foreground/30"
+              settings.enabled ? "bg-blue-500" : "bg-muted-foreground/30"
             }`}
           >
             <span
@@ -192,7 +192,7 @@ export function EmailIngestionCard() {
             {settings.allowedSenders.map((sender) => (
               <span
                 key={sender}
-                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400"
+                className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-mono font-medium text-blue-600 dark:text-blue-400"
               >
                 <span>{sender}</span>
                 <button
@@ -232,7 +232,7 @@ export function EmailIngestionCard() {
               className="gap-1 text-xs shrink-0"
             >
               {copied ? (
-                <CheckCircle2 className="size-3.5 text-emerald-500" />
+                <CheckCircle2 className="size-3.5 text-blue-500" />
               ) : (
                 <Copy className="size-3.5" />
               )}
@@ -244,7 +244,7 @@ export function EmailIngestionCard() {
         {/* Action: Test Webhook Button */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ShieldAlert className="size-4 text-emerald-500" />
+            <ShieldAlert className="size-4 text-blue-500" />
             <span>Webhook Status: Active & Secured</span>
           </div>
 
@@ -252,7 +252,7 @@ export function EmailIngestionCard() {
             size="sm"
             onClick={handleTestIngest}
             disabled={testing || !settings.enabled}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs"
           >
             <Send className="size-3.5" />
             {testing ? "Testing Ingestion…" : "Test Ingest Sample Attachment"}

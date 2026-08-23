@@ -103,7 +103,7 @@ export function FaceKioskDialog() {
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer shadow-sm"
+          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium cursor-pointer shadow-sm"
         >
           <Camera className="size-4" />
           Face AI Kiosk Check-In
@@ -112,7 +112,7 @@ export function FaceKioskDialog() {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ScanFace className="size-5 text-emerald-600 dark:text-emerald-400" />
+            <ScanFace className="size-5 text-blue-600 dark:text-blue-400" />
             AI Face Recognition Kiosk
           </DialogTitle>
           <DialogDescription>
@@ -124,9 +124,9 @@ export function FaceKioskDialog() {
         <div className="space-y-4 py-2">
           {/* Result Banner */}
           {result?.recognized && result.decision === "auto_approved" ? (
-            <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 space-y-1 animate-in fade-in zoom-in-95">
+            <div className="p-4 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 space-y-1 animate-in fade-in zoom-in-95">
               <div className="flex items-center gap-2 font-semibold text-base">
-                <CheckCircle2 className="size-5 text-emerald-500" />
+                <CheckCircle2 className="size-5 text-blue-500" />
                 Attendance Marked — {result.direction?.toUpperCase() || "PUNCH"}
               </div>
               <p className="text-sm font-medium">
@@ -153,7 +153,7 @@ export function FaceKioskDialog() {
               autoPlay
               playsInline
               muted
-              className={`w-full h-64 object-cover rounded-lg border border-emerald-500/40 ${cameraActive ? "block" : "hidden"}`}
+              className={`w-full h-64 object-cover rounded-lg border border-blue-500/40 ${cameraActive ? "block" : "hidden"}`}
               style={{ transform: "none" }}
             />
 
@@ -168,7 +168,7 @@ export function FaceKioskDialog() {
             ) : null}
 
             {scanning ? (
-              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-emerald-400 space-y-2">
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-blue-400 space-y-2">
                 <ScanFace className="size-10 animate-bounce" />
                 <span className="text-xs font-semibold">Matching Face Biometrics...</span>
               </div>
@@ -184,7 +184,7 @@ export function FaceKioskDialog() {
               size="sm"
               onClick={() => captureAndPunch()}
               disabled={scanning || !cameraActive}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 cursor-pointer"
             >
               <Camera className="size-4" />
               {scanning ? "Scanning..." : "Scan & Punch"}

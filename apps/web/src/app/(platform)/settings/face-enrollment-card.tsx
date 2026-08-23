@@ -166,10 +166,10 @@ export function FaceEnrollmentCard() {
                   {status.credentials.map((cred, idx) => (
                     <div
                       key={cred.id || idx}
-                      className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs"
+                      className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 text-xs"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <UserCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <UserCheck className="size-4 shrink-0 text-blue-600 dark:text-blue-400" />
                         <div className="truncate">
                           <p className="font-semibold text-foreground truncate">
                             {cred.label || `Face Profile #${idx + 1}`}

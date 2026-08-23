@@ -26,7 +26,7 @@ export default function CheckInKioskPage() {
       />
 
       <div className="rounded-xl border border-border bg-card p-8 text-center space-y-6 shadow-sm">
-        <div className="size-20 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+        <div className="size-20 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto border border-blue-500/30">
           <ScanFace className="size-10" />
         </div>
 

@@ -22,11 +22,21 @@ jobs:
       matrix:
         language: ["javascript-typescript", "python"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@v5
+
+      # NOTE: the input is `languages` (plural). Passing `language` is silently
+      # ignored, which makes CodeQL fall back to auto-detection — that picked up
+      # the Capacitor Android Java/Kotlin sources and failed the run with
+      # "CodeQL could not process any code written in Java/Kotlin".
+      #
+      # build-mode: none is correct for both of these: neither needs a compile
+      # step, and it stops CodeQL trying to infer one.
+      - uses: github/codeql-action/init@v4
         with:
-          language: ${{ matrix.language }}
+          languages: ${{ matrix.language }}
+          build-mode: none
           queries: security-and-quality
-      - uses: github/codeql-action/analyze@v3
+
+      - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"

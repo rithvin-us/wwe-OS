@@ -76,7 +76,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
               </Avatar>
               {employee.enrolled_at ? (
                 <div
-                  className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white shadow-md ring-2 ring-background"
+                  className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-1 text-white shadow-md ring-2 ring-background"
                   title="AI Face Biometrics Enrolled"
                 >
                   <CheckCircle2 className="size-4" />
@@ -169,7 +169,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <ScanFace className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <ScanFace className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <h2 className="text-sm font-semibold">AI Face Recognition & Photo Check-in</h2>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">

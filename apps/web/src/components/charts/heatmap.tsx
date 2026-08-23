@@ -15,10 +15,10 @@ export interface HeatmapProps {
 
 const INTENSITY_COLORS = [
   "bg-muted/40 border-border/40",
-  "bg-emerald-500/20 border-emerald-500/30 text-emerald-800 dark:text-emerald-300",
-  "bg-emerald-500/40 border-emerald-500/50 text-emerald-900 dark:text-emerald-200",
-  "bg-emerald-500/70 border-emerald-500/80 text-white",
-  "bg-emerald-600 border-emerald-700 text-white font-bold",
+  "bg-blue-500/20 border-blue-500/30 text-blue-800 dark:text-blue-300",
+  "bg-blue-500/40 border-blue-500/50 text-blue-900 dark:text-blue-200",
+  "bg-blue-500/70 border-blue-500/80 text-white",
+  "bg-blue-600 border-blue-700 text-white font-bold",
 ];
 
 export function HeatmapComponent({ data, columns = 7 }: HeatmapProps) {

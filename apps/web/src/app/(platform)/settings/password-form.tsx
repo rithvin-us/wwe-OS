@@ -129,15 +129,13 @@ export function PasswordForm() {
       {/* Password Strength Checks */}
       {newPassword ? (
         <div className="flex flex-wrap gap-3 text-[11px] font-mono p-3 rounded-lg border border-border/40 bg-muted/20">
-          <span
-            className={hasMinLength ? "text-emerald-400 font-semibold" : "text-muted-foreground"}
-          >
+          <span className={hasMinLength ? "text-blue-400 font-semibold" : "text-muted-foreground"}>
             {hasMinLength ? "✓ 8+ Characters" : "○ 8+ Characters"}
           </span>
-          <span className={hasNumber ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>
+          <span className={hasNumber ? "text-blue-400 font-semibold" : "text-muted-foreground"}>
             {hasNumber ? "✓ Number Included" : "○ Number Included"}
           </span>
-          <span className={hasSpecial ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>
+          <span className={hasSpecial ? "text-blue-400 font-semibold" : "text-muted-foreground"}>
             {hasSpecial ? "✓ Special Symbol" : "○ Special Symbol"}
           </span>
         </div>
@@ -153,7 +151,7 @@ export function PasswordForm() {
         <Button
           type="submit"
           disabled={pending}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs"
+          className="gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs"
         >
           <Save className="h-3.5 w-3.5" />
           {pending ? "Updating..." : "Update Account Password"}

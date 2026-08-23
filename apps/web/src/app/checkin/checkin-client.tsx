@@ -42,7 +42,7 @@ function StatusChip({
   children: React.ReactNode;
 }) {
   const toneClasses = {
-    success: "bg-emerald-500/10 text-emerald-700 ring-emerald-600/30",
+    success: "bg-blue-500/10 text-blue-700 ring-blue-600/30",
     warning: "bg-amber-500/10 text-amber-700 ring-amber-600/30",
     error: "bg-rose-500/10 text-rose-700 ring-rose-600/30",
   }[tone];
@@ -161,8 +161,8 @@ export function PublicMobileCheckIn() {
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             {result?.decision === "auto_approved" ? (
               <div className="p-6 text-center space-y-4">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10">
-                  <CheckCircle2 className="size-8 text-emerald-600" />
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-blue-500/10">
+                  <CheckCircle2 className="size-8 text-blue-600" />
                 </div>
                 <div className="space-y-1">
                   <StatusChip tone="success">
@@ -247,7 +247,7 @@ export function PublicMobileCheckIn() {
 
               {scanning ? (
                 <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
-                  <RefreshCw className="size-8 animate-spin text-emerald-400" />
+                  <RefreshCw className="size-8 animate-spin text-blue-400" />
                   <span className="text-sm font-semibold tracking-wide">
                     Hold still, checking in...
                   </span>

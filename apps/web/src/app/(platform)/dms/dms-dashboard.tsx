@@ -40,13 +40,13 @@ export function DMSStatTiles({ documents }: { documents: DocumentRecord[] }) {
           <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
             Active Files
           </span>
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <CheckCircle2 className="h-4 w-4 text-blue-500" />
         </div>
         <div className="flex items-baseline justify-between">
           <span className="font-display text-2xl font-semibold tracking-tight tabular-nums text-foreground">
             {active}
           </span>
-          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
             {total > 0 ? Math.round((active / total) * 100) : 0}% active
           </span>
         </div>
