@@ -9,6 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.12"
+
 jobs:
   lint-frontend:
     name: Lint (frontend)
@@ -18,11 +22,49 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm format:check
-      - run: pnpm lint
+      # Biome replaces the old prettier + root eslint pair (format + lint in one).
+      - name: Biome (format + lint)
+        run: pnpm exec biome ci .
+      # eslint-config-next is kept for the Next.js/React rules Biome does not
+      # cover (no-img-element, no-html-link-for-pages, react-hooks/*).
+      - name: Next.js lint
+        run: pnpm --filter web lint
+
+  build-frontend:
+    name: Build (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      # A broken frontend build used to reach main undetected — this is the gate.
+      - run: pnpm --filter web build
+
+  typecheck-frontend:
+    name: Typecheck (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit -p apps/web/tsconfig.json
 
   lint-python:
     name: Lint (python)
@@ -50,11 +92,48 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: |
             platform/requirements.txt
             platform/requirements-dev.txt
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: python manage.py check
+      - run: python manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          APP_ENV: production
+          ALLOWED_HOSTS: example.com
+        continue-on-error: true
       - run: pytest
+
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: JS dependency audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Python dependency audit
+        run: |
+          pip install pip-audit
+          pip-audit -r platform/requirements.txt --ignore-vuln GHSA-none || true
+        continue-on-error: true
