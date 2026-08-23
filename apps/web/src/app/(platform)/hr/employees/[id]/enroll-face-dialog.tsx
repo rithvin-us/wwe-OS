@@ -200,7 +200,7 @@ export function EnrollFaceDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ScanFace className="size-5 text-emerald-600" />
+            <ScanFace className="size-5 text-blue-600" />
             Enroll Face Biometrics — {employeeName}
           </DialogTitle>
           <DialogDescription>
@@ -221,7 +221,7 @@ export function EnrollFaceDialog({
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
-                  className="rounded-full cursor-grab active:cursor-grabbing border-2 border-emerald-500 shadow-lg"
+                  className="rounded-full cursor-grab active:cursor-grabbing border-2 border-blue-500 shadow-lg"
                 />
 
                 {/* Overlay Instruction */}
@@ -250,7 +250,7 @@ export function EnrollFaceDialog({
                   step="0.05"
                   value={zoom}
                   onChange={(e) => setZoom(parseFloat(e.target.value))}
-                  className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-muted rounded-lg"
+                  className="w-full accent-blue-600 cursor-pointer h-1.5 bg-muted rounded-lg"
                 />
               </div>
 
@@ -268,7 +268,7 @@ export function EnrollFaceDialog({
                   >
                     <RefreshCw className="size-3" /> Reset View
                   </Button>
-                  <label className="text-xs text-emerald-600 hover:underline cursor-pointer font-medium">
+                  <label className="text-xs text-blue-600 hover:underline cursor-pointer font-medium">
                     Change Photo
                     <input
                       type="file"
@@ -318,7 +318,7 @@ export function EnrollFaceDialog({
                 size="sm"
                 onClick={handleUpload}
                 disabled={loading || !imageObj}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
               >
                 {loading ? "Processing AI Embedding..." : "Enroll Face Photo"}
               </Button>

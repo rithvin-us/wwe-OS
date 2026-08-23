@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                 {/* Step 1 */}
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/30">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[10px] font-bold border border-blue-500/30">
                       1
                     </span>
                     <span className="w-px flex-1 bg-border my-1" />
@@ -186,7 +186,7 @@ export default async function DashboardPage() {
                       href="/hr/attendance"
                       className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-muted text-[11px] font-medium hover:bg-accent transition-colors"
                     >
-                      <span className="size-1.5 rounded-full bg-emerald-500" /> Open grid
+                      <span className="size-1.5 rounded-full bg-blue-500" /> Open grid
                     </a>
                   </div>
                 </div>

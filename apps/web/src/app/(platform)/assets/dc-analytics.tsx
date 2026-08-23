@@ -51,13 +51,13 @@ export function DCAnalytics({
             <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
               Returnable
             </span>
-            <RotateCcw className="h-4 w-4 text-emerald-500" />
+            <RotateCcw className="h-4 w-4 text-blue-500" />
           </div>
           <div className="flex items-baseline justify-between">
             <span className="font-display text-2xl font-semibold tracking-tight tabular-nums text-foreground">
               {returnable}
             </span>
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
               {returnablePct}%
             </span>
           </div>
@@ -104,8 +104,8 @@ export function DCAnalytics({
           <div className="flex items-center justify-between text-xs font-medium">
             <span className="text-muted-foreground">Type Breakdown</span>
             <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                <span className="h-2 w-2 rounded-full bg-blue-500" />
                 Returnable ({returnable})
               </span>
               <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
@@ -116,7 +116,7 @@ export function DCAnalytics({
           </div>
           <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary">
             <div
-              className="bg-emerald-500 transition-[width] duration-(--duration-slow) ease-out-quart"
+              className="bg-blue-500 transition-[width] duration-(--duration-slow) ease-out-quart"
               style={{ width: `${returnablePct}%` }}
             />
             <div

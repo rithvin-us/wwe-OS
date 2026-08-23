@@ -42,7 +42,7 @@ export function ProgressKpi({
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" role="presentation">
         <div
-          className="h-full rounded-full bg-emerald-500 transition-[width] duration-(--duration-slow) ease-out-quart"
+          className="h-full rounded-full bg-blue-500 transition-[width] duration-(--duration-slow) ease-out-quart"
           style={{ width: `${known ? clamped : 0}%` }}
         />
       </div>

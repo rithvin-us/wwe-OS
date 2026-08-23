@@ -51,12 +51,10 @@ export function PurchasesViewToggle({
           </button>
         </div>
 
-        {activeTab === "bills" && (
-          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live Sync Active
-          </div>
-        )}
+        {/* A "Live Sync Active" pill used to render here unconditionally. It
+            was decorative — nothing measured a sync, so it claimed liveness
+            whether or not ingestion was running. Removed rather than faked;
+            if a real sync signal lands, surface that instead. */}
       </div>
 
       {/* Tab 1: Purchase Bills */}

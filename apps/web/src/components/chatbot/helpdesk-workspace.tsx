@@ -195,7 +195,7 @@ export function HelpdeskWorkspace() {
           onClick={() => setActiveTab("sandbox")}
           className="gap-2 text-xs"
         >
-          <Sparkles className="size-3.5 text-emerald-500" />
+          <Sparkles className="size-3.5 text-blue-500" />
           <span>Live Test Sandbox</span>
         </Button>
       </div>
@@ -222,9 +222,9 @@ export function HelpdeskWorkspace() {
                   key={preset.id}
                   onClick={() => setSelectedSeason(preset.id)}
                   className={cn(
-                    "cursor-pointer rounded-2xl border p-5 transition duration-(--duration-base) ease-out-quart hover:border-emerald-500/60",
+                    "cursor-pointer rounded-2xl border p-5 transition duration-(--duration-base) ease-out-quart hover:border-blue-500/60",
                     isSelected
-                      ? "border-emerald-500 bg-emerald-500/5 ring-2 ring-emerald-500/30 dark:bg-emerald-500/10"
+                      ? "border-blue-500 bg-blue-500/5 ring-2 ring-blue-500/30 dark:bg-blue-500/10"
                       : "border-border bg-card hover:bg-muted/40",
                   )}
                 >
@@ -233,9 +233,7 @@ export function HelpdeskWorkspace() {
                       <div
                         className={cn(
                           "flex size-10 items-center justify-center rounded-xl font-bold shrink-0",
-                          isSelected
-                            ? "bg-emerald-600 text-white"
-                            : "bg-muted text-muted-foreground",
+                          isSelected ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground",
                         )}
                       >
                         <IconComp className="size-5" />
@@ -244,7 +242,7 @@ export function HelpdeskWorkspace() {
                         <h4 className="font-display text-sm font-bold text-foreground">
                           {preset.name}
                         </h4>
-                        <span className="font-mono text-[9px] uppercase font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="font-mono text-[9px] uppercase font-semibold text-blue-600 dark:text-blue-400">
                           {preset.badge}
                         </span>
                       </div>
@@ -271,7 +269,7 @@ export function HelpdeskWorkspace() {
             <Button
               size="sm"
               onClick={handleSaveSettings}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Save className="size-4" />
               <span>Apply Seasonal Mode</span>
@@ -296,7 +294,7 @@ export function HelpdeskWorkspace() {
           <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-foreground flex items-center gap-2">
-                <FileCode className="size-4 text-emerald-600" />
+                <FileCode className="size-4 text-blue-600" />
                 <span>Global Persona & Custom System Prompt</span>
               </label>
               <span className="font-mono text-[10px] text-muted-foreground">
@@ -308,14 +306,14 @@ export function HelpdeskWorkspace() {
               value={systemRules}
               onChange={(e) => setSystemRules(e.target.value)}
               rows={8}
-              className="w-full rounded-xl border border-border bg-background p-4 font-mono text-xs text-foreground focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              className="w-full rounded-xl border border-border bg-background p-4 font-mono text-xs text-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               placeholder="Enter system prompt instructions..."
             />
 
             <div className="grid gap-3 md:grid-cols-2 pt-2">
               <div className="rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
                 <p className="font-semibold text-foreground">Current Seasonal Override</p>
-                <p className="mt-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                <p className="mt-1 font-mono text-[11px] text-blue-600 dark:text-blue-400 font-bold">
                   Mode: {currentSeason.name}
                 </p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -338,7 +336,7 @@ export function HelpdeskWorkspace() {
               <Button
                 size="sm"
                 onClick={handleSaveSettings}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Save className="size-4" />
                 <span>Save Rules</span>
@@ -365,7 +363,7 @@ export function HelpdeskWorkspace() {
             {/* Model & Temperature */}
             <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
               <h4 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
-                <Cpu className="size-4 text-emerald-600" />
+                <Cpu className="size-4 text-blue-600" />
                 <span>LLM Engine & Creativity</span>
               </h4>
 
@@ -378,7 +376,7 @@ export function HelpdeskWorkspace() {
                     className={cn(
                       "rounded-xl border p-3 text-left text-xs transition",
                       selectedModel === "gemini-2.5-flash"
-                        ? "border-emerald-500 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400"
+                        ? "border-blue-500 bg-blue-500/10 font-bold text-blue-600 dark:text-blue-400"
                         : "border-border bg-background text-muted-foreground hover:bg-muted/40",
                     )}
                   >
@@ -394,7 +392,7 @@ export function HelpdeskWorkspace() {
                     className={cn(
                       "rounded-xl border p-3 text-left text-xs transition",
                       selectedModel === "gemini-2.5-pro"
-                        ? "border-emerald-500 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400"
+                        ? "border-blue-500 bg-blue-500/10 font-bold text-blue-600 dark:text-blue-400"
                         : "border-border bg-background text-muted-foreground hover:bg-muted/40",
                     )}
                   >
@@ -426,7 +424,7 @@ export function HelpdeskWorkspace() {
                   step="0.1"
                   value={temperature}
                   onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="w-full accent-emerald-600"
+                  className="w-full accent-blue-600"
                 />
               </div>
             </div>
@@ -434,7 +432,7 @@ export function HelpdeskWorkspace() {
             {/* Automated Capabilities */}
             <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
               <h4 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
-                <BrainCircuit className="size-4 text-emerald-600" />
+                <BrainCircuit className="size-4 text-blue-600" />
                 <span>Automated Capabilities</span>
               </h4>
 
@@ -491,7 +489,7 @@ export function HelpdeskWorkspace() {
             <Button
               size="sm"
               onClick={handleSaveSettings}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Save className="size-4" />
               <span>Save Capability Configuration</span>
@@ -539,7 +537,7 @@ export function HelpdeskWorkspace() {
                     className={cn(
                       "max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs",
                       msg.sender === "user"
-                        ? "bg-emerald-600 text-white rounded-br-none"
+                        ? "bg-blue-600 text-white rounded-br-none"
                         : "bg-muted/70 text-foreground border border-border rounded-bl-none",
                     )}
                   >
@@ -550,7 +548,7 @@ export function HelpdeskWorkspace() {
 
               {busy && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Bot className="size-4 animate-spin text-emerald-600" />
+                  <Bot className="size-4 animate-spin text-blue-600" />
                   <span>Rithu is thinking under {currentSeason.name} rules…</span>
                 </div>
               )}
@@ -576,7 +574,7 @@ export function HelpdeskWorkspace() {
                   type="submit"
                   size="sm"
                   disabled={!sandboxInput.trim() || busy}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 h-9"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shrink-0 h-9"
                 >
                   <Send className="size-3.5" />
                 </Button>

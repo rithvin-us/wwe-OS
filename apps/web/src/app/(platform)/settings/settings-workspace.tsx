@@ -83,7 +83,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex flex-col items-start p-3 rounded-xl transition duration-(--duration-base) ease-out-quart text-left relative overflow-hidden group ${
                 isActive
-                  ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-emerald-500/20"
+                  ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-blue-500/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/40"
               }`}
             >
@@ -91,7 +91,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
                 <div
                   className={`p-1.5 rounded-lg ${
                     isActive
-                      ? "bg-emerald-500/15 text-emerald-400"
+                      ? "bg-blue-500/15 text-blue-400"
                       : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
@@ -101,7 +101,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
                   <span
                     className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
                       isActive
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -135,7 +135,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <User className="h-4 w-4 text-emerald-400" />
+                  <User className="h-4 w-4 text-blue-400" />
                   Your Profile & Personal Preferences
                 </CardTitle>
                 <CardDescription>
@@ -187,7 +187,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
               <Card>
                 <CardHeader className="border-b border-border/40 pb-4">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-emerald-400" />
+                    <Building2 className="h-4 w-4 text-blue-400" />
                     Company & Tenant Profile
                   </CardTitle>
                   <CardDescription>
@@ -218,7 +218,7 @@ export function SettingsWorkspace({ profile, company }: SettingsWorkspaceProps) 
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-emerald-400" />
+                  <Lock className="h-4 w-4 text-blue-400" />
                   Security & Authentication Rules
                 </CardTitle>
                 <CardDescription>

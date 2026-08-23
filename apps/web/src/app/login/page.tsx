@@ -5,11 +5,14 @@ import { LoginForm } from "@/components/login-form";
 import { LoginFeatureShowcase } from "@/components/login-feature-showcase";
 import { COMPANY } from "@/config/company";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { StatusDot } from "@bop/ui/components/status";
+import { PlatformStatusBadge } from "@/components/platform-status-badge";
 
 export const metadata: Metadata = {
-  title: `Employee Sign In | ${COMPANY.name}`,
-  description: "Internal operational login portal for WWE OS",
+  // `absolute` opts out of the root layout's "%s · WWE OS" template. Without
+  // it this page rendered as "Employee Sign In | WWE OS · WWE OS" — the name
+  // twice, behind a label. The tab should read as the product, not the task.
+  title: { absolute: COMPANY.name },
+  description: `Sign in to ${COMPANY.name}.`,
 };
 
 /**
@@ -22,10 +25,7 @@ export default function LoginPage() {
       {/* Top Action Bar */}
       <header className="absolute top-0 right-0 z-30 flex items-center gap-3 p-4 md:p-6">
         <div className="hidden sm:flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-3 py-1.5 backdrop-blur-md shadow-xs">
-          <StatusDot status="operational" />
-          <span className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            Systems Operational
-          </span>
+          <PlatformStatusBadge />
         </div>
         <ThemeToggle />
       </header>
@@ -58,10 +58,7 @@ export default function LoginPage() {
 
               {/* Mobile System Status Badge */}
               <div className="flex sm:hidden items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
-                <StatusDot status="operational" />
-                <span className="font-mono text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                  Active
-                </span>
+                <PlatformStatusBadge variant="short" />
               </div>
             </div>
 

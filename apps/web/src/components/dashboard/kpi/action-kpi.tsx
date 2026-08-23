@@ -22,10 +22,10 @@ export function ActionKpi({
   return (
     <Link
       href={href}
-      className="group flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="group flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition duration-(--duration-base) ease-out-quart hover:-translate-y-0.5 hover:border-blue-500/30 hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-emerald-500/10 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400">
           <Icon aria-hidden className="size-4" />
         </span>
         <div>

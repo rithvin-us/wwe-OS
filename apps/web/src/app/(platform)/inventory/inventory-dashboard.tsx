@@ -39,13 +39,13 @@ export function InventoryDashboard({
             <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
               Active Equipment
             </span>
-            <PackageCheck className="h-4 w-4 text-emerald-500" />
+            <PackageCheck className="h-4 w-4 text-blue-500" />
           </div>
           <div className="flex items-baseline justify-between">
             <span className="font-display text-2xl font-semibold tracking-tight tabular-nums text-foreground">
               {stats.active}
             </span>
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
               {stats.total_items > 0 ? Math.round((stats.active / stats.total_items) * 100) : 0}%
               active
             </span>

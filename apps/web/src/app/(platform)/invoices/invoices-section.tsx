@@ -211,7 +211,7 @@ export function InvoicesSection({
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950"
+                            className="text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950"
                             title="Mark Approved / Received"
                             disabled={busyId === invoice.id}
                             onClick={() => handleStatusChange(invoice.id, "approved")}
@@ -313,7 +313,7 @@ function TabButton({
         className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold ${
           active
             ? variant === "success"
-              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+              ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
               : variant === "warning"
                 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                 : variant === "destructive"

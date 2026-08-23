@@ -56,10 +56,10 @@ export function SettingsTopologyDiagram() {
       status: "active",
       latency: "1.8 ms",
       icon: Globe,
-      accentColor: "from-emerald-500/20 via-teal-500/10 to-transparent",
-      glowColor: "shadow-emerald-500/10",
-      borderColor: "border-emerald-500/40 hover:border-emerald-400",
-      badgeBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
+      accentColor: "from-blue-500/20 via-teal-500/10 to-transparent",
+      glowColor: "shadow-blue-500/10",
+      borderColor: "border-blue-500/40 hover:border-blue-400",
+      badgeBg: "bg-blue-500/15 border-blue-500/30 text-blue-400",
       badgeText: "ONLINE",
       metrics: [
         { label: "Rendering Engine", value: "Next.js App Router" },
@@ -94,10 +94,10 @@ export function SettingsTopologyDiagram() {
       status: "secure",
       latency: "ArcFace Ready",
       icon: ScanFace,
-      accentColor: "from-emerald-500/20 via-teal-500/10 to-transparent",
-      glowColor: "shadow-emerald-500/10",
-      borderColor: "border-emerald-500/40 hover:border-emerald-400",
-      badgeBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
+      accentColor: "from-blue-500/20 via-teal-500/10 to-transparent",
+      glowColor: "shadow-blue-500/10",
+      borderColor: "border-blue-500/40 hover:border-blue-400",
+      badgeBg: "bg-blue-500/15 border-blue-500/30 text-blue-400",
       badgeText: "SECURE",
       metrics: [
         { label: "Recognition Model", value: "ArcFace 512-Dim Vectors" },
@@ -149,18 +149,18 @@ export function SettingsTopologyDiagram() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || nodes[1];
 
   return (
-    <Card className="border border-emerald-500/20 bg-slate-950/80 backdrop-blur-xl text-slate-100 shadow-2xl overflow-hidden rounded-2xl">
+    <Card className="border border-blue-500/20 bg-slate-950/80 backdrop-blur-xl text-slate-100 shadow-2xl overflow-hidden rounded-2xl">
       <CardHeader className="border-b border-slate-800/80 bg-slate-900/40 pb-5 px-6 pt-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner">
                 <Layers className="h-5 w-5" />
               </div>
               <div>
                 <CardTitle className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
                   System Architecture & Node Topology
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
                     LIVE TELEMETRY
                   </span>
                 </CardTitle>
@@ -182,10 +182,10 @@ export function SettingsTopologyDiagram() {
               size="sm"
               onClick={handleRunDiagnostics}
               disabled={refreshing}
-              className="gap-2 text-xs border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-500/10 hover:text-emerald-400 text-slate-200 transition duration-(--duration-base) ease-out-quart"
+              className="gap-2 text-xs border-blue-500/30 bg-slate-900/80 hover:bg-blue-500/10 hover:text-blue-400 text-slate-200 transition duration-(--duration-base) ease-out-quart"
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-emerald-400" : ""}`}
+                className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-blue-400" : ""}`}
               />
               Verify Nodes
             </Button>
@@ -208,7 +208,7 @@ export function SettingsTopologyDiagram() {
                 onClick={() => setSelectedNodeId(node.id)}
                 className={`text-left p-4 rounded-xl border transition duration-(--duration-base) ease-out-quart relative overflow-hidden group flex flex-col justify-between min-h-[140px] ${
                   isSelected
-                    ? `${node.borderColor} bg-slate-900/90 shadow-xl ${node.glowColor} ring-1 ring-emerald-500/30`
+                    ? `${node.borderColor} bg-slate-900/90 shadow-xl ${node.glowColor} ring-1 ring-blue-500/30`
                     : "border-slate-800/80 bg-slate-900/40 hover:bg-slate-900/80 hover:border-slate-700"
                 }`}
               >
@@ -218,7 +218,7 @@ export function SettingsTopologyDiagram() {
                 />
 
                 <div className="relative z-10 flex items-start justify-between gap-2">
-                  <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                  <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-blue-400 group-hover:text-blue-300 transition-colors">
                     <Icon className="h-4 w-4" />
                   </div>
 
@@ -230,7 +230,7 @@ export function SettingsTopologyDiagram() {
                 </div>
 
                 <div className="relative z-10 space-y-1 mt-3">
-                  <h4 className="font-bold text-xs text-white group-hover:text-emerald-300 transition-colors line-clamp-1">
+                  <h4 className="font-bold text-xs text-white group-hover:text-blue-300 transition-colors line-clamp-1">
                     {node.name}
                   </h4>
                   <p className="text-[10px] text-slate-400 line-clamp-1">{node.category}</p>
@@ -238,7 +238,7 @@ export function SettingsTopologyDiagram() {
 
                 <div className="relative z-10 flex items-center justify-between pt-2 border-t border-slate-800/60 mt-2 text-[10px]">
                   <span className="text-slate-500 font-mono">Status</span>
-                  <span className="font-mono text-emerald-400 font-semibold">{node.latency}</span>
+                  <span className="font-mono text-blue-400 font-semibold">{node.latency}</span>
                 </div>
               </motion.button>
             );
@@ -258,7 +258,7 @@ export function SettingsTopologyDiagram() {
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400">
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-blue-400">
                     <selectedNode.icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -271,7 +271,7 @@ export function SettingsTopologyDiagram() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">Security Isolation:</span>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1.5">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     Verified Safe
                   </span>

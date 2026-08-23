@@ -155,7 +155,7 @@ export function MaintenanceWorkspace({
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-start p-3 rounded-xl transition duration-(--duration-base) ease-out-quart text-left relative overflow-hidden group ${
                 isActive
-                  ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-emerald-500/20"
+                  ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-blue-500/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/40"
               }`}
             >
@@ -163,7 +163,7 @@ export function MaintenanceWorkspace({
                 <div
                   className={`p-1.5 rounded-lg ${
                     isActive
-                      ? "bg-emerald-500/15 text-emerald-400"
+                      ? "bg-blue-500/15 text-blue-400"
                       : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
@@ -173,7 +173,7 @@ export function MaintenanceWorkspace({
                   <span
                     className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
                       isActive
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -228,7 +228,7 @@ export function MaintenanceWorkspace({
               <Card>
                 <CardHeader className="border-b border-border/40 pb-4">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <GitCommit className="h-4 w-4 text-emerald-400" />
+                    <GitCommit className="h-4 w-4 text-blue-400" />
                     Deploy &amp; Runtime
                   </CardTitle>
                   <CardDescription>What&apos;s actually live right now.</CardDescription>
@@ -283,7 +283,7 @@ export function MaintenanceWorkspace({
               <Card>
                 <CardHeader className="border-b border-border/40 pb-4">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4 text-emerald-400" />
+                    <CalendarClock className="h-4 w-4 text-blue-400" />
                     Current Business Period
                   </CardTitle>
                   <CardDescription>
@@ -319,7 +319,7 @@ export function MaintenanceWorkspace({
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <BrainCircuit className="h-4 w-4 text-emerald-400" />
+                  <BrainCircuit className="h-4 w-4 text-blue-400" />
                   AI Gateway Operations
                 </CardTitle>
                 <CardDescription>
@@ -402,7 +402,7 @@ export function MaintenanceWorkspace({
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-emerald-400" />
+                  <Activity className="h-4 w-4 text-blue-400" />
                   AI Usage &amp; Cost Analytics
                 </CardTitle>
                 <CardDescription>All-time usage and cost across the platform.</CardDescription>
@@ -455,7 +455,7 @@ export function MaintenanceWorkspace({
               <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border/40 pb-4">
                 <div>
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <ScanFace className="h-4 w-4 text-emerald-400" />
+                    <ScanFace className="h-4 w-4 text-blue-400" />
                     Face Check-in Diagnostics
                   </CardTitle>
                   <CardDescription>
@@ -559,7 +559,7 @@ export function MaintenanceWorkspace({
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <ScrollText className="h-4 w-4 text-emerald-400" />
+                  <ScrollText className="h-4 w-4 text-blue-400" />
                   Recent Activity
                 </CardTitle>
                 <CardDescription>What changed most recently, across every module.</CardDescription>
@@ -595,7 +595,7 @@ export function MaintenanceWorkspace({
             <Card>
               <CardHeader className="border-b border-border/40 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Key className="h-4 w-4 text-emerald-400" />
+                  <Key className="h-4 w-4 text-blue-400" />
                   Subscriptions &amp; API Keys
                 </CardTitle>
                 <CardDescription>Manage third-party integrations and billing.</CardDescription>

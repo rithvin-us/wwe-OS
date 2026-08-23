@@ -49,13 +49,13 @@ export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
                       className="object-cover"
                     />
                   ) : null}
-                  <AvatarFallback className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-base font-bold font-mono">
+                  <AvatarFallback className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-base font-bold font-mono">
                     {getInitials(employee.employee_name)}
                   </AvatarFallback>
                 </Avatar>
                 {employee.enrolled_at ? (
                   <div
-                    className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-0.5 text-white shadow-xs ring-2 ring-background"
+                    className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-0.5 text-white shadow-xs ring-2 ring-background"
                     title="AI Face Biometrics Enrolled"
                   >
                     <CheckCircle2 className="size-3.5" />
@@ -85,7 +85,7 @@ export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
           {/* Employment Grid */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Briefcase className="size-4 text-emerald-500" /> Employment Details
+              <Briefcase className="size-4 text-blue-500" /> Employment Details
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
               <DetailBox label="Department" value={employee.department || "Production"} />
@@ -103,7 +103,7 @@ export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
           {/* Statutory & Personal Grid */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <CreditCard className="size-4 text-emerald-500" /> Statutory & Banking
+              <CreditCard className="size-4 text-blue-500" /> Statutory & Banking
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
               <DetailBox label="PF Number" value={employee.pf_number} />
@@ -119,7 +119,7 @@ export function EmployeeProfileDialog({ employee }: { employee: Employee }) {
           <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <ScanFace className="size-4 text-emerald-600 dark:text-emerald-400" />
+                <ScanFace className="size-4 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
                   AI Face Recognition Enrollment
                 </h3>

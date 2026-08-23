@@ -168,9 +168,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-svh">
       {/* Global Drag & Drop Overlay Zone */}
       {isDraggingOver && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center border-4 border-dashed border-emerald-500 bg-background/90 backdrop-blur-xl animate-in fade-in duration-(--duration-fast) ease-out-quart">
-          <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-500/40 bg-card p-10 shadow-2xl text-center max-w-md mx-4">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg animate-bounce">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center border-4 border-dashed border-blue-500 bg-background/90 backdrop-blur-xl animate-in fade-in duration-(--duration-fast) ease-out-quart">
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-blue-500/40 bg-card p-10 shadow-2xl text-center max-w-md mx-4">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg animate-bounce">
               <UploadCloud className="size-8" />
             </div>
             <div>
@@ -179,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Rithu AI will immediately inspect, analyze, and explain this document for you.
               </p>
             </div>
-            <span className="font-mono text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
+            <span className="font-mono text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 bg-blue-500/15 px-3 py-1 rounded-full border border-blue-500/30">
               Agent Ready
             </span>
           </div>

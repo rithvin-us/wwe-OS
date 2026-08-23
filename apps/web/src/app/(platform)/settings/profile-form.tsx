@@ -32,18 +32,18 @@ export function ProfileForm({ profile }: { profile: MyProfile }) {
   return (
     <form onSubmit={submit} className="space-y-6">
       {/* Profile Header Badge */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5">
         <div className="flex items-center gap-4">
-          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold text-lg shadow-inner">
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 font-bold text-lg shadow-inner">
             {initials}
-            <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-slate-950">
+            <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-slate-950">
               ✓
             </span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-base text-foreground">{profile.username}</h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
                 {profile.status ? profile.status.toUpperCase() : "ACTIVE"}
               </span>
             </div>
@@ -51,7 +51,7 @@ export function ProfileForm({ profile }: { profile: MyProfile }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium bg-background/60 px-3 py-1.5 rounded-lg border border-border/40">
+        <div className="flex items-center gap-2 text-xs text-blue-400 font-medium bg-background/60 px-3 py-1.5 rounded-lg border border-border/40">
           <ShieldCheck className="h-4 w-4" />
           <span>Platform Owner Permission</span>
         </div>
@@ -130,7 +130,7 @@ export function ProfileForm({ profile }: { profile: MyProfile }) {
         <Button
           type="submit"
           disabled={pending}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs"
+          className="gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs"
         >
           <Save className="h-3.5 w-3.5" />
           {pending ? "Saving..." : "Save Profile Changes"}

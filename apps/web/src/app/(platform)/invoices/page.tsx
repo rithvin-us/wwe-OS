@@ -122,7 +122,7 @@ function SummaryCard({
       <p
         className={`mt-1 font-mono text-2xl font-semibold tracking-tight ${
           highlight === "success"
-            ? "text-emerald-600 dark:text-emerald-400"
+            ? "text-blue-600 dark:text-blue-400"
             : highlight === "warning"
               ? "text-amber-600 dark:text-amber-400"
               : "text-foreground"
