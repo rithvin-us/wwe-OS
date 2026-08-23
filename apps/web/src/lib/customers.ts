@@ -58,9 +58,7 @@ export interface CustomerOverview {
 }
 
 export async function getCustomers(): Promise<BillingCustomer[]> {
-  return djangoFetch<BillingCustomer[]>(
-    "/api/v1/finance/customers/?ordering=name&page_size=200",
-  );
+  return djangoFetch<BillingCustomer[]>("/api/v1/finance/customers/?ordering=name&page_size=200");
 }
 
 export async function getCustomerOverview(id: string): Promise<CustomerOverview> {

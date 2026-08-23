@@ -2,11 +2,7 @@
 
 export type NotificationStatus = "unread" | "read" | "archived";
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
-export type NotificationBucket =
-  | "critical"
-  | "action_required"
-  | "informational"
-  | "completed";
+export type NotificationBucket = "critical" | "action_required" | "informational" | "completed";
 
 export interface NotificationRecord {
   id: string;

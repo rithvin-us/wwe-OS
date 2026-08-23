@@ -95,11 +95,7 @@ export function DocumentVersions({
                 onChange={onUpload}
                 disabled={pending}
               />
-              <Button
-                size="sm"
-                disabled={pending}
-                onClick={() => fileRef.current?.click()}
-              >
+              <Button size="sm" disabled={pending} onClick={() => fileRef.current?.click()}>
                 <Upload aria-hidden />
                 New version
               </Button>

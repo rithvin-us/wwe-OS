@@ -4,12 +4,7 @@ import { Badge } from "@bop/ui/components/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/card";
 import { PageHeader } from "@bop/ui/components/page-header";
 
-import {
-  BACKUP_KIND_LABELS,
-  type BackupArea,
-  formatBytes,
-  getBackupStatus,
-} from "@/lib/backups";
+import { BACKUP_KIND_LABELS, type BackupArea, formatBytes, getBackupStatus } from "@/lib/backups";
 
 export const metadata: Metadata = { title: "Backups" };
 
@@ -42,8 +37,8 @@ export default async function BackupsPage() {
         <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
           <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
           <span>
-            One or more areas have no successful backup recorded. Backups are infrastructure and must
-            be configured separately; runs appear here once the backup job records them via{" "}
+            One or more areas have no successful backup recorded. Backups are infrastructure and
+            must be configured separately; runs appear here once the backup job records them via{" "}
             <code className="font-mono text-xs">manage.py backup_record</code>.
           </span>
         </div>
@@ -121,9 +116,14 @@ export default async function BackupsPage() {
               <ul className="space-y-2 text-sm">
                 {summary.recent_failures.map((failure, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    <AlertTriangle
+                      aria-hidden
+                      className="mt-0.5 size-4 shrink-0 text-destructive"
+                    />
                     <div>
-                      <p className="font-medium">{BACKUP_KIND_LABELS[failure.kind] ?? failure.kind}</p>
+                      <p className="font-medium">
+                        {BACKUP_KIND_LABELS[failure.kind] ?? failure.kind}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {failure.message || "No detail"} · {formatDate(failure.at)}
                       </p>

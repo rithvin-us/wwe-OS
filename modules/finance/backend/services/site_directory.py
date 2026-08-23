@@ -93,8 +93,7 @@ class SiteDirectoryService(BaseService):
             },
             "invoices": [self._row(inv) for inv in self._recent(all_at_site)],
             "amc": [
-                self._row(inv)
-                for inv in self._recent(at_site.filter(invoice_type=InvoiceType.AMC))
+                self._row(inv) for inv in self._recent(at_site.filter(invoice_type=InvoiceType.AMC))
             ],
             "activity": self._activity(tenant, all_at_site),
             # Declared unlinked so the UI states it plainly instead of faking it.

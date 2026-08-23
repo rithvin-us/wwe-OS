@@ -45,9 +45,7 @@ class AssistantService(BaseService):
                 "grounded": False,
             }
 
-        hits = SearchService().search(
-            user=user, query=question, page_size=MAX_SOURCES
-        )["results"]
+        hits = SearchService().search(user=user, query=question, page_size=MAX_SOURCES)["results"]
 
         sources = [
             {

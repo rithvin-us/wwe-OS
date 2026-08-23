@@ -136,7 +136,10 @@ export function AssistantPanel() {
                     href={source.url || "/search"}
                     className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-accent"
                   >
-                    <FileSearch aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <FileSearch
+                      aria-hidden
+                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                    />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{source.title}</p>
                       <p className="truncate text-xs text-muted-foreground">

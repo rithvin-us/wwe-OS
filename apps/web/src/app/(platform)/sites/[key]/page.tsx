@@ -196,8 +196,8 @@ export default async function SiteOverviewPage({ params }: { params: Promise<{ k
                   ))}
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  These areas don&rsquo;t carry a facility link in the data yet, so they&rsquo;re not
-                  shown here rather than guessed.
+                  These areas don&rsquo;t carry a facility link in the data yet, so they&rsquo;re
+                  not shown here rather than guessed.
                 </p>
               </CardContent>
             </Card>

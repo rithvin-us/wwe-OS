@@ -23,11 +23,7 @@ import {
   type Invoice,
 } from "@/config/invoices";
 
-import {
-  cancelInvoiceAction,
-  markInvoicePaidAction,
-  markInvoiceSentAction,
-} from "./actions";
+import { cancelInvoiceAction, markInvoicePaidAction, markInvoiceSentAction } from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export function InvoiceRowActions({
