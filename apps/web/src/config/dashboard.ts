@@ -50,10 +50,10 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       label: "Revenue",
       icon: CircleDollarSign,
       format: "currency",
-      value: 2150000,
-      deltaPct: 14.2,
+      value: 0,
+      deltaPct: null,
       source: "Sales & finance",
-      status: "live",
+      status: "unwired",
       href: "/reports",
     },
     {
@@ -61,8 +61,8 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       label: "Expenses",
       icon: Wallet,
       format: "currency",
-      value: 945000,
-      deltaPct: -3.8,
+      value: 0,
+      deltaPct: null,
       source: "Purchases & finance",
       status: "live",
       href: "/purchase",
@@ -72,8 +72,8 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       label: "Digitized purchases",
       icon: ShoppingCart,
       format: "count",
-      value: purchase?.processed && purchase.processed > 0 ? purchase.processed : 28,
-      deltaPct: 8.5,
+      value: purchase?.processed ?? 0,
+      deltaPct: null,
       source: "Purchases",
       status: purchaseFetchFailed ? "error" : "live",
       href: "/purchase",
@@ -83,10 +83,10 @@ export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
       label: "Service equipment",
       icon: Boxes,
       format: "count",
-      value: 42,
-      deltaPct: 5.0,
+      value: 0,
+      deltaPct: null,
       source: "Inventory & Assets",
-      status: "live",
+      status: "unwired",
       href: "/assets",
     },
   ];
@@ -104,10 +104,10 @@ export interface SummaryRow {
 }
 
 export const FINANCIAL_SUMMARY: SummaryRow[] = [
-  { label: "Revenue (month)", value: 2150000, format: "currency" },
-  { label: "Expenses (month)", value: 945000, format: "currency" },
-  { label: "Net", value: 1205000, format: "currency" },
-  { label: "Cash position", value: 4820000, format: "currency" },
+  { label: "Revenue (month)", value: 0, format: "currency" },
+  { label: "Expenses (month)", value: 0, format: "currency" },
+  { label: "Net", value: 0, format: "currency" },
+  { label: "Cash position", value: 0, format: "currency" },
 ];
 
 export function procurementSummary(
@@ -117,22 +117,22 @@ export function procurementSummary(
   return [
     {
       label: "Processed purchases",
-      value: purchase?.processed && purchase.processed > 0 ? purchase.processed : 28,
+      value: purchase?.processed ?? 0,
       format: "count",
     },
     {
       label: "Needs attention",
-      value: purchase?.needsAttention && purchase.needsAttention > 0 ? purchase.needsAttention : 2,
+      value: purchase?.needsAttention ?? 0,
       format: "count",
     },
     {
       label: "Unpaid purchases",
-      value: purchase?.unpaid && purchase.unpaid > 0 ? purchase.unpaid : 5,
+      value: purchase?.unpaid ?? 0,
       format: "count",
     },
     {
       label: "Via Telegram (7d)",
-      value: telegramRecentCount && telegramRecentCount > 0 ? telegramRecentCount : 12,
+      value: telegramRecentCount ?? 0,
       format: "count",
     },
   ];
