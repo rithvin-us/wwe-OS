@@ -100,6 +100,36 @@ export async function cancelInvoiceAction(
   }
 }
 
+async function lifecycleAction(
+  id: string,
+  path: string,
+  done: (invoice: Invoice) => string,
+): Promise<ActionResult<Invoice>> {
+  try {
+    const data = await djangoFetch<Invoice>(`${BASE}/invoices/${id}/${path}/`, { method: "POST" });
+    revalidatePath("/invoices");
+    return { ok: true, message: done(data), data };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function markInvoicePaidAction(id: string): Promise<ActionResult<Invoice>> {
+  return lifecycleAction(id, "mark-paid", (invoice) => `Invoice ${invoice.number} marked paid.`);
+}
+
+export async function markInvoiceSentAction(id: string): Promise<ActionResult<Invoice>> {
+  return lifecycleAction(id, "mark-sent", (invoice) => `Invoice ${invoice.number} marked sent.`);
+}
+
+export async function unmarkInvoicePaidAction(id: string): Promise<ActionResult<Invoice>> {
+  return lifecycleAction(
+    id,
+    "unmark-paid",
+    (invoice) => `Invoice ${invoice.number} payment reversed.`,
+  );
+}
+
 export async function updateInvoiceStatusAction(
   id: string,
   status: string,

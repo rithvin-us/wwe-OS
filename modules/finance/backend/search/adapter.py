@@ -39,6 +39,8 @@ def to_document(invoice: Invoice) -> dict:
         "body": body,
         "extra": {
             "status": invoice.status,
+            "lifecycle": invoice.lifecycle_stage(),
+            "payment_status": invoice.payment_status,
             "invoice_type": invoice.invoice_type,
             "financial_year": invoice.financial_year,
             "customer": invoice.consignee_name,

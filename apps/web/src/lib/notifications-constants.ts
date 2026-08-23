@@ -2,11 +2,13 @@
 
 export type NotificationStatus = "unread" | "read" | "archived";
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
+export type NotificationBucket = "critical" | "action_required" | "informational" | "completed";
 
 export interface NotificationRecord {
   id: string;
   category: string;
   priority: NotificationPriority;
+  bucket: NotificationBucket;
   channel: string;
   status: NotificationStatus;
   title: string;
@@ -15,6 +17,33 @@ export interface NotificationRecord {
   read_at: string | null;
   created_at: string;
 }
+
+/** Operator-facing categories the Notification Center groups by. Order is the
+ * order the tabs render in — most urgent first. */
+export const NOTIFICATION_BUCKETS: NotificationBucket[] = [
+  "critical",
+  "action_required",
+  "informational",
+  "completed",
+];
+
+export const BUCKET_LABELS: Record<NotificationBucket, string> = {
+  critical: "Critical",
+  action_required: "Action required",
+  informational: "Informational",
+  completed: "Completed",
+};
+
+/** Badge variant per bucket, using the design-system token variants only. */
+export const BUCKET_BADGE_VARIANT: Record<
+  NotificationBucket,
+  "destructive" | "warning" | "secondary" | "success"
+> = {
+  critical: "destructive",
+  action_required: "warning",
+  informational: "secondary",
+  completed: "success",
+};
 
 /** Where clicking a notification should take the operator, derived from the
  * publishing module's category + the ids it attached. */

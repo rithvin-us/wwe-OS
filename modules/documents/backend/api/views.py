@@ -13,9 +13,11 @@ from django.http import HttpResponse
 from documents.backend.models import Document
 from documents.backend.serializers.document import (
     DocumentSerializer,
+    DocumentVersionSerializer,
     ExportDocumentsSerializer,
     UpdateDocumentSerializer,
     UploadDocumentSerializer,
+    UploadVersionSerializer,
 )
 from documents.backend.services.document import DocumentService, validate_tags
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -24,6 +26,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
+from shared.exceptions import PermissionDeniedError
 from shared.views import BaseModelViewSet
 
 
@@ -40,7 +43,11 @@ class DocumentViewSet(BaseModelViewSet):
         "list": "documents.read",
         "retrieve": "documents.read",
         "download": "documents.read",
+        "preview": "documents.read",
+        "share": "documents.read",
         "export": "documents.read",
+        "versions": "documents.read",
+        "restore_version": "documents.write",
         "create": "documents.write",
         "partial_update": "documents.write",
         "summarize": "documents.write",
@@ -135,6 +142,73 @@ class DocumentViewSet(BaseModelViewSet):
         disposition = "inline" if request.query_params.get("inline") else "attachment"
         response["Content-Disposition"] = f'{disposition}; filename="{document.file.filename}"'
         return response
+
+    # Content types safe to render inline in a browser tab; everything else is
+    # served as a download so the browser never tries to execute it.
+    _INLINE_TYPES = frozenset(
+        {"application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp", "text/plain"}
+    )
+
+    @action(detail=True, methods=["get"])
+    def preview(self, request: Request, pk=None) -> HttpResponse:
+        """Stream the current file for in-browser viewing (inline) when its type
+        is safe to render; otherwise fall back to an attachment."""
+        from storage.services import StorageService
+
+        document = self.get_object()
+        payload = StorageService().open(document.file)
+        content_type = document.file.content_type
+        disposition = "inline" if content_type in self._INLINE_TYPES else "attachment"
+        response = HttpResponse(payload, content_type=content_type)
+        response["Content-Disposition"] = f'{disposition}; filename="{document.file.filename}"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    @action(detail=True, methods=["get"])
+    def share(self, request: Request, pk=None) -> Response:
+        """A short-lived signed URL to the current file — for controlled sharing
+        without exposing storage credentials or a permanent public URL."""
+        from storage.services import StorageService
+
+        document = self.get_object()
+        expires = min(max(int(request.query_params.get("expires", 3600) or 3600), 60), 86400)
+        return Response(
+            {
+                "url": StorageService().signed_url(document.file, expires_seconds=expires),
+                "expires_in": expires,
+                "filename": document.file.filename,
+            }
+        )
+
+    @action(detail=True, methods=["get", "post"])
+    def versions(self, request: Request, pk=None) -> Response:
+        """GET the document's version history; POST a new file (multipart) as a
+        new current version. History is append-only — nothing is overwritten."""
+        document = self.get_object()
+        if request.method == "POST":
+            if not request.user.has_platform_permission("documents.write"):
+                raise PermissionDeniedError("You do not have permission to add a version.")
+            data = UploadVersionSerializer(data=request.data)
+            data.is_valid(raise_exception=True)
+            upload = data.validated_data["file"]
+            DocumentService().add_version(
+                document=document,
+                data=upload.read(),
+                filename=upload.name,
+                content_type=upload.content_type or "application/octet-stream",
+                actor=request.user,
+                note=data.validated_data.get("note", ""),
+            )
+        versions = document.versions.select_related("file", "uploaded_by").all()
+        return Response(DocumentVersionSerializer(versions, many=True).data)
+
+    @action(detail=True, methods=["post"], url_path=r"versions/(?P<version>\d+)/restore")
+    def restore_version(self, request: Request, pk=None, version=None) -> Response:
+        document = self.get_object()
+        DocumentService().restore_version(
+            document=document, version=int(version), actor=request.user
+        )
+        return Response(DocumentSerializer(document).data)
 
     @extend_schema(
         request=ExportDocumentsSerializer,

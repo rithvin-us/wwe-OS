@@ -1,6 +1,18 @@
 "use client";
 
-import { FileSearch, LayoutDashboard, Loader2, Moon, Sun, SunMoon } from "@bop/icons";
+import {
+  CalendarClock,
+  FileSearch,
+  Inbox,
+  Layers,
+  LayoutDashboard,
+  Loader2,
+  Moon,
+  Newspaper,
+  Sparkles,
+  Sun,
+  SunMoon,
+} from "@bop/icons";
 import { useTheme } from "@bop/theme";
 import { Badge } from "@bop/ui/components/badge";
 import {
@@ -74,6 +86,7 @@ const SECONDARY_FIELD: Record<string, string> = {
   purchase: "vendor",
   invoices: "invoice_type",
   employees: "designation",
+  customers: "state",
 };
 
 function groupByIndex(results: SearchResultRow[]): [string, SearchResultRow[]][] {
@@ -301,6 +314,25 @@ export function CommandPalette({
                   </CommandItem>
                 );
               })}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Workspace">
+              <CommandItem value="workspace-briefing" onSelect={() => go("/briefing")}>
+                <Newspaper aria-hidden />
+                Briefing
+              </CommandItem>
+              <CommandItem value="workspace-assistant" onSelect={() => go("/assistant")}>
+                <Sparkles aria-hidden />
+                Assistant
+              </CommandItem>
+              <CommandItem value="workspace-approvals" onSelect={() => go("/approvals")}>
+                <Inbox aria-hidden />
+                Approvals
+              </CommandItem>
+              <CommandItem value="workspace-deadlines" onSelect={() => go("/deadlines")}>
+                <CalendarClock aria-hidden />
+                Deadlines
+              </CommandItem>
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="Platform">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, Download, FileText, Pencil } from "@bop/icons";
+import { Ban, CircleDollarSign, Download, FileText, Pencil, Send } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,
@@ -23,7 +23,7 @@ import {
   type Invoice,
 } from "@/config/invoices";
 
-import { cancelInvoiceAction } from "./actions";
+import { cancelInvoiceAction, markInvoicePaidAction, markInvoiceSentAction } from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export function InvoiceRowActions({
@@ -38,6 +38,19 @@ export function InvoiceRowActions({
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
   const issued = invoice.status === "issued";
+  const isPaid = invoice.payment_status === "paid";
+
+  async function runLifecycle(action: () => Promise<{ ok: boolean; message: string }>) {
+    setBusy(true);
+    const result = await action();
+    setBusy(false);
+    if (result.ok) {
+      toast.success(result.message);
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
+  }
 
   async function handleCancel() {
     if (!reason.trim()) {
@@ -72,6 +85,31 @@ export function InvoiceRowActions({
             <Download className="size-4" />
           </a>
         </Button>
+      ) : null}
+
+      {issued && !isPaid ? (
+        <>
+          {invoice.sent_at ? null : (
+            <Button
+              size="icon"
+              variant="ghost"
+              title="Mark as sent"
+              disabled={busy}
+              onClick={() => runLifecycle(() => markInvoiceSentAction(invoice.id))}
+            >
+              <Send className="size-4" />
+            </Button>
+          )}
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Mark as paid"
+            disabled={busy}
+            onClick={() => runLifecycle(() => markInvoicePaidAction(invoice.id))}
+          >
+            <CircleDollarSign className="size-4" />
+          </Button>
+        </>
       ) : null}
 
       {issued ? (

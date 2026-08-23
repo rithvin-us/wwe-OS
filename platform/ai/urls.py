@@ -2,9 +2,17 @@ from __future__ import annotations
 
 from django.urls import path
 
-from ai.views import GenerateView, HealthView, OperationsView, PromptListView, UsageView
+from ai.views import (
+    AssistantView,
+    GenerateView,
+    HealthView,
+    OperationsView,
+    PromptListView,
+    UsageView,
+)
 
 urlpatterns = [
+    path("assistant/", AssistantView.as_view(), name="ai-assistant"),
     path("generate/", GenerateView.as_view(), name="ai-generate"),
     path("usage/", UsageView.as_view(), name="ai-usage"),
     path("prompts/", PromptListView.as_view(), name="ai-prompts"),

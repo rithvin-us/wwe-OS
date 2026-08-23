@@ -1,4 +1,14 @@
-import { Bot, LayoutDashboard, Settings, type LucideIcon } from "@bop/icons";
+import {
+  Bot,
+  CalendarClock,
+  DatabaseBackup,
+  Inbox,
+  LayoutDashboard,
+  Newspaper,
+  Settings,
+  Sparkles,
+  type LucideIcon,
+} from "@bop/icons";
 
 import { APPS } from "@/config/modules";
 
@@ -63,9 +73,21 @@ export const NAVIGATION: NavGroup[] = [
     ],
   },
   {
+    // Cross-cutting operator surfaces — the "task cockpit" the whole company is
+    // run from, aggregating across the apps above rather than being one of them.
+    label: "WORKSPACE",
+    items: [
+      { name: "Briefing", href: "/briefing", icon: Newspaper },
+      { name: "Assistant", href: "/assistant", icon: Sparkles },
+      { name: "Approvals", href: "/approvals", icon: Inbox },
+      { name: "Deadlines", href: "/deadlines", icon: CalendarClock },
+    ],
+  },
+  {
     label: "SYSTEM",
     items: [
       { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
+      { name: "Backups", href: "/backups", icon: DatabaseBackup, subtle: true },
       { name: "Maintenance", href: "/maintenance", icon: Settings, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },
     ],

@@ -49,6 +49,7 @@ from finance.backend.models.invoice import (
     InvoiceLine,
     InvoiceStatus,
     InvoiceType,
+    PaymentStatus,
 )
 from finance.backend.services import computation, pdf, renderer
 from finance.backend.services.numbering import (
@@ -317,6 +318,74 @@ class InvoiceService(BaseService):
             extra={"reason": invoice.cancellation_reason},
         )
         return invoice
+
+    # ------------------------------------------------------------------ #
+    # Lifecycle — orthogonal to the register status (issued/cancelled). These
+    # never touch the number, the sequence, or the documents; they record where
+    # a raised bill is in its collection life (sent → paid), and a due date so
+    # "overdue" can be derived. A cancelled bill has no lifecycle to move.
+    # ------------------------------------------------------------------ #
+    def set_due_date(self, *, invoice: Invoice, due_date, actor=None) -> Invoice:
+        self._assert_live(invoice)
+        invoice.due_date = due_date
+        invoice.save(update_fields=["due_date", "updated_at"])
+        self._audit_lifecycle(invoice, actor, "finance.invoice_due_date_set")
+        return invoice
+
+    def mark_sent(self, *, invoice: Invoice, actor=None) -> Invoice:
+        self._assert_live(invoice)
+        if invoice.sent_at is None:
+            invoice.sent_at = timezone.now()
+            invoice.save(update_fields=["sent_at", "updated_at"])
+            self._audit_lifecycle(invoice, actor, "finance.invoice_sent")
+        return invoice
+
+    def mark_paid(self, *, invoice: Invoice, actor=None) -> Invoice:
+        self._assert_live(invoice)
+        if invoice.payment_status != PaymentStatus.PAID:
+            invoice.payment_status = PaymentStatus.PAID
+            invoice.paid_at = timezone.now()
+            invoice.save(update_fields=["payment_status", "paid_at", "updated_at"])
+            self._audit_lifecycle(invoice, actor, "finance.invoice_paid")
+        return invoice
+
+    def unmark_paid(self, *, invoice: Invoice, actor=None) -> Invoice:
+        """Reverses a mistaken payment confirmation."""
+        self._assert_live(invoice)
+        if invoice.payment_status != PaymentStatus.UNPAID:
+            invoice.payment_status = PaymentStatus.UNPAID
+            invoice.paid_at = None
+            invoice.save(update_fields=["payment_status", "paid_at", "updated_at"])
+            self._audit_lifecycle(invoice, actor, "finance.invoice_payment_reversed")
+        return invoice
+
+    @staticmethod
+    def _assert_live(invoice: Invoice) -> None:
+        if invoice.status == InvoiceStatus.CANCELLED:
+            raise ConflictError("A cancelled invoice has no lifecycle to update.")
+
+    def _audit_lifecycle(self, invoice: Invoice, actor, action: str) -> None:
+        from audit.services import AuditService
+        from finance.backend.search.adapter import INDEX as SEARCH_INDEX
+        from finance.backend.search.adapter import to_document as search_document
+        from search.services import SearchService
+
+        AuditService().record(
+            action=action,
+            module="finance",
+            object_type="Invoice",
+            object_id=str(invoice.id),
+            changes={
+                "number": invoice.number,
+                "payment_status": invoice.payment_status,
+                "lifecycle_stage": invoice.lifecycle_stage(),
+            },
+            actor=actor,
+            tenant=invoice.tenant,
+        )
+        SearchService().upsert(
+            index=SEARCH_INDEX, tenant=invoice.tenant, **search_document(invoice)
+        )
 
     # ------------------------------------------------------------------ #
     # Rendering & storage
