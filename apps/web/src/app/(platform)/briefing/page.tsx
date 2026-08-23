@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@bop/ui/components/car
 import { PageHeader } from "@bop/ui/components/page-header";
 import Link from "next/link";
 
+import { WorkspaceHeaderTabs } from "@/components/workspace-header-tabs";
 import { timelineHref } from "@/lib/audit-helpers";
 import { actionPhrase, getBriefing } from "@/lib/briefing";
 
@@ -44,11 +45,13 @@ export default async function BriefingPage() {
   const { activity, highlights, attention, window_days } = briefing;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
-        title="Briefing"
+        title="Workspace · Briefing"
         description={`What changed in your company over the last ${window_days} days — real movements, each linking to its records.`}
       />
+
+      <WorkspaceHeaderTabs />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <AttentionTile

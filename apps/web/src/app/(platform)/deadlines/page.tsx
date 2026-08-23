@@ -5,6 +5,7 @@ import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 import Link from "next/link";
 
+import { WorkspaceHeaderTabs } from "@/components/workspace-header-tabs";
 import { formatInvoiceDate } from "@/config/invoices";
 import { type DeadlineRow, deadlineKindLabel, deadlineTiming, getDeadlines } from "@/lib/deadlines";
 
@@ -42,11 +43,12 @@ export default async function DeadlinesPage() {
   const upcoming = deadlines.filter((d) => !d.is_overdue);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
-        title="Deadlines"
+        title="Workspace · Deadlines"
         description="Everything with a date coming up — invoice due dates, contract renewals — in one place, soonest first."
       />
+      <WorkspaceHeaderTabs />
 
       {deadlines.length === 0 ? (
         <EmptyState
