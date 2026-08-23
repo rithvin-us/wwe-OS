@@ -97,7 +97,7 @@ jobs:
         working-directory: platform
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -136,7 +136,7 @@ jobs:
       - name: JS dependency audit
         run: pnpm audit --audit-level=high
         continue-on-error: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Python dependency audit
