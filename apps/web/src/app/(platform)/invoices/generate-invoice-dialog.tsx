@@ -113,6 +113,7 @@ export function GenerateInvoiceDialog({
   useEffect(() => {
     if (searchParams?.get("action") === "new" || searchParams?.get("action") === "generate") {
       if (isControlled && onOpenChangeOverride) onOpenChangeOverride(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs form state to the selected record
       else setInternalOpen(true);
     }
   }, [searchParams, isControlled, onOpenChangeOverride]);
@@ -176,6 +177,7 @@ export function GenerateInvoiceDialog({
 
   useEffect(() => {
     if (initialDraft) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs form state to the selected record
       if (initialDraft.invoiceType) setInvoiceType(initialDraft.invoiceType);
       if (initialDraft.customerId) setCustomerId(initialDraft.customerId);
       if (initialDraft.gstRate) setGstRate(initialDraft.gstRate);

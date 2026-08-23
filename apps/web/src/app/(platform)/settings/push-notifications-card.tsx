@@ -21,6 +21,7 @@ export function PushNotificationsCard() {
 
   useEffect(() => {
     if (!isPushSupported()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser push-capability probe; only knowable on the client
       setState("unsupported");
       return;
     }
@@ -71,7 +72,7 @@ export function PushNotificationsCard() {
         ) : state === "unsupported" ? (
           <p className="text-sm text-muted-foreground">
             This browser doesn&apos;t support push notifications. Try a recent Chrome, Edge, or
-            Firefox — on iPhone, add WWE OS to your home screen first.
+            Firefox — on iPhone, add this app to your home screen first.
           </p>
         ) : state === "subscribed" ? (
           <div className="flex items-center justify-between gap-3">

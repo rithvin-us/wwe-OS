@@ -37,11 +37,10 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/png",
         purpose: "any",
       },
-      // Maskable lets Android crop to the launcher's shape without clipping
-      // the mark. Same asset — replace with a padded variant if the mark
-      // ever reaches the edges.
+      // Separate asset with a 20% safe zone so Android's launcher shape
+      // crop never clips the mark.
       {
-        src: "/icon.png",
+        src: "/icon-maskable.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

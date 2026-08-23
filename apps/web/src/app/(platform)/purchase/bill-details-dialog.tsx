@@ -67,6 +67,7 @@ export function BillDetailsDialog({ bill, allTags, open, onOpenChange }: BillDet
   // bill, or a stale confirm-delete banner survives into a different one.
   useEffect(() => {
     if (!open || !bill) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs form state to the selected bill
     setVendorName(bill.seller_name);
     setInvoiceNumber(bill.invoice_number);
     setTotalRate(bill.total_rate);

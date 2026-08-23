@@ -41,7 +41,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "WWE OS", body: "" };
+  let payload = { title: "Water Works Engineering", body: "" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {

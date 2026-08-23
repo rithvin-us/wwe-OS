@@ -24,6 +24,7 @@ export function AddEmployeeDialog() {
 
   useEffect(() => {
     if (searchParams?.get("action") === "new" || searchParams?.get("action") === "add") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- opens from the URL once, then the user owns the state; deriving it during render would make the dialog impossible to close
       setOpen(true);
     }
   }, [searchParams]);

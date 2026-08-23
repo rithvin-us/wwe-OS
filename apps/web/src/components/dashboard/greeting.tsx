@@ -19,6 +19,7 @@ export function Greeting({ dataAsOf, name = "LAKSHMANAN" }: { dataAsOf: string; 
   useEffect(() => {
     // Client's clock only — the server can't know it, so this is a real
     // external-system read, not derived state the effect could avoid.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the viewer's clock, which the server cannot know; doing it during render would hydrate mismatched
     setNow(new Date());
 
     const interval = setInterval(() => {

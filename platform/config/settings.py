@@ -194,7 +194,10 @@ if _database_url:
             conn_health_checks=True,
         ),
     }
-    # Neon Postgres & PgBouncer pooler compatibility
+    # Required by any PgBouncer transaction-mode pooler — which is what the
+    # Supabase connection string in render.yaml is. Server-side cursors do not
+    # survive a pooler handing the connection to another session between
+    # statements, so they are turned off rather than left to fail at runtime.
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     DATABASES["default"]["OPTIONS"] = DATABASES["default"].get("OPTIONS", {})
     # Enable keepalive to prevent SSL SYSCALL connection aborts

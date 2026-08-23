@@ -41,8 +41,8 @@ export default function PrivacyPolicyPage() {
             <p className="text-muted-foreground">
               Employee records (name, contact details, role, statutory identifiers), attendance and
               payroll history, expense claims, and business documents such as contracts and purchase
-              records. All of it is company operational data, used only to run the company's HR,
-              payroll, and operations.
+              records. All of it is company operational data, used only to run the company&apos;s
+              HR, payroll, and operations.
             </p>
           </section>
 

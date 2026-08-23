@@ -25,6 +25,7 @@ export function AnimatedCounter({
     // Respect prefers-reduced-motion for accessibility
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- matchMedia reduced-motion probe; browser-only
       setDisplayValue(value);
       return;
     }

@@ -137,8 +137,8 @@ export function CommitDiffDialog({ entry, open, onOpenChange }: CommitDiffDialog
               <div className="text-amber-400 font-bold">
                 @@ -1,4 +1,{Object.keys(entry.changes || {}).length + 2} @@
               </div>
-              <div className="text-slate-300"> module: "{entry.module}"</div>
-              <div className="text-slate-300"> action: "{entry.action}"</div>
+              <div className="text-slate-300"> module: &quot;{entry.module}&quot;</div>
+              <div className="text-slate-300"> action: &quot;{entry.action}&quot;</div>
 
               {entry.changes && Object.keys(entry.changes).length > 0 ? (
                 Object.entries(entry.changes).map(([key, val]) => (

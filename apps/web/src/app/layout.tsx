@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 
 import "./globals.css";
 
+import { COMPANY } from "@/config/company";
 import { Providers } from "@/components/providers";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
@@ -23,8 +24,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "WWE OS",
-    template: "%s · WWE OS",
+    default: COMPANY.name,
+    template: `%s · ${COMPANY.name}`,
   },
   description: "One place for company operations: HR, purchases, documents, and more.",
 };

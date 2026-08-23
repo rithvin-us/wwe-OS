@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { COMPANY } from "@/config/company";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { SettingsWorkspace } from "@/app/(platform)/settings/settings-workspace";
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
 
       {/* Footer Legal Link */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border/40">
-        <span>WWE OS Operations Platform</span>
+        <span>{COMPANY.name}</span>
         <Link href="/privacy" className="hover:text-foreground hover:underline font-medium">
           Platform Privacy Policy & Biometric Compliance →
         </Link>

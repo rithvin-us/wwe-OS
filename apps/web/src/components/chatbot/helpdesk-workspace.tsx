@@ -208,8 +208,8 @@ export function HelpdeskWorkspace() {
               Select Seasonal Operating Mode
             </h3>
             <p className="text-xs text-muted-foreground">
-              Customize Rithu AI's decision priorities and reasoning based on your current business
-              season.
+              Customize Rithu AI&apos;s decision priorities and reasoning based on your current
+              business season.
             </p>
           </div>
 

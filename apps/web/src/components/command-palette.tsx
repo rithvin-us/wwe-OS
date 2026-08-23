@@ -108,6 +108,7 @@ export function CommandPalette({
   const [badges, setBadges] = useState<NavBadges | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads recent searches from storage when the palette opens
     if (open) setRecent(loadRecentSearches());
   }, [open]);
 
@@ -130,6 +131,7 @@ export function CommandPalette({
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the query when the palette closes so it reopens empty
       setQuery("");
       setResponse(null);
     }
@@ -140,6 +142,7 @@ export function CommandPalette({
 
   useEffect(() => {
     if (!searching) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale results when the query drops below the search threshold
       setResponse(null);
       setLoading(false);
       return;

@@ -53,6 +53,7 @@ export function VoiceNoteSheet({
   // that only shows up after using the feature for a while.
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- media recorder lifecycle side effect
       setState("idle");
       setElapsedMs(0);
       setAudioUrl(null);

@@ -41,6 +41,7 @@ export function FaceKioskDialog() {
       startCamera();
     } else {
       stopCamera();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- camera/device lifecycle side effect
       setResult(null);
       setErrorMessage(null);
     }

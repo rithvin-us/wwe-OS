@@ -4,7 +4,7 @@
  * company details directly.
  */
 export const COMPANY = {
-  name: "WWE OS",
+  name: "Water Works Engineering",
   /** Short caption under the name. */
   caption: "Operations",
   /** 1–2 letters for the logo mark. */

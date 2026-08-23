@@ -31,14 +31,12 @@ jobs:
       # eslint-config-next is kept for the Next.js/React rules Biome does not
       # cover (no-img-element, no-html-link-for-pages, react-hooks/*).
       #
-      # Non-blocking for now: this linter was crashing on a bad transitive
-      # dependency resolution and so had never actually run. Turning it on
-      # surfaced a backlog of 28 errors (16 react-hooks/set-state-in-effect,
-      # 11 react/no-unescaped-entities, 1 no-html-link-for-pages). Make this
-      # blocking once that backlog is cleared.
+      # Blocking. The 28-error backlog this surfaced when it was first
+      # enabled is cleared: the escaping and next/link errors were fixed, and
+      # each set-state-in-effect site carries a justification for why an
+      # effect is correct there (browser-only reads, device lifecycle).
       - name: Next.js lint
         run: pnpm --filter web lint
-        continue-on-error: true
 
   build-frontend:
     name: Build (frontend)

@@ -80,6 +80,7 @@ export function LoginForm() {
       startCamera();
     } else {
       stopCamera();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- camera start/stop is a real side effect; the message reset belongs with it
       setFaceSuccessMessage(null);
       setFaceErrorMessage(null);
     }
@@ -265,8 +266,8 @@ export function LoginForm() {
                     <DialogHeader>
                       <DialogTitle>Reset Password</DialogTitle>
                       <DialogDescription>
-                        Enter your work email address and we'll send you instructions to reset your
-                        account password.
+                        Enter your work email address and we&apos;ll send you instructions to reset
+                        your account password.
                       </DialogDescription>
                     </DialogHeader>
 

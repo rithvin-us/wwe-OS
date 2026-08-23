@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Activity, CircleDollarSign, ShoppingCart, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
 
@@ -182,12 +183,12 @@ export default async function DashboardPage() {
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
                       Fill presence, leave codes, and swipe times.
                     </p>
-                    <a
+                    <Link
                       href="/hr/attendance"
                       className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-muted text-[11px] font-medium hover:bg-accent transition-colors"
                     >
                       <span className="size-1.5 rounded-full bg-blue-500" /> Open grid
-                    </a>
+                    </Link>
                   </div>
                 </div>
 

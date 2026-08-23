@@ -63,6 +63,7 @@ export function FaceEnrollmentCard() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- camera/device lifecycle side effect
     fetchStatus();
   }, []);
 
@@ -209,7 +210,7 @@ export function FaceEnrollmentCard() {
               <div className="space-y-3 pt-2 border-t border-border">
                 <div className="space-y-1.5">
                   <Label htmlFor="face-label" className="text-xs">
-                    Face Profile Label (e.g. "With Glasses", "Front View")
+                    Face Profile Label (e.g. &quot;With Glasses&quot;, &quot;Front View&quot;)
                   </Label>
                   <Input
                     id="face-label"

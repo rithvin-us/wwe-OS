@@ -37,6 +37,7 @@ export function SettingsTopologyDiagram() {
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client clock read on mount; not derivable during SSR
     setLastSyncTime(new Date().toLocaleTimeString());
   }, []);
 
