@@ -3,12 +3,13 @@
 import { UploadCloud } from "@bop/icons";
 import { useTheme } from "@bop/theme";
 import { Sheet, SheetContent, SheetTitle } from "@bop/ui/components/sheet";
+import { cn } from "@bop/ui/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { Style, StatusBar } from "@capacitor/status-bar";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AppHeader } from "@/components/app-header";
@@ -20,6 +21,10 @@ import { SessionRefresh } from "@/components/session-refresh";
 import { LiveRefresh } from "@/components/live-refresh";
 
 const SIDEBAR_HINT_SEEN_KEY = "wwe-os-sidebar-collapse-hint-seen";
+const SIDEBAR_WIDTH_KEY = "wwe-os-sidebar-custom-width";
+const DEFAULT_SIDEBAR_WIDTH = 240;
+const MIN_SIDEBAR_WIDTH = 180;
+const MAX_SIDEBAR_WIDTH = 480;
 
 /**
  * The platform shell: one sidebar, one header, one command palette.
@@ -29,9 +34,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidthPx, setSidebarWidthPx] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
+
+  // Load saved sidebar width preference
+  useEffect(() => {
+    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+        setSidebarWidthPx(parsed);
+      }
+    }
+  }, []);
+
+  // Handle drag-to-resize sidebar
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizingSidebar) return;
+      const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, e.clientX));
+      setSidebarWidthPx(newWidth);
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(newWidth));
+    },
+    [isResizingSidebar],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizingSidebar(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizingSidebar) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, [isResizingSidebar, handleMouseMove, handleMouseUp]);
 
   // First time the rail collapses to icon-only, explain what happened and
   // how to undo it — after that the user already knows, never show again.
@@ -162,7 +210,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const sidebarWidth = sidebarCollapsed ? "4rem" : "var(--layout-sidebar-width)";
+  const sidebarWidth = sidebarCollapsed ? "4rem" : `${sidebarWidthPx}px`;
 
   return (
     <div className="relative min-h-svh">
@@ -187,10 +235,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <aside
-        className="fixed inset-y-0 left-0 z-(--z-sticky) hidden border-r border-sidebar-border lg:block overflow-hidden transition-[width] duration-(--duration-base) ease-out-quart"
+        className={cn(
+          "fixed inset-y-0 left-0 z-(--z-sticky) hidden border-r border-sidebar-border lg:block overflow-hidden",
+          !isResizingSidebar && "transition-[width] duration-(--duration-base) ease-out-quart",
+        )}
         style={{ width: sidebarWidth }}
       >
         <AppSidebar collapsed={sidebarCollapsed} />
+
+        {/* Drag Handle to Resize Sidebar Width */}
+        {!sidebarCollapsed && (
+          <div
+            role="separator"
+            aria-label="Resize sidebar"
+            tabIndex={0}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizingSidebar(true);
+            }}
+            onDoubleClick={() => {
+              setSidebarWidthPx(DEFAULT_SIDEBAR_WIDTH);
+              localStorage.setItem(SIDEBAR_WIDTH_KEY, String(DEFAULT_SIDEBAR_WIDTH));
+            }}
+            className={cn(
+              "absolute top-0 right-0 bottom-0 w-2 cursor-col-resize group z-30 transition-colors",
+              "hover:bg-primary/40 active:bg-primary",
+              isResizingSidebar && "bg-primary",
+            )}
+            title="Drag to resize sidebar width (Double-click to reset width)"
+          >
+            <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-8 rounded-full bg-muted-foreground/40 group-hover:bg-primary group-hover:scale-y-125 transition-all" />
+          </div>
+        )}
       </aside>
 
       <div

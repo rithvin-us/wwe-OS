@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Eye, FileText, Folder, Search, Sparkles } from "@bop/icons";
+import { Download, Eye, FileText, Folder, Search, Sparkles, Trash2 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
@@ -9,14 +9,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@bop/ui/components/dialog";
 import { TagPill } from "@bop/ui/components/tag-pill";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 
+import { deleteDocumentAction } from "@/app/(platform)/dms/actions";
 import {
   DOCUMENT_CATEGORIES,
   formatFileSize,
@@ -100,8 +104,63 @@ function PreviewDialog({
   );
 }
 
+function DeleteConfirmDialog({
+  document,
+  onOpenChange,
+  onDeleted,
+}: {
+  document: DocumentRecord | null;
+  onOpenChange: (open: boolean) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  function handleDelete() {
+    if (!document) return;
+    startTransition(async () => {
+      const res = await deleteDocumentAction(document.id);
+      if (res.ok) {
+        toast.success(`Deleted "${document.title}"`);
+        onDeleted(document.id);
+        onOpenChange(false);
+      } else {
+        toast.error(res.message || "Failed to delete document.");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={!!document} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete document?</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete{" "}
+            <strong className="text-foreground">{document?.title}</strong>? This action cannot be
+            undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant="destructive" size="sm" disabled={pending} onClick={handleDelete}>
+            {pending ? "Deleting..." : "Delete document"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function buildColumns(
   onPreview: (document: DocumentRecord) => void,
+  onDeleteRequest: (document: DocumentRecord) => void,
 ): ColumnDef<DocumentRecord, unknown>[] {
   return [
     {
@@ -188,6 +247,15 @@ function buildColumns(
               Download
             </a>
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => onDeleteRequest(row.original)}
+          >
+            <Trash2 aria-hidden />
+            Delete
+          </Button>
         </div>
       ),
     },
@@ -195,32 +263,42 @@ function buildColumns(
 }
 
 export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
   const [aiFilter, setAiFilter] = useState<"all" | "ready" | "pending">("all");
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<DocumentRecord | null>(null);
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
 
-  const columns = useMemo(() => buildColumns(setPreviewDoc), []);
+  const columns = useMemo(() => buildColumns(setPreviewDoc, setDeleteDoc), []);
 
-  const rows = documents.filter((d) => {
-    if (statusFilter !== "all" && d.status !== statusFilter) return false;
-    if (categoryFilter !== "all" && d.category !== categoryFilter) return false;
-    if (aiFilter === "ready" && d.summary_status !== "ready") return false;
-    if (aiFilter === "pending" && d.summary_status === "ready") return false;
+  const rows = documents
+    .filter((d) => !deletedIds.includes(d.id))
+    .filter((d) => {
+      if (statusFilter !== "all" && d.status !== statusFilter) return false;
+      if (categoryFilter !== "all" && d.category !== categoryFilter) return false;
+      if (aiFilter === "ready" && d.summary_status !== "ready") return false;
+      if (aiFilter === "pending" && d.summary_status === "ready") return false;
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchTitle = d.title.toLowerCase().includes(q);
-      const matchDesc = (d.description || "").toLowerCase().includes(q);
-      const matchFile = (d.file_name || "").toLowerCase().includes(q);
-      const matchSummary = (d.ai_summary || "").toLowerCase().includes(q);
-      const matchTags = d.tags.some((tag) => tag.name.toLowerCase().includes(q));
-      if (!matchTitle && !matchDesc && !matchFile && !matchSummary && !matchTags) return false;
-    }
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matchTitle = d.title.toLowerCase().includes(q);
+        const matchDesc = (d.description || "").toLowerCase().includes(q);
+        const matchFile = (d.file_name || "").toLowerCase().includes(q);
+        const matchSummary = (d.ai_summary || "").toLowerCase().includes(q);
+        const matchTags = d.tags.some((tag) => tag.name.toLowerCase().includes(q));
+        if (!matchTitle && !matchDesc && !matchFile && !matchSummary && !matchTags) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+
+  function handleDeleted(id: string) {
+    setDeletedIds((prev) => [...prev, id]);
+    router.refresh();
+  }
 
   return (
     <section className="space-y-4">
@@ -295,6 +373,11 @@ export function DocumentsTable({ documents }: { documents: DocumentRecord[] }) {
       />
 
       <PreviewDialog document={previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)} />
+      <DeleteConfirmDialog
+        document={deleteDoc}
+        onOpenChange={(open) => !open && setDeleteDoc(null)}
+        onDeleted={handleDeleted}
+      />
     </section>
   );
 }
