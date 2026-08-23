@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AtSign,
   Bot,
@@ -116,6 +116,57 @@ export function RithuChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const triggerSendWithAttachment = useCallback(
+    async (promptText: string, attachmentToUse?: FileAttachment | null) => {
+      if (busy) return;
+
+      const fileToAttach = attachmentToUse !== undefined ? attachmentToUse : attachedFile;
+      const userMsg: ChatMessage = {
+        id: `usr_${Date.now()}`,
+        sender: "user",
+        text: promptText,
+        timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+        fileAttachment: fileToAttach ? { ...fileToAttach } : undefined,
+      };
+
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+      setAttachedFile(null);
+      setShowCommandMenu(false);
+      setBusy(true);
+
+      try {
+        const history = messages.slice(-8).map((m) => ({
+          sender: m.sender,
+          text: m.text,
+          fileAttachment: m.fileAttachment
+            ? { name: m.fileAttachment.name, type: m.fileAttachment.type }
+            : undefined,
+        }));
+        const res = await fetch("/api/ai/chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: promptText,
+            fileAttachment: fileToAttach || undefined,
+            history,
+          }),
+        });
+        const data: ChatMessage = await res.json();
+        data.timestamp = new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        setMessages((prev) => [...prev, data]);
+      } catch {
+        toast.error("Could not reach Rithu AI service.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [attachedFile, busy, messages],
+  );
+
   useEffect(() => {
     function onAttachEvent(e: Event) {
       const customEv = e as CustomEvent<{
@@ -146,92 +197,7 @@ export function RithuChatWidget() {
     }
     window.addEventListener("rithu:attach-file", onAttachEvent);
     return () => window.removeEventListener("rithu:attach-file", onAttachEvent);
-  }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, busy]);
-
-  // Keep the caret in the input at all times: on open, after Rithu replies,
-  // and after a slash/@ command is picked from the popover (which otherwise
-  // steals focus to the clicked button).
-  useEffect(() => {
-    if (open && !busy) inputRef.current?.focus();
-  }, [open, busy]);
-
-  function handleInputChange(text: string) {
-    setInput(text);
-    if (text.startsWith("/") || text.includes("@")) {
-      setShowCommandMenu(true);
-    } else {
-      setShowCommandMenu(false);
-    }
-  }
-
-  function selectCommand(cmd: CommandItem) {
-    if (cmd.type === "slash") {
-      setInput(`${cmd.key} `);
-    } else {
-      setInput((prev) => {
-        const lastAt = prev.lastIndexOf("@");
-        if (lastAt !== -1) return prev.slice(0, lastAt) + `${cmd.key} `;
-        return `${prev} ${cmd.key} `;
-      });
-    }
-    setShowCommandMenu(false);
-    inputRef.current?.focus();
-  }
-
-  async function triggerSendWithAttachment(
-    promptText: string,
-    attachmentToUse?: FileAttachment | null,
-  ) {
-    if (busy) return;
-
-    const fileToAttach = attachmentToUse !== undefined ? attachmentToUse : attachedFile;
-    const userMsg: ChatMessage = {
-      id: `usr_${Date.now()}`,
-      sender: "user",
-      text: promptText,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-      fileAttachment: fileToAttach ? { ...fileToAttach } : undefined,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setAttachedFile(null);
-    setShowCommandMenu(false);
-    setBusy(true);
-
-    try {
-      const history = messages.slice(-8).map((m) => ({
-        sender: m.sender,
-        text: m.text,
-        fileAttachment: m.fileAttachment
-          ? { name: m.fileAttachment.name, type: m.fileAttachment.type }
-          : undefined,
-      }));
-      const res = await fetch("/api/ai/chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: promptText,
-          fileAttachment: fileToAttach || undefined,
-          history,
-        }),
-      });
-      const data: ChatMessage = await res.json();
-      data.timestamp = new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      setMessages((prev) => [...prev, data]);
-    } catch {
-      toast.error("Could not reach Rithu AI service.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [triggerSendWithAttachment]);
 
   async function handleSend() {
     const promptText = input.trim();
