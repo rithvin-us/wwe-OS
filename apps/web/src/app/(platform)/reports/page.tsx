@@ -5,8 +5,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { ReportCatalog } from "@/app/(platform)/reports/report-catalog";
 import { BarChartComponent, ChartCard } from "@/components/charts";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
-import { mockData } from "@/lib/mock-data";
-import { getReportCatalog, getReportHistory } from "@/lib/reports";
+import { getReportCatalog, getReportHistory, type ReportExportRecord } from "@/lib/reports";
 import { listTags } from "@/lib/tags";
 
 export const metadata: Metadata = {
@@ -22,6 +21,28 @@ function formatDateTime(iso: string): string {
   });
 }
 
+/** Per-report run counts for the frequency chart — real, derived from the
+ * export history. Empty history yields an empty chart, never invented runs. */
+function reportUsage(history: ReportExportRecord[]): { name: string; runsCount: number }[] {
+  const counts = new Map<string, number>();
+  for (const row of history) {
+    const key = row.title || row.report_key;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([name, runsCount]) => ({ name, runsCount }))
+    .sort((a, b) => b.runsCount - a.runsCount)
+    .slice(0, 8);
+}
+
+function mostActiveModule(history: ReportExportRecord[]): { module: string; pct: number } | null {
+  if (history.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const row of history) counts.set(row.module, (counts.get(row.module) ?? 0) + 1);
+  const [module, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  return { module, pct: Math.round((n / history.length) * 100) };
+}
+
 export default async function ReportsPage() {
   const [catalog, history, allTags] = await Promise.all([
     getReportCatalog().catch(() => []),
@@ -29,7 +50,8 @@ export default async function ReportsPage() {
     listTags().catch(() => []),
   ]);
 
-  const usageData = mockData.other.MOCK_REPORT_USAGE;
+  const usageData = reportUsage(history);
+  const topCategory = mostActiveModule(history);
 
   return (
     <div className="space-y-8">
@@ -38,39 +60,41 @@ export default async function ReportsPage() {
         description="Run ready-made reports across the company and download them in your preferred format."
       />
 
-      {/* Report Analytics Cards */}
+      {/* Report Analytics Cards — all derived from real catalog + export history. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
             <span>Total Catalog Reports</span>
-            <FileSpreadsheet className="size-4 text-blue-600 dark:text-blue-400" />
+            <FileSpreadsheet className="size-4 text-primary" />
           </div>
           <p className="text-2xl font-bold font-display">
-            <AnimatedCounter value={catalog.length || 12} />
+            <AnimatedCounter value={catalog.length} />
           </p>
-          <p className="text-[11px] text-muted-foreground">Ready for automated generation</p>
+          <p className="text-[11px] text-muted-foreground">Ready to run on demand or on schedule</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
             <span>Exports Generated</span>
-            <History className="size-4 text-blue-600 dark:text-blue-400" />
+            <History className="size-4 text-primary" />
           </div>
           <p className="text-2xl font-bold font-display">
-            <AnimatedCounter value={history.length || 148} />
+            <AnimatedCounter value={history.length} />
           </p>
-          <p className="text-[11px] text-muted-foreground">Across HR, Purchases, and Logistics</p>
+          <p className="text-[11px] text-muted-foreground">Recorded across the company</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-mono uppercase">
-            <span>Most Active Category</span>
-            <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
+            <span>Most Active Area</span>
+            <TrendingUp className="size-4 text-primary" />
           </div>
-          <p className="text-2xl font-bold font-display text-blue-600 dark:text-blue-400">
-            HR & Payroll
+          <p className="text-2xl font-bold font-display capitalize text-primary">
+            {topCategory ? topCategory.module : "—"}
           </p>
-          <p className="text-[11px] text-muted-foreground">42% of total platform downloads</p>
+          <p className="text-[11px] text-muted-foreground">
+            {topCategory ? `${topCategory.pct}% of exports` : "No exports yet"}
+          </p>
         </div>
       </div>
 

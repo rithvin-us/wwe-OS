@@ -3,7 +3,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { TIMELINE_MODULES, getTimeline, type TimelineModule } from "@/lib/audit";
 
 import { BarChartComponent, ChartCard } from "@/components/charts";
-import { mockData } from "@/lib/mock-data";
+import { eventsByModule } from "@/lib/audit-helpers";
 import { GitTimelineGraph } from "@/components/timeline/git-timeline-graph";
 
 export const metadata: Metadata = {
@@ -38,6 +38,8 @@ export default async function TimelinePage({
     page,
   });
 
+  const activityByModule = eventsByModule(data.entries);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -48,13 +50,13 @@ export default async function TimelinePage({
       {/* Activity Volume Chart */}
       <ChartCard
         title="Activity Volume by Module"
-        empty={mockData.other.MOCK_TIMELINE_ACTIVITY.length === 0}
+        empty={activityByModule.length === 0}
         description="Recorded platform events across operations"
         badge="Platform Events"
         iconName="history"
       >
         <BarChartComponent
-          data={mockData.other.MOCK_TIMELINE_ACTIVITY}
+          data={activityByModule}
           xAxisKey="module"
           height={160}
           valueSuffix="events"

@@ -5,7 +5,7 @@ import { EmptyState } from "@bop/ui/components/empty-state";
 import { PageHeader } from "@bop/ui/components/page-header";
 
 import { BarChartComponent, ChartCard } from "@/components/charts";
-import { mockData } from "@/lib/mock-data";
+import { automationRunSeries } from "@/config/automation";
 import { getAlertRules } from "@/lib/alerts";
 import { getRules, getRuleSources, getRunHistory } from "@/lib/automation";
 import { getBillingCustomers, getInvoices, getNextInvoiceNumber } from "@/lib/invoices";
@@ -43,7 +43,7 @@ export default async function AutomationPage() {
       getAlertRules(),
     ]);
 
-  const automationRuns = mockData.other.MOCK_AUTOMATION_RUNS;
+  const automationRuns = automationRunSeries(history);
 
   return (
     <div className="space-y-8">
@@ -55,8 +55,8 @@ export default async function AutomationPage() {
       {/* Rule Execution Health Chart */}
       <ChartCard
         title="Automation Execution Health"
-        empty={automationRuns.length === 0}
-        description="Scheduled rule triggers and collection runs"
+        empty={history.length === 0}
+        description="Scheduled rule triggers and collection runs, last 7 days"
         badge="Weekly Execution"
         iconName="zap"
       >
@@ -66,7 +66,8 @@ export default async function AutomationPage() {
           height={170}
           valueSuffix="runs"
           series={[
-            { key: "successful", name: "Successful Runs", color: "var(--module-automation)" },
+            { key: "successful", name: "Successful", color: "var(--module-automation)" },
+            { key: "failed", name: "Failed", color: "var(--destructive)" },
           ]}
         />
       </ChartCard>

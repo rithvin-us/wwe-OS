@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ChevronLeft, ChevronRight, Droplets, ShieldCheck, Factory, Award } from "@bop/icons";
+import { ChevronLeft, ChevronRight, Droplets, Factory, ShieldCheck } from "@bop/icons";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
+
+import { COMPANY } from "@/config/company";
 
 interface FeatureSlide {
   id: string;
@@ -11,48 +13,37 @@ interface FeatureSlide {
   description: string;
   image: string;
   icon: typeof Droplets;
-  metrics: { label: string; value: string }[];
 }
 
+// Honest brand imagery + qualitative descriptions of the operation — no
+// invented metrics. Each slide describes what its (real) photo shows.
 const SLIDES: FeatureSlide[] = [
   {
     id: "stp-ops",
-    badge: "STP Plant Operations",
-    title: "50+ Million Liters Processed Daily",
+    badge: "Plant operations",
+    title: "Sewage treatment, run from one place",
     description:
-      "Maintaining 100% environmental compliance across our sewage treatment plants through round-the-clock operator vigilance.",
+      "Round-the-clock treatment across the plants — operated, monitored, and reported from a single operations workspace.",
     image: "/images/stp-facility.jpg",
     icon: Factory,
-    metrics: [
-      { label: "Daily Wastewater Treated", value: "50 MLD" },
-      { label: "Effluent Standard Compliance", value: "100%" },
-    ],
   },
   {
     id: "water-reuse",
-    badge: "Environmental Achievement",
-    title: "88% Recycled Water Utilization",
+    badge: "Sustainability",
+    title: "Water reuse and recycling",
     description:
-      "Closing the loop by returning tertiary-treated water back to industrial cooling towers and local water networks.",
+      "Tertiary-treated water returned to industrial cooling and local networks, tracked end to end alongside the rest of operations.",
     image: "/images/stp-water-reuse.jpg",
     icon: Droplets,
-    metrics: [
-      { label: "Recycled Water Reused", value: "88%" },
-      { label: "Solar-Powered Energy", value: "25%" },
-    ],
   },
   {
-    id: "scada-safety",
-    badge: "Operational Safety",
-    title: "1,200+ Days Zero Safety Incidents",
+    id: "plant-safety",
+    badge: "Plant safety",
+    title: "Safe, monitored operations",
     description:
-      "Real-time SCADA telemetry, automated chemical dosing checks, and strict plant safety protocols for all shift engineers.",
+      "Telemetry, dosing checks, and shift protocols keep every plant running safely — with the records to prove it.",
     image: "/images/stp-aeration.jpg",
     icon: ShieldCheck,
-    metrics: [
-      { label: "Safe Work Days", value: "1,200+" },
-      { label: "SCADA Monitoring", value: "24 / 7" },
-    ],
   },
 ];
 
@@ -73,11 +64,11 @@ export function LoginFeatureShowcase() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col justify-between overflow-hidden bg-slate-950 p-8 lg:p-12 text-white"
+      className="relative flex h-full w-full flex-col justify-between overflow-hidden bg-neutral-950 p-8 lg:p-12 text-white"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
-      {/* Background Image Carousel with Overlay Scrim */}
+      {/* Background image carousel with an overlay scrim for text contrast. */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSlide.id}
@@ -90,40 +81,39 @@ export function LoginFeatureShowcase() {
           <img
             src={activeSlide.image}
             alt={activeSlide.title}
-            className="h-full w-full object-cover object-center filter brightness-[0.75]"
+            className="h-full w-full object-cover object-center brightness-[0.75]"
           />
-          {/* Gradient Scrim for Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-neutral-950/40" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Top Header Badge & Employee Navigation */}
+      {/* Brand badge & carousel controls */}
       <div className="relative z-10 flex items-center justify-between">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-900/80 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md shadow-md">
-          <Award className="size-3.5 text-cyan-400" />
-          <span>STP Employee Operations Portal</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md shadow-md">
+          <span>{COMPANY.name} · Operations</span>
         </div>
 
-        {/* Manual Carousel Controls */}
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={() => setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)}
-            className="flex size-8 items-center justify-center rounded-full border border-white/20 bg-slate-900/60 text-slate-300 transition hover:bg-slate-800 hover:text-white active:scale-95"
-            aria-label="Previous Slide"
+            className="flex size-8 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white/80 transition hover:bg-black/60 hover:text-white active:scale-95"
+            aria-label="Previous slide"
           >
             <ChevronLeft className="size-4" />
           </button>
           <button
+            type="button"
             onClick={() => setCurrentSlide((prev) => (prev + 1) % SLIDES.length)}
-            className="flex size-8 items-center justify-center rounded-full border border-white/20 bg-slate-900/60 text-slate-300 transition hover:bg-slate-800 hover:text-white active:scale-95"
-            aria-label="Next Slide"
+            className="flex size-8 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white/80 transition hover:bg-black/60 hover:text-white active:scale-95"
+            aria-label="Next slide"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
       </div>
 
-      {/* Main Content & Achievement Display */}
+      {/* Slide content */}
       <div className="relative z-10 my-auto py-10">
         <AnimatePresence mode="wait">
           <motion.div
@@ -134,7 +124,7 @@ export function LoginFeatureShowcase() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-5"
           >
-            <div className="inline-flex items-center gap-2 rounded-md bg-cyan-500/20 border border-cyan-400/30 px-3 py-1 text-xs font-semibold text-cyan-300 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
               <IconComponent className="size-4" />
               <span>{activeSlide.badge}</span>
             </div>
@@ -143,42 +133,30 @@ export function LoginFeatureShowcase() {
               {activeSlide.title}
             </h2>
 
-            <p className="max-w-lg text-sm leading-relaxed text-slate-200 lg:text-base drop-shadow-xs">
+            <p className="max-w-lg text-sm leading-relaxed text-white/85 lg:text-base drop-shadow-xs">
               {activeSlide.description}
             </p>
-
-            {/* Practical Operational Achievements */}
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              {activeSlide.metrics.map((m, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-xl border border-white/15 bg-slate-900/70 p-4 backdrop-blur-md shadow-lg"
-                >
-                  <p className="font-display text-xl font-bold text-cyan-400">{m.value}</p>
-                  <p className="text-xs font-medium text-slate-300 mt-0.5">{m.label}</p>
-                </div>
-              ))}
-            </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Footer Indicators & Employee Notice */}
+      {/* Footer indicators */}
       <div className="relative z-10 flex items-center justify-between border-t border-white/15 pt-5">
         <div className="flex items-center gap-2">
-          {SLIDES.map((_, idx) => (
+          {SLIDES.map((slide, idx) => (
             <button
-              key={idx}
+              type="button"
+              key={slide.id}
               onClick={() => setCurrentSlide(idx)}
               className={`h-1.5 rounded-full transition duration-(--duration-slow) ease-out-quart ${
-                currentSlide === idx ? "w-7 bg-cyan-400" : "w-2 bg-white/30 hover:bg-white/60"
+                currentSlide === idx ? "w-7 bg-white" : "w-2 bg-white/30 hover:bg-white/60"
               }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
         </div>
 
-        <p className="text-xs text-slate-300 font-medium">Authorized Employee Access Only</p>
+        <p className="text-xs text-white/70 font-medium">Authorized access only</p>
       </div>
     </div>
   );
