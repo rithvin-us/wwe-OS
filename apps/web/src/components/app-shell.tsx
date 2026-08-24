@@ -46,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (saved) {
       const parsed = parseInt(saved, 10);
       if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- restores the saved sidebar width from localStorage on mount; browser-only, cannot run during SSR
         setSidebarWidthPx(parsed);
       }
     }

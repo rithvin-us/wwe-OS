@@ -98,20 +98,20 @@ export function DashboardCharts({
       {/* 4. Category Breakdown Donut Chart */}
       <ChartCard
         title="Procurement Categories"
-        description="Spend distribution by item category"
-        badge="Categories"
+        description="Spend distribution across top purchased items"
+        badge="By item"
         icon={PieChartIcon}
         loading={loading}
         error={error}
         empty={categoryBreakdown.length === 0}
-        emptyMessage="No category breakdown available yet."
+        emptyMessage="No itemised purchase spend recorded yet."
       >
         <DonutChartComponent
           data={categoryBreakdown}
           height={190}
-          centerTitle="Total Categories"
+          centerTitle="Top items"
           centerValue={`${categoryBreakdown.length}`}
-          valueSuffix="%"
+          valueFormat="currency"
         />
       </ChartCard>
 
