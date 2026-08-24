@@ -1,5 +1,5 @@
 # WWE OS platform kernel — runtime dependencies.
-python-dotenv>=1.0    # loads repo-root .env for local (non-Docker) runs
+python-dotenv>=1.2.3    # loads repo-root .env for local (non-Docker) runs
 Django>=6.1,<6.2
 djangorestframework>=3.18.0
 djangorestframework-simplejwt>=5.5.1
