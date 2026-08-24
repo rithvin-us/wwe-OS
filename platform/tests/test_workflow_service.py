@@ -3,7 +3,10 @@ draining, and the pause/resume/cancel/retry control-plane actions."""
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 from shared.exceptions import ConflictError
 from workflow.models import PipelineRun, PipelineRunStatus, StepRunStatus
 from workflow.registry import (
@@ -16,6 +19,10 @@ from workflow.registry import (
 from workflow.services import PipelineService
 
 pytestmark = pytest.mark.django_db
+
+
+def _raise(ctx: StepContext) -> StepResult:
+    raise RuntimeError("boom")
 
 
 def _register(key, *, run=None, max_attempts=1):
@@ -171,3 +178,77 @@ def test_pipeline_tick_command_advances_due_runs(tenant):
     call_command("pipeline_tick", stdout=StringIO())  # second tick notices "no more steps"
     run.refresh_from_db()
     assert run.status == PipelineRunStatus.SUCCESS
+
+
+# --------------------------------------------------------------------------- #
+# Read models — the definition catalog and run stats behind the dashboard.
+# --------------------------------------------------------------------------- #
+
+
+def test_list_definitions_describes_registered_pipelines(tenant):
+    def two_step(ctx: StepContext) -> StepResult:
+        return StepResult()
+
+    register_pipeline(
+        PipelineDefinition(
+            key="test.catalog.two",
+            label="Two-step",
+            module="test",
+            permission="test.run",
+            version=3,
+            steps=[
+                StepDefinition(key="a", label="Step A", run=two_step, max_attempts=2),
+                StepDefinition(key="b", label="Step B", run=two_step),
+            ],
+        )
+    )
+
+    catalog = PipelineService().list_definitions()
+
+    entry = next(d for d in catalog if d["key"] == "test.catalog.two")
+    assert entry["label"] == "Two-step"
+    assert entry["module"] == "test"
+    assert entry["version"] == 3
+    assert entry["steps"] == [
+        {"key": "a", "label": "Step A", "max_attempts": 2},
+        {"key": "b", "label": "Step B", "max_attempts": 1},
+    ]
+
+
+def test_stats_counts_by_status_and_pipeline(tenant):
+    _register("test.stats.alpha")
+    _register("test.stats.beta", run=_raise, max_attempts=1)
+    # 2 alpha runs left QUEUED, 1 beta run driven to FAILED.
+    PipelineService().start(pipeline_key="test.stats.alpha", tenant=tenant)
+    PipelineService().start(pipeline_key="test.stats.alpha", tenant=tenant)
+    beta, _ = PipelineService().start(pipeline_key="test.stats.beta", tenant=tenant)
+    PipelineService().run_to_completion(beta)
+
+    stats = PipelineService().stats(PipelineRun.objects.filter(tenant=tenant))
+
+    assert stats["total"] == 3
+    assert stats["active"] == 2  # the two queued alpha runs
+    assert stats["by_status"][PipelineRunStatus.QUEUED] == 2
+    assert stats["by_status"][PipelineRunStatus.FAILED] == 1
+    by_key = {row["pipeline_key"]: row for row in stats["by_pipeline"]}
+    assert by_key["test.stats.alpha"]["total"] == 2
+    assert by_key["test.stats.alpha"]["active"] == 2
+    assert by_key["test.stats.beta"]["failed"] == 1
+
+
+def test_stats_flags_active_runs_past_the_budget_as_at_risk(tenant):
+    _register("test.stats.risk")
+    fresh, _ = PipelineService().start(pipeline_key="test.stats.risk", tenant=tenant)
+    stale, _ = PipelineService().start(pipeline_key="test.stats.risk", tenant=tenant)
+    # Backdate one run's start well past the budget.
+    PipelineRun.objects.filter(id=stale.id).update(
+        status=PipelineRunStatus.RUNNING,
+        started_at=timezone.now() - timedelta(seconds=7200),
+    )
+
+    stats = PipelineService().stats(
+        PipelineRun.objects.filter(tenant=tenant), at_risk_after_seconds=3600
+    )
+
+    assert stats["at_risk"] == 1
+    assert stats["at_risk_after_seconds"] == 3600

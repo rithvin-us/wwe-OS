@@ -556,6 +556,9 @@ METRICS_TOKEN = env_str("METRICS_TOKEN", "") or ""
 PIPELINE_STEP_STALE_TIMEOUT_SECONDS = env_int("PIPELINE_STEP_STALE_TIMEOUT_SECONDS", 600)
 PIPELINE_TICK_BATCH_SIZE = env_int("PIPELINE_TICK_BATCH_SIZE", 50)
 PIPELINE_TICK_INTERVAL_SECONDS = env_int("PIPELINE_TICK_INTERVAL_SECONDS", 3)
+# An active run still going past this budget is flagged "at risk" by the
+# workflow stats endpoint — a single global stand-in for per-definition SLAs.
+PIPELINE_RUN_AT_RISK_SECONDS = env_int("PIPELINE_RUN_AT_RISK_SECONDS", 3600)
 
 LOGGING = {
     "version": 1,

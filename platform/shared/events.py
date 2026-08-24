@@ -41,6 +41,7 @@ class Events:
     WORKFLOW_STARTED = "workflow.started"
     WORKFLOW_STEP_APPROVED = "workflow.step_approved"
     WORKFLOW_COMPLETED = "workflow.completed"
+    WORKFLOW_FAILED = "workflow.failed"
     WORKFLOW_REJECTED = "workflow.rejected"
     WORKFLOW_CANCELLED = "workflow.cancelled"
     FILE_STORED = "storage.file_stored"
