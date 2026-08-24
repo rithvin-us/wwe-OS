@@ -1,4 +1,5 @@
-"""Management Briefing API — one 'what changed' summary."""
+"""Workspace cockpit API — the ranked worklist, its counts, and the
+'what changed' digest, in one call."""
 
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ class BriefingView(APIView):
     @extend_schema(
         tags=["briefing"],
         responses={
-            200: OpenApiResponse(description="What changed: activity, highlights, attention."),
+            200: OpenApiResponse(description="Cockpit: counts, ranked worklist, and digest."),
         },
     )
     def get(self, request: Request) -> Response:
