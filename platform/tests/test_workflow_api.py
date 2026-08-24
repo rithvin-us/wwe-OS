@@ -98,3 +98,38 @@ def test_control_actions_require_workflow_control_permission(
     response = auth_client(viewer).post(f"{RUNS_URL}{run.id}/pause/")
 
     assert response.status_code == 403
+
+
+PIPELINES_URL = "/api/v1/workflow/pipelines/"
+STATS_URL = "/api/v1/workflow/runs/stats/"
+
+
+def test_catalog_requires_authentication(api):
+    assert api.get(PIPELINES_URL).status_code == 401
+
+
+def test_catalog_lists_registered_pipelines(owner, auth_client):
+    response = auth_client(owner).get(PIPELINES_URL)
+
+    assert response.status_code == 200
+    entry = next(p for p in response.data if p["key"] == "test.api.pipeline")
+    assert entry["module"] == "test"
+    assert entry["steps"] == [{"key": "only", "label": "Only", "max_attempts": 1}]
+
+
+def test_stats_endpoint_returns_counts(tenant, owner, auth_client):
+    PipelineService().start(pipeline_key="test.api.pipeline", tenant=tenant)
+
+    response = auth_client(owner).get(STATS_URL)
+
+    assert response.status_code == 200
+    assert response.data["total"] == 1
+    assert response.data["active"] == 1
+    assert response.data["by_pipeline"][0]["pipeline_key"] == "test.api.pipeline"
+
+
+def test_stats_requires_workflow_view_permission(tenant, make_user, make_role, grant, auth_client):
+    outsider = make_user(email="outsider@acme.test", username="outsider", tenant=tenant)
+    grant(outsider, make_role(tenant, "outsider", []))  # no workflow.view
+
+    assert auth_client(outsider).get(STATS_URL).status_code == 403

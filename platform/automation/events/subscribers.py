@@ -65,5 +65,9 @@ def _on_pipeline_finished(event: str, instance: Any = None, **_extra: Any) -> No
     AutomationService()._advance_schedule(rule=rule, finished=finished)
 
 
+# Every terminal outcome records an AutomationRun — success, failure, and
+# cancellation alike — so the /automation history never silently drops a run
+# just because the engine now announces failure on its own event.
 subscribe(Events.WORKFLOW_COMPLETED, _on_pipeline_finished)
+subscribe(Events.WORKFLOW_FAILED, _on_pipeline_finished)
 subscribe(Events.WORKFLOW_CANCELLED, _on_pipeline_finished)

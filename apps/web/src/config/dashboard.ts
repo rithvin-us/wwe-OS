@@ -41,30 +41,49 @@ export interface LivePurchaseStats {
   unpaid: number;
 }
 
-export function buildKpis(purchase: LivePurchaseStats | null): Kpi[] {
+/** This-month revenue (from invoices) and expenses (from purchase bills).
+ * Each is `null` only when its source fetch failed — a live zero (no data
+ * yet) stays a real number, so a genuine failure never hides behind "—". */
+export interface LiveFinancials {
+  revenueMonth: number | null;
+  expensesMonth: number | null;
+}
+
+/** A wired money metric is "live" when it has a number, "error" when its
+ * fetch failed. It is never "unwired" — the backend for it now exists. */
+function moneyStatus(value: number | null): KpiStatus {
+  return value === null ? "error" : "live";
+}
+
+export function buildKpis(
+  purchase: LivePurchaseStats | null,
+  financials: LiveFinancials | null = null,
+): Kpi[] {
   const purchaseFetchFailed = purchase === null;
+  const revenueMonth = financials?.revenueMonth ?? null;
+  const expensesMonth = financials?.expensesMonth ?? null;
 
   const kpis: Kpi[] = [
     {
       key: "revenue",
-      label: "Revenue",
+      label: "Revenue (month)",
       icon: CircleDollarSign,
       format: "currency",
-      value: 0,
+      value: revenueMonth,
       deltaPct: null,
-      source: "Sales & finance",
-      status: "unwired",
-      href: "/reports",
+      source: "Invoices",
+      status: moneyStatus(revenueMonth),
+      href: "/invoices",
     },
     {
       key: "expenses",
-      label: "Expenses",
+      label: "Expenses (month)",
       icon: Wallet,
       format: "currency",
-      value: 0,
+      value: expensesMonth,
       deltaPct: null,
-      source: "Purchases & finance",
-      status: "live",
+      source: "Purchases",
+      status: moneyStatus(expensesMonth),
       href: "/purchase",
     },
     {
@@ -103,12 +122,20 @@ export interface SummaryRow {
   format: KpiFormat;
 }
 
-export const FINANCIAL_SUMMARY: SummaryRow[] = [
-  { label: "Revenue (month)", value: 0, format: "currency" },
-  { label: "Expenses (month)", value: 0, format: "currency" },
-  { label: "Net", value: 0, format: "currency" },
-  { label: "Cash position", value: 0, format: "currency" },
-];
+/** Live monthly financials. `Net` needs both halves, so it blanks if either
+ * is missing; `Cash position` has no source yet and stays an honest blank
+ * (—) rather than a fabricated 0. */
+export function financialSummary(financials: LiveFinancials | null): SummaryRow[] {
+  const revenue = financials?.revenueMonth ?? null;
+  const expenses = financials?.expensesMonth ?? null;
+  const net = revenue !== null && expenses !== null ? revenue - expenses : null;
+  return [
+    { label: "Revenue (month)", value: revenue, format: "currency" },
+    { label: "Expenses (month)", value: expenses, format: "currency" },
+    { label: "Net (month)", value: net, format: "currency" },
+    { label: "Cash position", value: null, format: "currency" },
+  ];
+}
 
 export function procurementSummary(
   purchase: LivePurchaseStats | null,
@@ -266,6 +293,71 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { label: "Business Timeline", href: "/timeline", icon: History },
   { label: "Automation", href: "/automation", icon: Workflow },
 ];
+
+// --- Trends -------------------------------------------------------------- //
+// Real monthly series from the purchase (spend) and finance (revenue) stats
+// endpoints, shaped for the dashboard charts. A missing series (fetch failed)
+// yields an empty array, which the charts render as an honest empty state —
+// never fabricated points.
+
+export interface MonthlyPoint {
+  /** "YYYY-MM". */
+  period: string;
+  amount: number;
+}
+
+const MONTH_ABBR = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function monthLabel(period: string): string {
+  const month = Number(period.split("-")[1]);
+  return MONTH_ABBR[month - 1] ?? period;
+}
+
+/** Current month as "YYYY-MM", to pick this month's figure out of a series. */
+export function currentPeriod(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** This month's amount from a monthly series: a live 0 when the month has no
+ * entry, `null` only when the series itself is missing (its fetch failed). */
+export function monthlyAmountFor(series: MonthlyPoint[] | null, period: string): number | null {
+  if (series === null) return null;
+  return series.find((point) => point.period === period)?.amount ?? 0;
+}
+
+/** Monthly bill spend, shaped for the "Procurement & Spend" bar chart. */
+export function spendTrend(series: MonthlyPoint[] | null): Array<{ month: string; spend: number }> {
+  return (series ?? []).map((point) => ({ month: monthLabel(point.period), spend: point.amount }));
+}
+
+/** Revenue vs expenses per month, merged across both series by period, for
+ * the "Revenue vs Expenses" line chart. */
+export function financialTrend(
+  revenue: MonthlyPoint[] | null,
+  expenses: MonthlyPoint[] | null,
+): Array<{ month: string; revenue: number; expenses: number }> {
+  const rev = new Map((revenue ?? []).map((point) => [point.period, point.amount]));
+  const exp = new Map((expenses ?? []).map((point) => [point.period, point.amount]));
+  const periods = Array.from(new Set([...rev.keys(), ...exp.keys()])).sort();
+  return periods.map((period) => ({
+    month: monthLabel(period),
+    revenue: rev.get(period) ?? 0,
+    expenses: exp.get(period) ?? 0,
+  }));
+}
 
 export function formatValue(value: number | null, format: KpiFormat): string {
   if (value === null) return "—";

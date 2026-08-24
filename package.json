@@ -32,7 +32,9 @@
       "minimatch@3": ">=3.1.4 <4",
       "brace-expansion@1": ">=1.1.12 <2",
       "brace-expansion@2": ">=2.0.2 <3",
-      "brace-expansion@5": ">=5.0.9 <6"
+      "brace-expansion@5": ">=5.0.9 <6",
+      "tar": ">=7.5.21",
+      "uuid": ">=11.1.1"
     }
   }
 }

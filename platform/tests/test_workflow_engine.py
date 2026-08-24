@@ -356,6 +356,75 @@ def test_cancelling_a_run_lands_on_cancelled_not_failed(tenant):
 
 
 # --------------------------------------------------------------------------- #
+# Terminal events — each terminal state announces itself distinctly so a
+# subscriber can react to failure without inspecting run.status.
+# --------------------------------------------------------------------------- #
+
+
+def _drain_capturing_events(run, monkeypatch, *, max_ticks=20) -> list[str]:
+    from workflow import engine
+
+    published: list[str] = []
+    monkeypatch.setattr(engine, "publish", lambda event, **_: published.append(event))
+    for _ in range(max_ticks):
+        run.refresh_from_db()
+        if run.status in (
+            PipelineRunStatus.SUCCESS,
+            PipelineRunStatus.FAILED,
+            PipelineRunStatus.CANCELLED,
+        ):
+            break
+        advance_one(run)
+    return published
+
+
+def test_successful_run_publishes_workflow_completed(tenant, monkeypatch):
+    from shared.events import Events
+
+    _register_single_step_pipeline("test.events.success", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.events.success")
+
+    events = _drain_capturing_events(run, monkeypatch)
+
+    assert run.status == PipelineRunStatus.SUCCESS
+    assert events == [Events.WORKFLOW_COMPLETED]
+    assert Events.WORKFLOW_FAILED not in events
+
+
+def test_failed_run_publishes_workflow_failed_not_completed(tenant, monkeypatch):
+    from shared.events import Events
+
+    def always_fails(ctx: StepContext) -> StepResult:
+        raise RuntimeError("permanent")
+
+    _register_single_step_pipeline("test.events.failure", run=always_fails, max_attempts=1)
+    run = _start_run(tenant, "test.events.failure")
+
+    events = _drain_capturing_events(run, monkeypatch)
+
+    assert run.status == PipelineRunStatus.FAILED
+    assert events == [Events.WORKFLOW_FAILED]
+    assert Events.WORKFLOW_COMPLETED not in events
+
+
+def test_cancelled_run_publishes_workflow_cancelled(tenant, monkeypatch):
+    from shared.events import Events
+
+    _register_single_step_pipeline("test.events.cancel", run=lambda ctx: StepResult())
+    run = _start_run(tenant, "test.events.cancel")
+    advance_one(run)  # only step succeeds, run still RUNNING
+    run.refresh_from_db()
+    run.status = PipelineRunStatus.COMPENSATING
+    run.termination_reason = "cancelled"
+    run.save(update_fields=["status", "termination_reason"])
+
+    events = _drain_capturing_events(run, monkeypatch)
+
+    assert run.status == PipelineRunStatus.CANCELLED
+    assert events == [Events.WORKFLOW_CANCELLED]
+
+
+# --------------------------------------------------------------------------- #
 # Crash recovery (reclaim_stale_steps)
 # --------------------------------------------------------------------------- #
 

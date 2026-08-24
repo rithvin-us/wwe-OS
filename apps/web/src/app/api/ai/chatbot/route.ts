@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { FINANCIAL_SUMMARY, formatValue } from "@/config/dashboard";
+import {
+  currentPeriod,
+  financialSummary,
+  formatValue,
+  type LiveFinancials,
+  monthlyAmountFor,
+} from "@/config/dashboard";
 import { getDocuments } from "@/lib/dms";
 import { getEmployees } from "@/lib/hr";
-import { getPurchaseBillStats, getVendors } from "@/lib/purchase";
+import { getInvoiceStats } from "@/lib/invoices";
+import { getPurchaseBillStats, getPurchaseInsights, getVendors } from "@/lib/purchase";
 
 export interface ChatMessage {
   id: string;
@@ -107,12 +114,27 @@ export async function POST(request: Request) {
     // Real platform data — every figure below is read from the same sources
     // the Executive Dashboard and module pages use. Nothing here is invented;
     // a fetch failure yields an honest empty result, not a made-up number.
-    const [documents, purchaseStats, vendors, employees] = await Promise.all([
-      getDocuments().catch(() => []),
-      getPurchaseBillStats().catch(() => null),
-      getVendors().catch(() => []),
-      getEmployees().catch(() => []),
-    ]);
+    const [documents, purchaseStats, purchaseInsights, invoiceStats, vendors, employees] =
+      await Promise.all([
+        getDocuments().catch(() => []),
+        getPurchaseBillStats().catch(() => null),
+        getPurchaseInsights().catch(() => null),
+        getInvoiceStats().catch(() => null),
+        getVendors().catch(() => []),
+        getEmployees().catch(() => []),
+      ]);
+
+    // Real monthly financials — the same live figures the dashboard shows,
+    // so Rithu never quotes a fabricated number. `null` where a source fetch
+    // failed, which formatValue renders honestly as "—".
+    const financials: LiveFinancials = {
+      revenueMonth: invoiceStats ? invoiceStats.revenue_month : null,
+      expensesMonth:
+        purchaseStats === null || purchaseInsights === null
+          ? null
+          : monthlyAmountFor(purchaseInsights.monthly_spend, currentPeriod()),
+    };
+    const financialRows = financialSummary(financials);
 
     const documentsIndex = documents.map((doc) => ({
       title: doc.title,
@@ -174,7 +196,7 @@ Retrieved Indexed Documents (from Document Management, real data — may be empt
 ${JSON.stringify(activeRAGDocs, null, 2)}
 
 Live Company Figures (from Purchases & Finance):
-${FINANCIAL_SUMMARY.map((row) => `- ${row.label}: ${formatValue(row.value, row.format)}`).join("\n")}
+${financialRows.map((row) => `- ${row.label}: ${formatValue(row.value, row.format)}`).join("\n")}
 - Purchases: ${purchaseStats?.processed ?? "—"} bills processed, ${purchaseStats?.needs_attention ?? "—"} needing review, ${purchaseStats?.unpaid ?? "—"} unpaid
 
 User Question/Prompt: "${effectivePrompt || "What is this file and explain what's inside?"}"
@@ -430,9 +452,9 @@ Return your response strictly as a JSON object matching this schema:
     ) {
       replyText =
         "Here's a quick look at how the business is doing today! 😊\n\n" +
-        FINANCIAL_SUMMARY.map(
-          (row) => `• **${row.label}**: ${formatValue(row.value, row.format)}`,
-        ).join("\n") +
+        financialRows
+          .map((row) => `• **${row.label}**: ${formatValue(row.value, row.format)}`)
+          .join("\n") +
         `\n• **Purchases / Invoices**: ${purchaseStats?.processed ?? "—"} processed, ${purchaseStats?.needs_attention ?? "—"} pending review, ${purchaseStats?.unpaid ?? "—"} unpaid\n` +
         `• **Team**: ${activeEmployees.length || "—"} active employees`;
       suggestedPrompts = [

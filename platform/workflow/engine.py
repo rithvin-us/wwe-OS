@@ -28,6 +28,15 @@ from workflow.registry import StepContext, get_pipeline
 
 logger = logging.getLogger("platform.workflow")
 
+# Terminal run status -> the event announcing it. SUCCESS is the implicit
+# default (WORKFLOW_COMPLETED) so a status that somehow isn't mapped still
+# announces *something* rather than silently publishing nothing.
+_TERMINAL_EVENTS = {
+    PipelineRunStatus.SUCCESS: Events.WORKFLOW_COMPLETED,
+    PipelineRunStatus.FAILED: Events.WORKFLOW_FAILED,
+    PipelineRunStatus.CANCELLED: Events.WORKFLOW_CANCELLED,
+}
+
 
 class AdvanceOutcome(StrEnum):
     STEP_SUCCEEDED = "step_succeeded"
@@ -61,11 +70,11 @@ def _finish_run(run: PipelineRun, status: str) -> AdvanceOutcome:
     )
     run.refresh_from_db()
     if updated:
-        event = (
-            Events.WORKFLOW_CANCELLED
-            if status == PipelineRunStatus.CANCELLED
-            else Events.WORKFLOW_COMPLETED
-        )
+        # One event per terminal state so subscribers can react to failure
+        # distinctly (e.g. raise an operator alert) without inspecting
+        # run.status. WORKFLOW_COMPLETED is success-only; a failed run gets
+        # WORKFLOW_FAILED, a cancelled one WORKFLOW_CANCELLED.
+        event = _TERMINAL_EVENTS.get(status, Events.WORKFLOW_COMPLETED)
         publish(event, instance=run)
     return AdvanceOutcome.RUN_FINISHED
 

@@ -27,9 +27,23 @@ Every business module · Approvals inbox · Notifications · Audit · Telegram/E
 
 ## 6. APIs
 
+The enterprise, approval-shaped surface (design target):
+
 - `GET/POST /api/workflow/definitions` · `POST /api/workflow/definitions/{id}/publish`
 - `POST /api/workflow/instances` (module-invoked) · `POST /api/workflow/tasks/{id}/complete`
 - `GET /api/workflow/instances/{id}/history`
+
+**Built today** — the platform runs on the durable *pipeline* engine
+(`platform/workflow`, saga-style steps + retries + compensation, not approval
+chains). Its live REST surface under `/api/v1/workflow/`:
+
+- `GET pipelines/` — registered pipeline catalog (definitions + steps).
+- `GET runs/` · `GET runs/{id}/` — run history (filter by `pipeline_key`, `status`, `trigger_type`).
+- `GET runs/stats/` — aggregate counts (total, active, per-status, per-pipeline, "at risk") for the dashboard.
+- `POST runs/{id}/{pause,resume,cancel,retry}/` — control-plane actions.
+
+Permissions: `workflow.view` (read/catalog/stats), `workflow.control` (the
+actions). See `platform/workflow/README.md`.
 
 ## 7. Dashboard widgets
 

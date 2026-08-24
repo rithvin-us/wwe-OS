@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Activity, CircleDollarSign, ShoppingCart, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
 
@@ -11,17 +10,22 @@ import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/sec
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import {
   buildKpis,
-  FINANCIAL_SUMMARY,
+  currentPeriod,
+  financialSummary,
+  financialTrend,
+  type LiveFinancials,
+  type LivePurchaseStats,
+  monthlyAmountFor,
   operationalAlerts,
   procurementSummary,
   recentActivity,
-  type LivePurchaseStats,
+  spendTrend,
 } from "@/config/dashboard";
 import { activityLabel, getTodayActivity } from "@/lib/audit";
 import { getActiveRules } from "@/lib/automation";
 import { getContracts } from "@/lib/contracts";
-import { getPurchaseBillStats, getRecentTelegramBills } from "@/lib/purchase";
-import { mockData } from "@/lib/mock-data";
+import { getInvoiceStats } from "@/lib/invoices";
+import { getPurchaseBillStats, getPurchaseInsights, getRecentTelegramBills } from "@/lib/purchase";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -81,20 +85,39 @@ async function loadContractsExpiringCount(): Promise<number> {
 export default async function DashboardPage() {
   const [
     purchaseStats,
+    purchaseInsights,
+    invoiceStats,
     telegramCount,
     automationDueCount,
     contractsExpiringCount,
     activityEntries,
   ] = await Promise.all([
     loadPurchaseStats(),
+    getPurchaseInsights(),
+    getInvoiceStats(),
     loadTelegramCount(),
     loadAutomationDueCount(),
     loadContractsExpiringCount(),
     getTodayActivity(8),
   ]);
 
+  const financials: LiveFinancials = {
+    revenueMonth: invoiceStats ? invoiceStats.revenue_month : null,
+    // Expenses share the purchase API's fate — if its stats fetch failed,
+    // report the failure honestly rather than a live-looking 0.
+    expensesMonth:
+      purchaseStats === null
+        ? null
+        : monthlyAmountFor(purchaseInsights.monthly_spend, currentPeriod()),
+  };
+  const revenueVsExpenses = financialTrend(
+    invoiceStats?.monthly ?? null,
+    purchaseInsights.monthly_spend,
+  );
+  const spend = spendTrend(purchaseInsights.monthly_spend);
+
   const dataAsOf = new Date().toISOString();
-  const kpis = buildKpis(purchaseStats);
+  const kpis = buildKpis(purchaseStats, financials);
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
   const hasUrgentAlert = alerts.some((item) => item.severity !== "info");
   const activity = recentActivity(activityEntries, activityLabel);
@@ -116,20 +139,16 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Visual insight charts */}
-        <DashboardCharts
-          financialTrend={mockData.dashboard.MOCK_FINANCIAL_TREND}
-          spendTrend={mockData.dashboard.MOCK_SPEND_TREND}
-          attendanceTrend={mockData.dashboard.MOCK_ATTENDANCE_TREND}
-          categoryBreakdown={mockData.dashboard.MOCK_CATEGORY_BREAKDOWN}
-          processFunnel={mockData.dashboard.MOCK_PROCESS_FUNNEL}
-        />
+        {/* Visual insight charts — real series where a backend exists (spend
+            from purchases, revenue vs expenses from invoices + purchases);
+            the rest render honest empty states until their source is wired. */}
+        <DashboardCharts financialTrend={revenueVsExpenses} spendTrend={spend} />
 
         <div className="grid gap-4 lg:grid-cols-12">
           {/* Primary column */}
           <div className="space-y-4 lg:col-span-8">
             <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports" glass>
-              <SummaryRows rows={FINANCIAL_SUMMARY} />
+              <SummaryRows rows={financialSummary(financials)} />
             </SectionCard>
 
             <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase" glass>
@@ -158,79 +177,6 @@ export default async function DashboardPage() {
 
           {/* Right sidebar column */}
           <div className="space-y-4 lg:col-span-4">
-            {/* Monthly Operations Workflow — vertical stepper */}
-            <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                  Monthly Workflow
-                </h2>
-                <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase">
-                  Jul 2026
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {/* Step 1 */}
-                <div className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[10px] font-bold border border-blue-500/30">
-                      1
-                    </span>
-                    <span className="w-px flex-1 bg-border my-1" />
-                  </div>
-                  <div className="flex-1 pb-3">
-                    <h3 className="text-xs font-semibold">Attendance Grid</h3>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Fill presence, leave codes, and swipe times.
-                    </p>
-                    <Link
-                      href="/hr/attendance"
-                      className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-muted text-[11px] font-medium hover:bg-accent transition-colors"
-                    >
-                      <span className="size-1.5 rounded-full bg-blue-500" /> Open grid
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Step 2 */}
-                <div className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30">
-                      2
-                    </span>
-                    <span className="w-px flex-1 bg-border my-1" />
-                  </div>
-                  <div className="flex-1 pb-3">
-                    <h3 className="text-xs font-semibold">Payroll Execution</h3>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Compute wages, OT, PF, and ESI from attendance.
-                    </p>
-                    <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                      <span className="size-1.5 rounded-full bg-amber-500" /> Pending
-                    </span>
-                  </div>
-                </div>
-
-                {/* Step 3 */}
-                <div className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-bold border border-amber-500/30">
-                      3
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xs font-semibold">Generate Registers</h3>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Produce 10 statutory workbooks, hash-archived.
-                    </p>
-                    <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                      <span className="size-1.5 rounded-full bg-amber-500" /> Pending
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <SectionCard
               title="Operational alerts"
               icon={TriangleAlert}

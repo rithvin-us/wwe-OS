@@ -7,13 +7,17 @@ pipeline via the API (Task 10).
 from __future__ import annotations
 
 import time
+from datetime import timedelta
 
+from django.conf import settings
+from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 from shared.exceptions import ConflictError
 from shared.services import BaseService
 
 from workflow.engine import advance_one
 from workflow.models import (
+    ACTIVE_STATUSES,
     TERMINAL_STATUSES,
     PipelineRun,
     PipelineRunStatus,
@@ -21,7 +25,7 @@ from workflow.models import (
     StepRunStatus,
     TerminationReason,
 )
-from workflow.registry import get_pipeline
+from workflow.registry import all_pipelines, get_pipeline
 
 
 class PipelineService(BaseService):
@@ -140,3 +144,70 @@ class PipelineService(BaseService):
         run.error_message = ""
         run.save(update_fields=["status", "termination_reason", "error_message", "updated_at"])
         return run
+
+    def list_definitions(self) -> list[dict]:
+        """A serializable catalog of every registered pipeline — what the
+        management UI's "Definitions" view renders. Pipelines are code, not
+        database rows (see workflow/registry.py), so this reads the
+        in-process registry rather than querying anything."""
+        return [
+            {
+                "key": d.key,
+                "label": d.label,
+                "module": d.module,
+                "permission": d.permission,
+                "version": d.version,
+                "steps": [
+                    {"key": s.key, "label": s.label, "max_attempts": s.max_attempts}
+                    for s in d.steps
+                ],
+            }
+            for d in all_pipelines()
+        ]
+
+    def stats(
+        self, runs: QuerySet[PipelineRun], *, at_risk_after_seconds: int | None = None
+    ) -> dict:
+        """Aggregate counts over `runs` (already tenant-scoped by the caller)
+        for the workflow dashboard widgets: total, a per-status breakdown, a
+        per-pipeline breakdown, and "at risk" — active runs that have been
+        going longer than the time budget (docs/modules/workflow.md §7). A
+        single global budget stands in for the not-yet-built per-definition
+        SLA timers (docs/specs/workflow-engine.md §1b)."""
+        threshold = (
+            at_risk_after_seconds
+            if at_risk_after_seconds is not None
+            else settings.PIPELINE_RUN_AT_RISK_SECONDS
+        )
+        by_status = {
+            row["status"]: row["n"] for row in runs.values("status").annotate(n=Count("id"))
+        }
+        by_pipeline = [
+            {
+                "pipeline_key": row["pipeline_key"],
+                "total": row["total"],
+                "active": row["active"],
+                "failed": row["failed"],
+            }
+            for row in runs.values("pipeline_key")
+            .annotate(
+                total=Count("id"),
+                active=Count("id", filter=Q(status__in=ACTIVE_STATUSES)),
+                failed=Count("id", filter=Q(status=PipelineRunStatus.FAILED)),
+            )
+            .order_by("pipeline_key")
+        ]
+        cutoff = timezone.now() - timedelta(seconds=threshold)
+        at_risk = (
+            runs.filter(status__in=ACTIVE_STATUSES)
+            .filter(Q(started_at__lt=cutoff) | Q(started_at__isnull=True, queued_at__lt=cutoff))
+            .count()
+        )
+        return {
+            "total": sum(by_status.values()),
+            "active": sum(by_status.get(s, 0) for s in ACTIVE_STATUSES),
+            "at_risk": at_risk,
+            "at_risk_after_seconds": threshold,
+            "by_status": by_status,
+            "by_pipeline": by_pipeline,
+        }
