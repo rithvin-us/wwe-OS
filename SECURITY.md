@@ -225,6 +225,21 @@ successfully-smuggled file can't execute or render inline in a browser —
 but real content-sniffing (e.g. via `python-magic`) would be a reasonable
 future hardening step if file uploads become a larger attack surface.
 
+### `image-size` DoS advisories with no upstream fix (dev tooling only)
+
+Two high advisories — GHSA-w3rx-r6r6-pgpr (ICNS parser DoS) and
+GHSA-5p2g-fcmc-qvqq (JXL/HEIF parser DoS) — affect `image-size <=2.0.2`,
+which has **no patched release**. It reaches the tree only through Expo's
+`metro` bundler under `apps/mobile` (the not-yet-shipping native app), i.e.
+build-time dev tooling that parses the app's own bundled assets, never
+untrusted input, and never runs in the web app or backend. Every other
+transitive advisory was remediated by pinning a patched version
+(`tar`, `uuid` in `pnpm.overrides`); these two are the only ones with no
+fix to pin to, so they are explicitly acknowledged in
+`pnpm.auditConfig.ignoreGhsas` — which keeps `pnpm audit` clean so a *new*
+advisory is never masked by a persistent non-zero count. Revisit if
+`apps/mobile` ships or upstream publishes a fix.
+
 ---
 
 ## Scope of this review

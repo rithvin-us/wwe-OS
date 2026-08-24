@@ -134,7 +134,10 @@ export async function POST(request: Request) {
           ? null
           : monthlyAmountFor(purchaseInsights.monthly_spend, currentPeriod()),
     };
-    const financialRows = financialSummary(financials);
+    const financialRows = financialSummary(
+      financials,
+      invoiceStats ? invoiceStats.outstanding : null,
+    );
 
     const documentsIndex = documents.map((doc) => ({
       title: doc.title,

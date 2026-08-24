@@ -9,7 +9,10 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/section-card";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import {
+  type AttendanceTrendPoint,
+  attendanceTrend,
   buildKpis,
+  categoryBreakdown,
   currentPeriod,
   financialSummary,
   financialTrend,
@@ -24,6 +27,7 @@ import {
 import { activityLabel, getTodayActivity } from "@/lib/audit";
 import { getActiveRules } from "@/lib/automation";
 import { getContracts } from "@/lib/contracts";
+import { getAttendanceTrends } from "@/lib/hr";
 import { getInvoiceStats } from "@/lib/invoices";
 import { getPurchaseBillStats, getPurchaseInsights, getRecentTelegramBills } from "@/lib/purchase";
 
@@ -82,11 +86,22 @@ async function loadContractsExpiringCount(): Promise<number> {
   }
 }
 
+async function loadAttendanceTrend(): Promise<AttendanceTrendPoint[] | null> {
+  try {
+    const now = new Date();
+    const { points } = await getAttendanceTrends(now.getFullYear(), now.getMonth() + 1, 6);
+    return points;
+  } catch {
+    return null;
+  }
+}
+
 export default async function DashboardPage() {
   const [
     purchaseStats,
     purchaseInsights,
     invoiceStats,
+    attendanceTrendPoints,
     telegramCount,
     automationDueCount,
     contractsExpiringCount,
@@ -95,6 +110,7 @@ export default async function DashboardPage() {
     loadPurchaseStats(),
     getPurchaseInsights(),
     getInvoiceStats(),
+    loadAttendanceTrend(),
     loadTelegramCount(),
     loadAutomationDueCount(),
     loadContractsExpiringCount(),
@@ -110,11 +126,14 @@ export default async function DashboardPage() {
         ? null
         : monthlyAmountFor(purchaseInsights.monthly_spend, currentPeriod()),
   };
+  const outstanding = invoiceStats ? invoiceStats.outstanding : null;
   const revenueVsExpenses = financialTrend(
     invoiceStats?.monthly ?? null,
     purchaseInsights.monthly_spend,
   );
   const spend = spendTrend(purchaseInsights.monthly_spend);
+  const attendance = attendanceTrend(attendanceTrendPoints);
+  const categories = categoryBreakdown(purchaseInsights.top_materials);
 
   const dataAsOf = new Date().toISOString();
   const kpis = buildKpis(purchaseStats, financials);
@@ -139,16 +158,22 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Visual insight charts — real series where a backend exists (spend
-            from purchases, revenue vs expenses from invoices + purchases);
-            the rest render honest empty states until their source is wired. */}
-        <DashboardCharts financialTrend={revenueVsExpenses} spendTrend={spend} />
+        {/* Visual insight charts — all real data: revenue vs expenses and
+            spend from invoices + purchases, attendance from HR, and spend by
+            top purchased item. Each renders an honest empty state when its
+            source has no data yet. */}
+        <DashboardCharts
+          financialTrend={revenueVsExpenses}
+          spendTrend={spend}
+          attendanceTrend={attendance}
+          categoryBreakdown={categories}
+        />
 
         <div className="grid gap-4 lg:grid-cols-12">
           {/* Primary column */}
           <div className="space-y-4 lg:col-span-8">
             <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports" glass>
-              <SummaryRows rows={financialSummary(financials)} />
+              <SummaryRows rows={financialSummary(financials, outstanding)} />
             </SectionCard>
 
             <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase" glass>

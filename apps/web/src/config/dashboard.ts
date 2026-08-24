@@ -123,9 +123,13 @@ export interface SummaryRow {
 }
 
 /** Live monthly financials. `Net` needs both halves, so it blanks if either
- * is missing; `Cash position` has no source yet and stays an honest blank
- * (—) rather than a fabricated 0. */
-export function financialSummary(financials: LiveFinancials | null): SummaryRow[] {
+ * is missing. `Outstanding` is issued-but-unpaid invoice value from the
+ * finance stats endpoint — a real receivables figure, in place of the old
+ * "Cash position" row that had no data source. */
+export function financialSummary(
+  financials: LiveFinancials | null,
+  outstanding: number | null = null,
+): SummaryRow[] {
   const revenue = financials?.revenueMonth ?? null;
   const expenses = financials?.expensesMonth ?? null;
   const net = revenue !== null && expenses !== null ? revenue - expenses : null;
@@ -133,7 +137,7 @@ export function financialSummary(financials: LiveFinancials | null): SummaryRow[
     { label: "Revenue (month)", value: revenue, format: "currency" },
     { label: "Expenses (month)", value: expenses, format: "currency" },
     { label: "Net (month)", value: net, format: "currency" },
-    { label: "Cash position", value: null, format: "currency" },
+    { label: "Outstanding", value: outstanding, format: "currency" },
   ];
 }
 
@@ -357,6 +361,44 @@ export function financialTrend(
     revenue: rev.get(period) ?? 0,
     expenses: exp.get(period) ?? 0,
   }));
+}
+
+/** One month of the HR attendance-trend series (a subset of the API's
+ * TrendPoint) — enough to plot the rate and tell "no data" from a real 0%. */
+export interface AttendanceTrendPoint {
+  label: string;
+  attendance_pct: number;
+  working_units: number;
+}
+
+/** Monthly attendance rate for the "Attendance" area chart. A window with no
+ * attendance recorded at all (every month's working_units is 0) returns []
+ * — an honest empty state, not a misleading flat 0% line. */
+export function attendanceTrend(
+  points: AttendanceTrendPoint[] | null,
+): Array<{ month: string; attendanceRate: number }> {
+  if (!points || points.every((point) => point.working_units === 0)) return [];
+  return points.map((point) => ({
+    month: point.label.split(" ")[0],
+    attendanceRate: point.attendance_pct,
+  }));
+}
+
+/** One entry of the purchase spend-by-item breakdown (a subset of purchase
+ * insights' top_materials / vendor_analysis rows). */
+export interface SpendSlice {
+  name: string;
+  total_spend: number;
+}
+
+/** Spend distribution for the procurement donut — real spend per top item,
+ * zero-spend entries dropped. Empty input yields an honest empty chart. */
+export function categoryBreakdown(
+  slices: SpendSlice[] | null,
+): Array<{ name: string; value: number }> {
+  return (slices ?? [])
+    .filter((slice) => slice.total_spend > 0)
+    .map((slice) => ({ name: slice.name, value: slice.total_spend }));
 }
 
 export function formatValue(value: number | null, format: KpiFormat): string {
