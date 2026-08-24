@@ -13,7 +13,7 @@ redis>=5.2
 gunicorn>=23.0
 # Platform services
 httpx>=0.28          # AI gateway provider calls
-openpyxl>=3.1        # reporting: Excel renderer
+openpyxl>=3.1.5        # reporting: Excel renderer
 reportlab>=5.0.0       # reporting: PDF renderer
 pypdf>=5.0           # auditor: merges PDFs into one package
 # storage/providers.py imports boto3 lazily, but production (and any dev env
