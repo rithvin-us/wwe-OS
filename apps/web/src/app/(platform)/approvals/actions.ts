@@ -26,7 +26,10 @@ export async function decideApprovalAction(
       method: "POST",
       body: JSON.stringify({ kind, object_id: objectId, decision, note }),
     });
+    // Both surfaces show this decision — the deep-dive inbox and the Focus
+    // cockpit's worklist — so refresh both.
     revalidatePath("/approvals");
+    revalidatePath("/briefing");
     return { ok: true, message: decision === "approve" ? "Approved." : "Rejected." };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };

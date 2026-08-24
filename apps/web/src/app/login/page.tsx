@@ -37,7 +37,7 @@ export default function LoginPage() {
           <LoginFeatureShowcase />
         </div>
 
-        {/* Right Side: Employee Auth Form */}
+        {/* Right Side: Auth Form */}
         <div className="col-span-12 flex flex-col justify-between p-6 sm:p-10 lg:col-span-5 lg:p-12">
           {/* Top Logo / Brand Header */}
           <div className="mx-auto w-full max-w-sm">
@@ -65,10 +65,10 @@ export default function LoginPage() {
             {/* Login Card Header */}
             <div className="mb-6 space-y-1.5">
               <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Employee Sign In
+                Sign in
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Sign in with your employee account to access operations and plant management.
+                Access your {COMPANY.name} operations workspace.
               </p>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Inbox, Newspaper, Sparkles } from "@bop/icons";
+import { CalendarClock, Inbox, Sparkles, Target } from "@bop/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,12 +9,28 @@ export function WorkspaceHeaderTabs() {
 
   const tabs = [
     {
-      id: "briefing",
-      label: "Briefing",
-      description: "Operational activity & highlights",
-      icon: Newspaper,
-      badge: "DAILY",
+      id: "focus",
+      label: "Focus",
+      description: "Your ranked worklist",
+      icon: Target,
+      badge: "TODAY",
       href: "/briefing",
+    },
+    {
+      id: "approvals",
+      label: "Approvals",
+      description: "Leave & expense decisions",
+      icon: Inbox,
+      badge: "INBOX",
+      href: "/approvals",
+    },
+    {
+      id: "deadlines",
+      label: "Deadlines",
+      description: "Due dates & renewals",
+      icon: CalendarClock,
+      badge: "CALENDAR",
+      href: "/deadlines",
     },
     {
       id: "assistant",
@@ -23,22 +39,6 @@ export function WorkspaceHeaderTabs() {
       icon: Sparkles,
       badge: "AI",
       href: "/assistant",
-    },
-    {
-      id: "approvals",
-      label: "Approvals",
-      description: "Leave & expense decisions inbox",
-      icon: Inbox,
-      badge: "INBOX",
-      href: "/approvals",
-    },
-    {
-      id: "deadlines",
-      label: "Deadlines",
-      description: "Upcoming due dates & renewals",
-      icon: CalendarClock,
-      badge: "CALENDAR",
-      href: "/deadlines",
     },
   ];
 
@@ -54,7 +54,7 @@ export function WorkspaceHeaderTabs() {
             href={tab.href}
             className={`flex flex-col items-start p-3 rounded-xl transition duration-(--duration-base) ease-out-quart text-left relative overflow-hidden group ${
               isActive
-                ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-blue-500/20"
+                ? "bg-background text-foreground shadow-md border border-border/80 ring-1 ring-primary/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
@@ -62,7 +62,7 @@ export function WorkspaceHeaderTabs() {
               <div
                 className={`p-1.5 rounded-lg ${
                   isActive
-                    ? "bg-blue-500/15 text-blue-400"
+                    ? "bg-primary/15 text-primary"
                     : "bg-muted text-muted-foreground group-hover:text-foreground"
                 }`}
               >
@@ -72,7 +72,7 @@ export function WorkspaceHeaderTabs() {
                 <span
                   className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
                     isActive
-                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      ? "bg-primary/20 text-primary border border-primary/30"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >

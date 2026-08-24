@@ -4,9 +4,9 @@ import {
   DatabaseBackup,
   Inbox,
   LayoutDashboard,
-  Newspaper,
   Settings,
   Sparkles,
+  Target,
   Wrench,
   type LucideIcon,
 } from "@bop/icons";
@@ -78,10 +78,10 @@ export const NAVIGATION: NavGroup[] = [
     // run from, aggregating across the apps above rather than being one of them.
     label: "WORKSPACE",
     items: [
-      { name: "Briefing", href: "/briefing", icon: Newspaper },
-      { name: "Assistant", href: "/assistant", icon: Sparkles },
+      { name: "Focus", href: "/briefing", icon: Target },
       { name: "Approvals", href: "/approvals", icon: Inbox },
       { name: "Deadlines", href: "/deadlines", icon: CalendarClock },
+      { name: "Assistant", href: "/assistant", icon: Sparkles },
     ],
   },
   {

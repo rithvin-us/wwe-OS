@@ -75,3 +75,38 @@ export interface AutomationSource {
   module: string;
   label: string;
 }
+
+export interface AutomationRunPoint {
+  day: string;
+  successful: number;
+  failed: number;
+}
+
+/** Daily success/failure counts over the last `days` days, derived from real
+ * run history — the automation execution-health chart. Days with no runs stay
+ * at zero rather than being dropped, so the chart shows a real, gap-free week. */
+export function automationRunSeries(
+  runs: Pick<AutomationRun, "status" | "started_at" | "finished_at">[],
+  days = 7,
+): AutomationRunPoint[] {
+  const order: { key: string; day: string }[] = [];
+  const buckets = new Map<string, { successful: number; failed: number }>();
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - i);
+    const key = date.toISOString().slice(0, 10);
+    order.push({ key, day: date.toLocaleDateString(undefined, { weekday: "short" }) });
+    buckets.set(key, { successful: 0, failed: 0 });
+  }
+  for (const run of runs) {
+    const key = (run.started_at || run.finished_at || "").slice(0, 10);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    if (run.status === "success") bucket.successful += 1;
+    else bucket.failed += 1;
+  }
+  return order.map(({ key, day }) => {
+    const bucket = buckets.get(key) ?? { successful: 0, failed: 0 };
+    return { day, successful: bucket.successful, failed: bucket.failed };
+  });
+}

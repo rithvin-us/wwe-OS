@@ -36,7 +36,7 @@ import { useFaceCapture } from "@/hooks/use-face-capture";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid work email address."),
+  email: z.string().email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 
@@ -64,6 +64,7 @@ export function LoginForm() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const {
     register,
@@ -167,16 +168,34 @@ export function LoginForm() {
     }
   }
 
-  const handleForgotPasswordSubmit = (e: React.FormEvent) => {
+  async function handleForgotPasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!resetEmail || !resetEmail.includes("@")) return;
 
     setIsResetting(true);
-    setTimeout(() => {
-      setIsResetting(false);
+    setResetError(null);
+    try {
+      const res = await fetch("/api/auth/password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setResetError(
+          res.status === 429
+            ? "Too many requests. Please wait a few minutes and try again."
+            : (body?.message ?? "Couldn't send the reset link. Please try again."),
+        );
+        return;
+      }
       setResetSent(true);
-    }, 1000);
-  };
+    } catch {
+      setResetError("Network error. Please try again.");
+    } finally {
+      setIsResetting(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -223,7 +242,7 @@ export function LoginForm() {
             {/* Email Field */}
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-medium">
-                Work Email
+                Email
               </Label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -253,7 +272,13 @@ export function LoginForm() {
                 <Label htmlFor="password" className="text-xs font-medium">
                   Password
                 </Label>
-                <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                <Dialog
+                  open={forgotPasswordOpen}
+                  onOpenChange={(open) => {
+                    setForgotPasswordOpen(open);
+                    if (open) setResetError(null);
+                  }}
+                >
                   <DialogTrigger asChild>
                     <button
                       type="button"
@@ -266,14 +291,14 @@ export function LoginForm() {
                     <DialogHeader>
                       <DialogTitle>Reset Password</DialogTitle>
                       <DialogDescription>
-                        Enter your work email address and we&apos;ll send you instructions to reset
-                        your account password.
+                        Enter your email address and we&apos;ll send you instructions to reset your
+                        account password.
                       </DialogDescription>
                     </DialogHeader>
 
                     {resetSent ? (
                       <div className="space-y-4 py-4 text-center">
-                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                           <CheckCircle2 className="size-6" />
                         </div>
                         <div className="space-y-1">
@@ -299,7 +324,7 @@ export function LoginForm() {
                     ) : (
                       <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 py-2">
                         <div className="space-y-1.5">
-                          <Label htmlFor="reset-email">Work Email</Label>
+                          <Label htmlFor="reset-email">Email</Label>
                           <Input
                             id="reset-email"
                             type="email"
@@ -309,6 +334,15 @@ export function LoginForm() {
                             required
                           />
                         </div>
+                        {resetError ? (
+                          <p
+                            className="flex items-center gap-1.5 text-xs text-destructive"
+                            role="alert"
+                          >
+                            <TriangleAlert className="size-3.5 shrink-0" />
+                            {resetError}
+                          </p>
+                        ) : null}
                         <Button type="submit" className="w-full" disabled={isResetting}>
                           {isResetting ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -349,7 +383,7 @@ export function LoginForm() {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400"
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-warning"
                 >
                   <TriangleAlert className="size-3" />
                   <span>Caps Lock is ON</span>
@@ -401,7 +435,7 @@ export function LoginForm() {
               ) : (
                 <ArrowRight className="size-4 mr-2" />
               )}
-              Sign In to Employee Portal
+              Sign in
             </Button>
           </motion.form>
         ) : (
@@ -426,7 +460,7 @@ export function LoginForm() {
 
               {/* Status alerts */}
               {faceSuccessMessage ? (
-                <div className="p-3 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center justify-center gap-2">
+                <div className="p-3 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-2">
                   <CheckCircle2 className="size-4" />
                   <span>{faceSuccessMessage}</span>
                 </div>
@@ -438,7 +472,7 @@ export function LoginForm() {
               ) : null}
 
               {/* Camera Feed Viewfinder */}
-              <div className="relative overflow-hidden rounded-xl border border-border bg-slate-950 p-2 shadow-inner flex items-center justify-center min-h-[220px]">
+              <div className="relative overflow-hidden rounded-xl border border-border bg-muted p-2 shadow-inner flex items-center justify-center min-h-[220px]">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -450,8 +484,8 @@ export function LoginForm() {
                 />
 
                 {!cameraActive && (
-                  <div className="flex flex-col items-center justify-center p-4 text-center text-slate-400 space-y-2">
-                    <Camera className="size-8 text-slate-500" />
+                  <div className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground space-y-2">
+                    <Camera className="size-8 text-muted-foreground" />
                     <p className="text-xs">Connecting to camera feed...</p>
                     <Button size="xs" variant="outline" onClick={startCamera} className="gap-1">
                       <RefreshCw className="size-3" /> Enable Camera
@@ -460,7 +494,7 @@ export function LoginForm() {
                 )}
 
                 {faceMatchScanning && (
-                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-primary space-y-2">
+                  <div className="absolute inset-0 bg-background/85 backdrop-blur-xs flex flex-col items-center justify-center text-primary space-y-2">
                     <ScanFace className="size-10 animate-pulse" />
                     <span className="text-xs font-semibold">Verifying your face...</span>
                   </div>

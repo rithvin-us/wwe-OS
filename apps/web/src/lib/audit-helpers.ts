@@ -56,3 +56,16 @@ export function describeEntry(entry: TimelineEntry): string {
 export function activityLabel(entry: AuditLogEntry): string {
   return `${describeEntry(entry)} — ${entry.action.replace(/[._]/g, " ")}`;
 }
+
+/** Event counts per module for the Timeline's activity-volume chart —
+ * derived from real audit entries, most-active first. Empty in, empty out;
+ * never a fabricated series. */
+export function eventsByModule(
+  entries: Pick<AuditLogEntry, "module">[],
+): { module: string; events: number }[] {
+  const counts = new Map<string, number>();
+  for (const entry of entries) counts.set(entry.module, (counts.get(entry.module) ?? 0) + 1);
+  return [...counts.entries()]
+    .map(([module, events]) => ({ module, events }))
+    .sort((a, b) => b.events - a.events);
+}
