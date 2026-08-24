@@ -8,7 +8,12 @@ period, rounding) lives in the service layer.
 from __future__ import annotations
 
 from django.http import HttpResponse
-from finance.backend.models.invoice import Customer, InvoiceType
+from finance.backend.models.invoice import (
+    Customer,
+    InvoiceStatus,
+    InvoiceType,
+    PaymentStatus,
+)
 from finance.backend.repositories.invoice import CustomerRepository, InvoiceRepository
 from finance.backend.serializers.invoice import (
     CancelInvoiceSerializer,
@@ -119,6 +124,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "download": "finance.invoice.read",
         "pdf": "finance.invoice.read",
         "next_number": "finance.invoice.read",
+        "stats": "finance.invoice.read",
         "create": "finance.invoice.generate",
         "preview": "finance.invoice.generate",
         "preview_document": "finance.invoice.generate",
@@ -134,6 +140,48 @@ class InvoiceViewSet(BaseModelViewSet):
         if getattr(self, "swagger_fake_view", False):
             return InvoiceRepository().for_tenant(None).none()
         return InvoiceRepository().for_tenant(_tenant_id(self.request.user))
+
+    @action(detail=False, methods=["get"])
+    def stats(self, request: Request) -> Response:
+        """Revenue aggregates for the Executive Dashboard. Cancelled invoices
+        never count as revenue; "outstanding" is issued-but-unpaid. `monthly`
+        is the last six months of issued-invoice revenue, oldest first — the
+        revenue half of the dashboard's Revenue-vs-Expenses trend."""
+        from datetime import date
+        from decimal import Decimal
+
+        from django.db.models import Count, Sum
+
+        issued = self.get_queryset().filter(status=InvoiceStatus.ISSUED)
+        today = date.today()
+        month_start = today.replace(day=1)
+
+        def _sum(qs) -> float:
+            return float(qs.aggregate(s=Sum("total"))["s"] or Decimal("0.00"))
+
+        monthly_rows = (
+            issued.values("invoice_date__year", "invoice_date__month")
+            .annotate(total=Sum("total"), count=Count("id"))
+            .order_by("-invoice_date__year", "-invoice_date__month")[:6]
+        )
+        monthly = [
+            {
+                "period": f"{row['invoice_date__year']}-{row['invoice_date__month']:02d}",
+                "amount": float(row["total"] or 0),
+                "count": row["count"],
+            }
+            for row in reversed(list(monthly_rows))
+        ]
+
+        return Response(
+            {
+                "revenue_month": _sum(issued.filter(invoice_date__gte=month_start)),
+                "revenue_total": _sum(issued),
+                "outstanding": _sum(issued.filter(payment_status=PaymentStatus.UNPAID)),
+                "invoice_count": issued.count(),
+                "monthly": monthly,
+            }
+        )
 
     # -- Generation ------------------------------------------------------- #
     def create(self, request: Request, *args, **kwargs) -> Response:

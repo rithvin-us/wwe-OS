@@ -38,3 +38,23 @@ export async function getNextInvoiceNumber(): Promise<NextInvoiceNumber | null> 
     return null;
   }
 }
+
+/** Revenue aggregates for the Executive Dashboard — issued invoices only,
+ * cancelled excluded. `monthly` is the last six months, oldest first. */
+export interface InvoiceStats {
+  revenue_month: number;
+  revenue_total: number;
+  outstanding: number;
+  invoice_count: number;
+  monthly: Array<{ period: string; amount: number; count: number }>;
+}
+
+/** `null` means the fetch failed (surfaced as an honest "—" / error state on
+ * the dashboard) — distinct from a live zero when no invoices exist yet. */
+export async function getInvoiceStats(): Promise<InvoiceStats | null> {
+  try {
+    return await djangoFetch<InvoiceStats>("/api/v1/finance/invoices/stats/");
+  } catch {
+    return null;
+  }
+}
