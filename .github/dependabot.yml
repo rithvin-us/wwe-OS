@@ -18,6 +18,38 @@ updates:
         patterns: ["@capacitor/*"]
       minor-and-patch:
         update-types: ["minor", "patch"]
+    # Minor/patch updates still flow through the groups above. Only the major
+    # jumps below are held back — each moves the platform off its declared stack
+    # (CLAUDE.md § "Stack") or has been verified to break a CI gate. Revisit an
+    # entry only when the toolchain actually supports the new major.
+    ignore:
+      # CLAUDE.md pins the frontend to Next.js 16 and Tailwind v4. Stay on those
+      # majors; 16.x / 4.x minor+patch updates are unaffected.
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@tailwindcss/*"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (the native-compiler rewrite) fails `pnpm --filter web build`
+      # against this toolchain, and ESLint 10 is unsupported by eslint-config-next's
+      # bundled plugins (eslint-plugin-react/import/jsx-a11y cap at eslint 9) and
+      # crashes the lint gate. Hold both at their current major.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # Expo / React Native are a version-locked set (Expo SDK 57 — see
+      # apps/mobile/AGENTS.md) that must be aligned with `expo install`, not bumped
+      # piecemeal: independent bumps break the reanimated / worklets / react-native
+      # peer alignment. Keep the whole cluster out of automated PRs.
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
     commit-message:
       prefix: "chore(deps)"
 
@@ -32,6 +64,11 @@ updates:
         patterns: ["Django", "djangorestframework", "django-*"]
       minor-and-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # CLAUDE.md pins the kernel to Django 6 (requirements.txt caps it at <6.2).
+      # Block major jumps; 6.x updates still flow through the django group.
+      - dependency-name: "Django"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
