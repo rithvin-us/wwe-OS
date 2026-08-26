@@ -107,16 +107,10 @@ def _tenant_from(user):
 
 
 class InvoiceViewSet(BaseModelViewSet):
-    """The bill register.
-
-    No DELETE: a raised invoice is cancelled, never removed — its number has
-    already been seen by the outside world and must stay consumed. Numbers are
-    handed out by `InvoiceNumberingService().reserve()` and never released, so
-    deleting a bill would leave a permanent hole in the statutory sequence.
-    """
+    """The bill register."""
 
     serializer_class = InvoiceSerializer
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     search_fields = ("number", "consignee_name", "facility")
     ordering_fields = ("invoice_date", "sequence_number", "created_at")
     filterset_fields = ("invoice_type", "financial_year", "status")
@@ -132,6 +126,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "preview_document": "finance.invoice.generate",
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
+        "destroy": "finance.invoice.cancel",
         "mark_sent": "finance.invoice.generate",
         "mark_paid": "finance.invoice.generate",
         "unmark_paid": "finance.invoice.generate",

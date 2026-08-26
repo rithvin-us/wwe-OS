@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   FileText,
   Pencil,
+  Trash2,
   XCircle,
 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
@@ -30,7 +31,7 @@ import {
   type InvoiceStatus,
 } from "@/config/invoices";
 
-import { updateInvoiceStatusAction } from "./actions";
+import { deleteInvoiceAction, updateInvoiceStatusAction } from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export type FilterTab = "all" | "approved" | "on_hold" | "declined_cancelled";
@@ -79,6 +80,20 @@ export function InvoicesSection({
       toast.error(res.message);
       // Revert if failed
       setInvoices(initialInvoices);
+    }
+  }
+
+  async function handleDeleteInvoice(id: string, number: string) {
+    if (!confirm(`Are you sure you want to permanently delete invoice ${number}?`)) return;
+    setBusyId(id);
+    const res = await deleteInvoiceAction(id);
+    setBusyId(null);
+    if (res.ok) {
+      toast.success(`Invoice ${number} deleted.`);
+      setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+      router.refresh();
+    } else {
+      toast.error(res.message);
     }
   }
 
@@ -272,6 +287,17 @@ export function InvoicesSection({
                             }
                           />
                         ) : null}
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+                          title="Delete invoice"
+                          disabled={busyId === invoice.id}
+                          onClick={() => handleDeleteInvoice(invoice.id, invoice.number)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
                       </div>
                     </td>
                   </tr>

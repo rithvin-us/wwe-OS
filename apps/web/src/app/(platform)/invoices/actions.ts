@@ -184,6 +184,17 @@ export async function deleteCustomerAction(id: string): Promise<ActionResult<nul
   }
 }
 
+export async function deleteInvoiceAction(id: string): Promise<ActionResult<null>> {
+  try {
+    await djangoFetch(`${BASE}/invoices/${id}/`, { method: "DELETE" });
+    revalidatePath("/invoices");
+    revalidatePath("/automation");
+    return { ok: true, message: "Invoice deleted." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
 function errorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return error.message;
   return "Something went wrong. Try again.";

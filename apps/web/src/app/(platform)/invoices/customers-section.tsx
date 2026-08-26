@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Pencil, Plus } from "@bop/icons";
+import { Building2, Pencil, Plus, Trash2 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
 import {
@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 import type { BillingCustomer } from "@/config/invoices";
 
-import { saveCustomerAction } from "./actions";
+import { deleteCustomerAction, saveCustomerAction } from "./actions";
 
 const BLANK = {
   name: "",
@@ -79,6 +79,20 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
     router.refresh();
   }
 
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Are you sure you want to remove customer "${name}"?`)) return;
+    setBusy(true);
+    const result = await deleteCustomerAction(id);
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success(result.message);
+    if (open) setOpen(false);
+    router.refresh();
+  }
+
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
@@ -109,9 +123,20 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
                   {[customer.facility, customer.gstin || null].filter(Boolean).join(" · ") || "—"}
                 </p>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => startEdit(customer)}>
-                <Pencil className="mr-2 size-4" /> Edit
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" onClick={() => startEdit(customer)}>
+                  <Pencil className="mr-2 size-4" /> Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => handleDelete(customer.id, customer.name)}
+                  title="Remove customer"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -194,13 +219,28 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
             </label>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" disabled={busy} onClick={handleSave}>
-              {busy ? "Saving…" : "Save customer"}
-            </Button>
+          <DialogFooter className="flex items-center justify-between sm:justify-between">
+            {editing ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={busy}
+                onClick={() => handleDelete(editing.id, editing.name)}
+              >
+                <Trash2 className="mr-2 size-4" /> Remove customer
+              </Button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" disabled={busy} onClick={handleSave}>
+                {busy ? "Saving…" : "Save customer"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

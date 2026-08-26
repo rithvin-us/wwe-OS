@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, CircleDollarSign, Download, FileText, Pencil, Send } from "@bop/icons";
+import { Ban, CircleDollarSign, Download, FileText, Pencil, Send, Trash2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,
@@ -23,7 +23,12 @@ import {
   type Invoice,
 } from "@/config/invoices";
 
-import { cancelInvoiceAction, markInvoicePaidAction, markInvoiceSentAction } from "./actions";
+import {
+  cancelInvoiceAction,
+  deleteInvoiceAction,
+  markInvoicePaidAction,
+  markInvoiceSentAction,
+} from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export function InvoiceRowActions({
@@ -68,6 +73,19 @@ export function InvoiceRowActions({
     setCancelling(false);
     setReason("");
     router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Are you sure you want to permanently delete invoice ${invoice.number}?`)) return;
+    setBusy(true);
+    const result = await deleteInvoiceAction(invoice.id);
+    setBusy(false);
+    if (result.ok) {
+      toast.success(`Invoice ${invoice.number} deleted.`);
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
   }
 
   return (
@@ -136,6 +154,17 @@ export function InvoiceRowActions({
           </Button>
         </>
       ) : null}
+
+      <Button
+        size="icon"
+        variant="ghost"
+        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+        title="Delete invoice"
+        disabled={busy}
+        onClick={handleDelete}
+      >
+        <Trash2 className="size-4" />
+      </Button>
 
       <Dialog open={cancelling} onOpenChange={setCancelling}>
         <DialogContent className="sm:max-w-[480px]">
