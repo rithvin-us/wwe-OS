@@ -10,7 +10,7 @@ argon2-cffi>=25
 dj-database-url>=3.1
 psycopg[binary]>=3.2
 redis>=5.2
-gunicorn>=23.0
+gunicorn>=26.1.0
 # Platform services
 httpx>=0.28.1        # AI gateway provider calls
 openpyxl>=3.1.5      # reporting: Excel renderer
