@@ -41,6 +41,13 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # @tanstack/react-table 9 rewrote ColumnDef's generics (the new TableFeatures
+      # param), breaking the typecheck gate across every data table. @types/node must
+      # track the Node runtime (22), not jump ahead to 26. Hold both majors.
+      - dependency-name: "@tanstack/react-table"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
       # Expo / React Native are a version-locked set (Expo SDK 57 — see
       # apps/mobile/AGENTS.md) that must be aligned with `expo install`, not bumped
       # piecemeal: independent bumps break the reanimated / worklets / react-native
