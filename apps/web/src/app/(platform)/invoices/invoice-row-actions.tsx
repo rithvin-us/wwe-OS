@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, CircleDollarSign, Download, FileText, Pencil, Send } from "@bop/icons";
+import { Ban, CircleDollarSign, Download, FileText, Pencil, Send, Trash2 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import {
   Dialog,
@@ -23,7 +23,12 @@ import {
   type Invoice,
 } from "@/config/invoices";
 
-import { cancelInvoiceAction, markInvoicePaidAction, markInvoiceSentAction } from "./actions";
+import {
+  cancelInvoiceAction,
+  deleteInvoiceAction,
+  markInvoicePaidAction,
+  markInvoiceSentAction,
+} from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export function InvoiceRowActions({
@@ -35,6 +40,7 @@ export function InvoiceRowActions({
 }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
   const issued = invoice.status === "issued";
@@ -67,6 +73,19 @@ export function InvoiceRowActions({
     toast.success(result.message);
     setCancelling(false);
     setReason("");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    const result = await deleteInvoiceAction(invoice.id);
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success(result.message);
+    setDeleting(false);
     router.refresh();
   }
 
@@ -137,6 +156,16 @@ export function InvoiceRowActions({
         </>
       ) : null}
 
+      <Button
+        size="icon"
+        variant="ghost"
+        title="Delete this invoice"
+        disabled={busy}
+        onClick={() => setDeleting(true)}
+      >
+        <Trash2 className="size-4 text-destructive" />
+      </Button>
+
       <Dialog open={cancelling} onOpenChange={setCancelling}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
@@ -165,6 +194,27 @@ export function InvoiceRowActions({
             </Button>
             <Button type="button" variant="destructive" disabled={busy} onClick={handleCancel}>
               {busy ? "Cancelling…" : "Cancel invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleting} onOpenChange={setDeleting}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Delete invoice {invoice.number}?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete invoice {invoice.number} and remove its stored files.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleting(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" disabled={busy} onClick={handleDelete}>
+              {busy ? "Deleting…" : "Delete invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>

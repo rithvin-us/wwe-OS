@@ -12,17 +12,44 @@ export interface ActionResult {
 
 const BASE = "/api/v1/documents/documents";
 
+const INVALID_ID_MESSAGE = "Invalid record id.";
+
+/** Document and version ids are UUID primary keys. Anything else is a path-traversal attempt. */
+const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertId(id: string): string {
+  if (!ID_PATTERN.test(id)) {
+    throw new Error(INVALID_ID_MESSAGE);
+  }
+  return id;
+}
+
+function _assertVersion(version: number): number {
+  if (!Number.isInteger(version) || version < 0) {
+    throw new Error(INVALID_ID_MESSAGE);
+  }
+  return version;
+}
+
 export async function summarizeDocumentAction(id: string): Promise<ActionResult> {
-  return post(`${BASE}/${id}/summarize/`, "Summary regenerated.", id);
+  try {
+    return await post(`${BASE}/${assertId(id)}/summarize/`, "Summary regenerated.", id);
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
 }
 
 export async function archiveDocumentAction(id: string): Promise<ActionResult> {
-  return post(`${BASE}/${id}/archive/`, "Document archived.", id);
+  try {
+    return await post(`${BASE}/${assertId(id)}/archive/`, "Document archived.", id);
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
 }
 
 export async function deleteDocumentAction(id: string): Promise<ActionResult> {
   try {
-    await djangoFetch(`${BASE}/${id}/`, { method: "DELETE" });
+    await djangoFetch(`${BASE}/${assertId(id)}/`, { method: "DELETE" });
     revalidatePath("/dms");
     return { ok: true, message: "Document deleted." };
   } catch (error) {
@@ -40,7 +67,7 @@ export async function addVersionAction(id: string, formData: FormData): Promise<
     const forward = new FormData();
     forward.append("file", file);
     forward.append("note", String(formData.get("note") ?? ""));
-    const response = await fetch(`${internalApiUrl()}${BASE}/${id}/versions/`, {
+    const response = await fetch(`${internalApiUrl()}${BASE}/${assertId(id)}/versions/`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: forward,
@@ -52,13 +79,21 @@ export async function addVersionAction(id: string, formData: FormData): Promise<
     }
     revalidatePath(`/dms/${id}`);
     return { ok: true, message: "New version uploaded." };
-  } catch {
-    return { ok: false, message: "Something went wrong. Try again." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
   }
 }
 
 export async function restoreVersionAction(id: string, version: number): Promise<ActionResult> {
-  return post(`${BASE}/${id}/versions/${version}/restore/`, `Restored version ${version}.`, id);
+  try {
+    return await post(
+      `${BASE}/${assertId(id)}/versions/${assertVersion(version)}/restore/`,
+      `Restored version ${version}.`,
+      id,
+    );
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
 }
 
 export async function shareDocumentAction(
@@ -66,7 +101,7 @@ export async function shareDocumentAction(
 ): Promise<ActionResult & { url?: string; expiresIn?: number }> {
   try {
     const data = await djangoFetch<{ url: string; expires_in: number }>(
-      `${BASE}/${id}/share/?expires=3600`,
+      `${BASE}/${assertId(id)}/share/?expires=3600`,
     );
     // The backend mints a Django-path signed URL; rewrite it to the browser-
     // facing storage proxy (same token — the token is the credential).
@@ -95,5 +130,6 @@ async function post(path: string, success: string, id: string): Promise<ActionRe
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return error.message;
+  if (error instanceof Error && error.message === INVALID_ID_MESSAGE) return error.message;
   return "Something went wrong. Try again.";
 }

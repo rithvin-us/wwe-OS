@@ -8,3 +8,4 @@ these constants and `shared.events.subscribe`, never this module's internals.
 INVOICE_GENERATED = "finance.invoice.generated"
 INVOICE_UPDATED = "finance.invoice.updated"
 INVOICE_CANCELLED = "finance.invoice.cancelled"
+INVOICE_DELETED = "finance.invoice.deleted"

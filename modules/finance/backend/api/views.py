@@ -114,7 +114,7 @@ class InvoiceViewSet(BaseModelViewSet):
     """
 
     serializer_class = InvoiceSerializer
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     search_fields = ("number", "consignee_name", "facility")
     ordering_fields = ("invoice_date", "sequence_number", "created_at")
     filterset_fields = ("invoice_type", "financial_year", "status")
@@ -130,6 +130,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "preview_document": "finance.invoice.generate",
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
+        "destroy": "finance.invoice.delete",
         "mark_sent": "finance.invoice.generate",
         "mark_paid": "finance.invoice.generate",
         "unmark_paid": "finance.invoice.generate",
@@ -212,6 +213,11 @@ class InvoiceViewSet(BaseModelViewSet):
             invoice=self.get_object(), actor=request.user, reason=payload.validated_data["reason"]
         )
         return Response(InvoiceSerializer(invoice).data)
+
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
+        invoice = self.get_object()
+        InvoiceService().delete(invoice=invoice, actor=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # -- Lifecycle -------------------------------------------------------- #
     @action(detail=True, methods=["post"], url_path="mark-sent")

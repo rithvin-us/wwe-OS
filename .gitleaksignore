@@ -1,0 +1,19 @@
+# Gitleaks allowlist — verified false positives only.
+#
+# Every entry here was inspected by hand and is NOT a credential. Never add a
+# real secret to this file: rotate it at the provider instead. An entry is a
+# gitleaks "fingerprint" (commit:path:rule:line) and is pinned to one commit,
+# so it cannot silently cover a later, genuine leak in the same file.
+
+# CI placeholders. Literal strings named "test"/"placeholder", used only to let
+# Django boot inside the test job; they sign nothing that exists.
+8ce4ccec6f400160b32e8b3c7243d2fbefc57636:.github/workflows/ci.yml:generic-api-key:45
+6b7e3d1d50633e7bab768848b33710e533bd90e9:.github/workflows/ci.yml:generic-api-key:47
+
+# Not secrets at all: the variable NAME `idempotency_key=` trips the
+# generic-api-key entropy rule.
+fc927c5364121cf85fdb430251ac6654fd60c2a6:platform/workflow/services.py:generic-api-key:61
+a5fb09e0db20f8fb05d81676ca4b30f9236fa819:docs/superpowers/plans/2026-07-24-pipeline-execution-engine.md:generic-api-key:1689
+
+# Test settings fixture, self-describing: "test-secret-key-that-is-sufficiently-long-...".
+35a37abbfcfed415278bf4d6e48df17485112b86:platform/config/settings_test.py:generic-api-key:21

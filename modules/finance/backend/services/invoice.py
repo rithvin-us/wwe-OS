@@ -40,6 +40,7 @@ from django.utils.text import slugify
 from finance.backend.document_types import AMC_INVOICE, SALES_INVOICE
 from finance.backend.events.registry import (
     INVOICE_CANCELLED,
+    INVOICE_DELETED,
     INVOICE_GENERATED,
     INVOICE_UPDATED,
 )
@@ -318,6 +319,41 @@ class InvoiceService(BaseService):
             extra={"reason": invoice.cancellation_reason},
         )
         return invoice
+
+    # ------------------------------------------------------------------ #
+    # Deleting
+    # ------------------------------------------------------------------ #
+    def delete(self, *, invoice: Invoice, actor=None) -> None:
+        """Deletes an invoice, removing its stored documents and search index entry."""
+        self._assert_period_open(tenant=invoice.tenant, invoice_date=invoice.invoice_date)
+        from audit.services import AuditService
+        from finance.backend.search.adapter import INDEX as SEARCH_INDEX
+        from search.services import SearchService
+
+        with transaction.atomic():
+            superseded = [invoice.file, invoice.pdf_file]
+            for stored in superseded:
+                if stored is not None:
+                    StorageService().delete(stored, actor=actor)
+
+            AuditService().record(
+                action="finance.invoice_deleted",
+                module="finance",
+                object_type="Invoice",
+                object_id=str(invoice.id),
+                changes={
+                    "number": invoice.number,
+                    "consignee": invoice.consignee_name,
+                    "total": str(invoice.total),
+                },
+                actor=actor,
+                tenant=invoice.tenant,
+            )
+            SearchService().remove(
+                index=SEARCH_INDEX, doc_id=str(invoice.id), tenant=invoice.tenant
+            )
+            publish(INVOICE_DELETED, instance=invoice, actor=actor)
+            invoice.delete()
 
     # ------------------------------------------------------------------ #
     # Lifecycle — orthogonal to the register status (issued/cancelled). These

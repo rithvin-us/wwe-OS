@@ -13,5 +13,6 @@ FINANCE_PERMISSIONS: list[PermissionDef] = [
     PermissionDef("finance.invoice.read", "View invoices and the bill register", "Finance"),
     PermissionDef("finance.invoice.generate", "Generate and correct invoices", "Finance"),
     PermissionDef("finance.invoice.cancel", "Cancel a raised invoice", "Finance"),
+    PermissionDef("finance.invoice.delete", "Delete an invoice", "Finance"),
     PermissionDef("finance.customer.manage", "Manage billing customers and sites", "Finance"),
 ]

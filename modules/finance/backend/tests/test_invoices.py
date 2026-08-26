@@ -324,3 +324,32 @@ def test_a_bill_needs_a_customer_or_a_typed_consignee(owner, auth_client):
     )
     # 422 is the platform's contract for a well-formed but invalid payload.
     assert response.status_code == 422
+
+
+def test_delete_invoice_removes_record_and_files(tenant, customer, line_items):
+    invoice = InvoiceService().generate(
+        tenant=tenant,
+        invoice_type=InvoiceType.SALES,
+        invoice_date=date(2026, 7, 26),
+        customer=customer,
+        lines=line_items(),
+    )
+    invoice_id = invoice.id
+    local_path = Path(invoice.local_path)
+    assert local_path.is_file()
+
+    InvoiceService().delete(invoice=invoice)
+
+    assert not Invoice.objects.filter(id=invoice_id).exists()
+    assert not local_path.exists()
+
+
+def test_delete_invoice_over_api(owner, auth_client, customer):
+    client = auth_client(owner)
+    created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
+    body = _body(created)
+    invoice_id = body["id"]
+
+    delete_resp = client.delete(f"{BASE}/invoices/{invoice_id}/")
+    assert delete_resp.status_code == 204
+    assert not Invoice.objects.filter(id=invoice_id).exists()
