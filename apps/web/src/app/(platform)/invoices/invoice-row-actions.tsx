@@ -40,6 +40,7 @@ export function InvoiceRowActions({
 }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
   const issued = invoice.status === "issued";
@@ -76,12 +77,12 @@ export function InvoiceRowActions({
   }
 
   async function handleDelete() {
-    if (!confirm(`Are you sure you want to permanently delete invoice ${invoice.number}?`)) return;
     setBusy(true);
     const result = await deleteInvoiceAction(invoice.id);
     setBusy(false);
     if (result.ok) {
       toast.success(`Invoice ${invoice.number} deleted.`);
+      setDeleting(false);
       router.refresh();
     } else {
       toast.error(result.message);
@@ -155,16 +156,40 @@ export function InvoiceRowActions({
         </>
       ) : null}
 
-      <Button
-        size="icon"
-        variant="ghost"
-        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-        title="Delete invoice"
-        disabled={busy}
-        onClick={handleDelete}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+      {invoice.can_delete ? (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          title="Delete this invoice"
+          disabled={busy}
+          onClick={() => setDeleting(true)}
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      ) : null}
+
+      <Dialog open={deleting} onOpenChange={setDeleting}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Delete invoice {invoice.number}?</DialogTitle>
+            <DialogDescription>
+              This bill has not been sent or paid, so it can still be taken off the register. The
+              workbook and PDF are destroyed and cannot be recovered. The number is not given back —
+              the next invoice takes the one after it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleting(false)}>
+              Keep it
+            </Button>
+            <Button type="button" variant="destructive" disabled={busy} onClick={handleDelete}>
+              {busy ? "Deleting…" : "Delete invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={cancelling} onOpenChange={setCancelling}>
         <DialogContent className="sm:max-w-[480px]">

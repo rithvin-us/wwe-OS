@@ -14,6 +14,14 @@ import {
 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@bop/ui/components/dialog";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { toast } from "sonner";
 
@@ -47,6 +55,8 @@ export function InvoicesSection({
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The invoice the delete confirmation is open for, or null when it is closed.
+  const [pendingDelete, setPendingDelete] = useState<Invoice | null>(null);
 
   // Tab Counts
   const countAll = invoices.length;
@@ -83,14 +93,14 @@ export function InvoicesSection({
     }
   }
 
-  async function handleDeleteInvoice(id: string, number: string) {
-    if (!confirm(`Are you sure you want to permanently delete invoice ${number}?`)) return;
-    setBusyId(id);
-    const res = await deleteInvoiceAction(id);
+  async function handleDeleteInvoice(invoice: Invoice) {
+    setBusyId(invoice.id);
+    const res = await deleteInvoiceAction(invoice.id);
     setBusyId(null);
     if (res.ok) {
-      toast.success(`Invoice ${number} deleted.`);
-      setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+      toast.success(`Invoice ${invoice.number} deleted.`);
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoice.id));
+      setPendingDelete(null);
       router.refresh();
     } else {
       toast.error(res.message);
@@ -288,16 +298,18 @@ export function InvoicesSection({
                           />
                         ) : null}
 
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-                          title="Delete invoice"
-                          disabled={busyId === invoice.id}
-                          onClick={() => handleDeleteInvoice(invoice.id, invoice.number)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        {invoice.can_delete ? (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            title="Delete this invoice"
+                            disabled={busyId === invoice.id}
+                            onClick={() => setPendingDelete(invoice)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -307,6 +319,38 @@ export function InvoicesSection({
           </table>
         </div>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Delete invoice {pendingDelete?.number}?</DialogTitle>
+            <DialogDescription>
+              This bill has not been sent or paid, so it can still be taken off the register. The
+              workbook and PDF are destroyed and cannot be recovered. The number is not given back —
+              the next invoice takes the one after it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPendingDelete(null)}>
+              Keep it
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pendingDelete !== null && busyId === pendingDelete.id}
+              onClick={() => pendingDelete && handleDeleteInvoice(pendingDelete)}
+            >
+              {pendingDelete !== null && busyId === pendingDelete.id
+                ? "Deleting…"
+                : "Delete invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

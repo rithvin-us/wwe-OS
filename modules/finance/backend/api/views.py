@@ -107,7 +107,20 @@ def _tenant_from(user):
 
 
 class InvoiceViewSet(BaseModelViewSet):
-    """The bill register."""
+    """The bill register.
+
+    DELETE is narrow on purpose. A raised invoice that has been sent, paid or
+    cancelled is never removed — its number has already been seen by the
+    outside world, and cancelling is the way to void it while keeping the row,
+    the reason and the issued documents. Only a bill still at
+    `LifecycleStage.GENERATED` — raised by mistake and caught before it went
+    anywhere — can be deleted; anything else answers 409. The guard itself
+    lives in `InvoiceService.delete()` so every caller is held to it.
+
+    Deleting never releases the number: the row is soft-deleted and
+    `InvoiceNumberingService` counts soft-deleted rows, so the statutory
+    sequence keeps no hole.
+    """
 
     serializer_class = InvoiceSerializer
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -209,6 +222,16 @@ class InvoiceViewSet(BaseModelViewSet):
             invoice=self.get_object(), actor=request.user, reason=payload.validated_data["reason"]
         )
         return Response(InvoiceSerializer(invoice).data)
+
+    def perform_destroy(self, instance) -> None:
+        """Routes DELETE through the service rather than the model.
+
+        `ModelViewSet` would call `instance.delete()` straight, which on a
+        platform model is a bare soft delete — it would skip the lifecycle
+        guard, the stored-document cleanup, the audit entry, the search
+        de-index and the accounting-period check.
+        """
+        InvoiceService().delete(invoice=instance, actor=self.request.user)
 
     # -- Lifecycle -------------------------------------------------------- #
     @action(detail=True, methods=["post"], url_path="mark-sent")

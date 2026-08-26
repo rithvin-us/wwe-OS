@@ -120,6 +120,9 @@ export interface Invoice {
   payment_status: PaymentStatus;
   lifecycle_stage: LifecycleStage;
   is_overdue: boolean;
+  /** Whether the register will accept a delete — true only while the bill is
+   * still `generated`. Decided by the API, not re-derived here. */
+  can_delete: boolean;
   due_date: string | null;
   sent_at: string | null;
   paid_at: string | null;

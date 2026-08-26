@@ -50,6 +50,7 @@ from finance.backend.models.invoice import (
     InvoiceLine,
     InvoiceStatus,
     InvoiceType,
+    LifecycleStage,
     PaymentStatus,
 )
 from finance.backend.services import computation, pdf, renderer
@@ -324,7 +325,27 @@ class InvoiceService(BaseService):
     # Deleting
     # ------------------------------------------------------------------ #
     def delete(self, *, invoice: Invoice, actor=None) -> None:
-        """Deletes an invoice, removing its stored documents and search index entry."""
+        """Retracts a bill that never left the building.
+
+        Only a freshly generated invoice can be deleted — one that has not been
+        sent, paid, gone overdue or been cancelled (`LifecycleStage.GENERATED`).
+        Once a bill has been seen by the outside world it is cancelled, never
+        removed: cancelling keeps the row, records a reason and leaves the
+        issued documents untouched. Deleting destroys the stored workbook and
+        PDF for good, so it is reserved for a bill raised by mistake and caught
+        before it went anywhere.
+
+        The number is not released either way. The row is soft-deleted and
+        `InvoiceNumberingService` counts soft-deleted rows when it allocates, so
+        the statutory sequence keeps no hole and no number is handed out twice.
+        """
+        stage = invoice.lifecycle_stage()
+        if stage != LifecycleStage.GENERATED:
+            raise ConflictError(
+                f"This invoice is {LifecycleStage(stage).label.lower()} and can no longer be "
+                "deleted — the customer has already seen it. Cancel it instead, which keeps "
+                "the bill and its number on the register with a reason."
+            )
         self._assert_period_open(tenant=invoice.tenant, invoice_date=invoice.invoice_date)
         from audit.services import AuditService
         from finance.backend.search.adapter import INDEX as SEARCH_INDEX

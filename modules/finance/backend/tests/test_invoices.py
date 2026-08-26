@@ -344,16 +344,69 @@ def test_delete_invoice_removes_record_and_files(tenant, customer, line_items):
     assert not local_path.exists()
 
 
-def test_the_api_refuses_to_delete_an_invoice(owner, auth_client, customer):
-    """The register has no delete. A number is reserved when the bill is raised
-    and never released, so removing one would leave a permanent hole in the
-    statutory sequence. Cancelling is the supported way to void a bill, and it
-    keeps the number consumed. Both the verb and the action route must refuse.
-    """
+def test_the_api_deletes_a_bill_that_never_left_the_building(owner, auth_client, customer):
+    """A freshly generated bill — not sent, not paid, not cancelled — was raised
+    by mistake and is caught before it went anywhere, so DELETE retracts it.
+    Only the verb does: there is no POST action route for deletion."""
     client = auth_client(owner)
     created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
     invoice_id = _body(created)["id"]
+    assert _body(created)["can_delete"] is True
 
-    assert client.delete(f"{BASE}/invoices/{invoice_id}/").status_code == 405
-    assert client.post(f"{BASE}/invoices/{invoice_id}/delete/").status_code == 404
+    deleted = client.delete(f"{BASE}/invoices/{invoice_id}/")
+    action_route = client.post(f"{BASE}/invoices/{invoice_id}/delete/")
+
+    assert deleted.status_code == 204
+    assert action_route.status_code == 404
+    assert not Invoice.objects.filter(id=invoice_id).exists()
+
+
+def test_deleting_a_bill_does_not_release_its_number(owner, auth_client, customer):
+    """The row is soft-deleted and the numbering service counts soft-deleted
+    rows, so a retracted bill still consumes its place in the statutory
+    sequence — the next invoice takes the number after it, never its own."""
+    client = auth_client(owner)
+    created = _body(client.post(f"{BASE}/invoices/", _payload(customer), format="json"))
+    retracted_number = created["sequence_number"]
+
+    deleted = client.delete(f"{BASE}/invoices/{created['id']}/")
+    assert deleted.status_code == 204
+
+    replacement = _body(client.post(f"{BASE}/invoices/", _payload(customer), format="json"))
+    assert replacement["sequence_number"] == retracted_number + 1
+    assert replacement["number"] != created["number"]
+
+
+@pytest.mark.parametrize("stage_route", ["mark-sent", "mark-paid"])
+def test_the_api_refuses_to_delete_a_bill_the_customer_has_seen(
+    owner, auth_client, customer, stage_route
+):
+    """Once a bill is sent or paid it is out in the world. Deleting would
+    destroy the issued documents, so the register refuses with 409 and points
+    at cancel, which keeps the bill, its number and a reason."""
+    client = auth_client(owner)
+    created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
+    invoice_id = _body(created)["id"]
+    client.post(f"{BASE}/invoices/{invoice_id}/{stage_route}/")
+
+    response = client.delete(f"{BASE}/invoices/{invoice_id}/")
+
+    reread = _body(client.get(f"{BASE}/invoices/{invoice_id}/"))
+
+    assert response.status_code == 409
+    assert Invoice.objects.filter(id=invoice_id).exists()
+    assert reread["can_delete"] is False
+
+
+def test_the_api_refuses_to_delete_a_cancelled_bill(owner, auth_client, customer):
+    """A cancelled bill is the record that a number was voided and why. Deleting
+    it would erase that explanation from the register."""
+    client = auth_client(owner)
+    created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
+    invoice_id = _body(created)["id"]
+    client.post(f"{BASE}/invoices/{invoice_id}/cancel/", {"reason": "Duplicate"}, format="json")
+
+    response = client.delete(f"{BASE}/invoices/{invoice_id}/")
+
+    assert response.status_code == 409
     assert Invoice.objects.filter(id=invoice_id).exists()
