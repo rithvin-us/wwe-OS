@@ -7,6 +7,7 @@ import {
   type LiveFinancials,
   monthlyAmountFor,
 } from "@/config/dashboard";
+import { isAuthenticated } from "@/lib/api/server";
 import { getDocuments } from "@/lib/dms";
 import { getEmployees } from "@/lib/hr";
 import { getInvoiceStats } from "@/lib/invoices";
@@ -86,6 +87,18 @@ function formatHistoryForPrompt(history: HistoryTurn[] | undefined): string {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json(
+      {
+        id: `msg_${Date.now()}`,
+        sender: "rithu",
+        text: "Please sign in to chat with Rithu.",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 401 },
+    );
+  }
+
   try {
     const body = await request.json();
     const prompt: string = (body.prompt || "").trim();
@@ -159,7 +172,7 @@ export async function POST(request: Request) {
     const activeEmployees = employees.filter((e) => e.status === "Active");
 
     // SaaS Production Path 1: Call Google Gemini API (gemini-2.0-flash) if a valid key is present
-    if (looksLikeGeminiKey) {
+    if (apiKey && looksLikeGeminiKey) {
       try {
         const contentsParts: Array<Record<string, unknown>> = [];
 
@@ -221,10 +234,10 @@ Return your response strictly as a JSON object matching this schema:
         // 404 on v1beta now.
         const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
         let geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
               contents: [{ role: "user", parts: contentsParts }],
               generationConfig: {
@@ -241,10 +254,10 @@ Return your response strictly as a JSON object matching this schema:
             `Gemini API ${modelName} returned status ${geminiResponse.status}, retrying with gemini-2.5-flash...`,
           );
           geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: contentsParts }],
                 generationConfig: {
@@ -466,7 +479,7 @@ Return your response strictly as a JSON object matching this schema:
         "Check employee attendance",
       ];
     } else if (slashIntent === "explain" && contextFile) {
-      replyText = `I don't have vision/summarization available right now (offline mode — no AI key configured), but "${contextFile.name}" is attached in this conversation. Once a valid GEMINI_API_KEY is configured I can inspect it directly.`;
+      replyText = `I don't have vision/summarization available right now (offline mode — no AI key configured), but "${contextFile.name}" is attached in this conversation. Once AI features are enabled I can inspect it directly.`;
       suggestedPrompts = [
         "Show Rithu documents",
         "How is the business doing?",

@@ -78,14 +78,15 @@ Return ONLY the raw JSON object without markdown formatting.`;
       let res: Response | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
               contents: [{ role: "user", parts }],
               generationConfig: {
                 temperature: 0.1,
+                maxOutputTokens: 2048,
                 responseMimeType: "application/json",
               },
             }),

@@ -494,9 +494,7 @@ class PayrollEngine:
 
         salary_rule = self.salary_rule_repo.effective_rule(employee.pk, year, month)
         if not salary_rule:
-            logger.warning(
-                "No salary rule found for employee %s. Skipping.", employee.employee_code
-            )
+            logger.warning("No salary rule found for employee id=%s. Skipping.", employee.pk)
             return None
 
         att_records = self.attendance_repo.month_for_employee(employee.pk, year, month)
@@ -546,7 +544,7 @@ class PayrollEngine:
 
         # Log warnings
         for w in result.warnings:
-            logger.warning("  %s: %s", employee.employee_code, w)
+            logger.warning("  employee id=%s: %s", employee.pk, w)
 
         # -- Persist --
         payroll = Payroll.objects.create(
@@ -586,9 +584,14 @@ class PayrollEngine:
         )
 
         logger.info(
-            "  %s: %s days, gross=%.2f, net=%.2f",
-            employee.employee_code,
+            "  employee id=%s: %s present days, %s paid days",
+            employee.pk,
             result.days.present,
+            result.days.total_paid,
+        )
+        logger.debug(
+            "  employee id=%s: gross=%.2f, net=%.2f",
+            employee.pk,
             result.wages.gross,
             result.net_salary,
         )
