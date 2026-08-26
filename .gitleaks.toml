@@ -56,3 +56,20 @@ regexes = [
   # Self-describing fixture in platform/config/settings_test.py.
   '''test-secret-key''',
 ]
+# Generated trees. Not source, never reviewed, and their size makes a scan
+# non-deterministic: a clean CI checkout has none of them, a developer box has
+# hundreds of megabytes. Excluding them keeps local and CI results identical.
+# `.env` is deliberately NOT excluded -- a committed one must still fail.
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)\.pnpm-store/''',
+  '''(^|/)dist/''',
+  '''(^|/)coverage/''',
+  '''(^|/)\.gradle/''',
+  '''(^|/)android/build/''',
+  '''(^|/)android/app/build/''',
+  '''(^|/)\.turbo/''',
+  '''pnpm-lock\.yaml$''',
+]
