@@ -144,14 +144,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Blocking on purpose. dependabot.yml holds every semver-major bump, and
+      # ignore rules suppress security PRs too -- so a vulnerability whose only
+      # fix ships in a new major reaches nobody unless this gate fails the
+      # build. Suppress an unfixable advisory by id in package.json
+      # pnpm.auditConfig.ignoreGhsas, never by neutering the step.
       - name: JS dependency audit
         run: pnpm audit --audit-level=high
-        continue-on-error: true
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+      # Blocking for the same reason as the JS audit above. Suppress an
+      # unfixable advisory by adding its id to --ignore-vuln.
       - name: Python dependency audit
         run: |
           pip install pip-audit
-          pip-audit -r platform/requirements.txt --ignore-vuln GHSA-none || true
-        continue-on-error: true
+          pip-audit -r platform/requirements.txt --ignore-vuln GHSA-none
