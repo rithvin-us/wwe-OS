@@ -3,8 +3,7 @@ updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       # One PR per ecosystem cluster instead of a PR per package.
@@ -74,8 +73,7 @@ updates:
   - package-ecosystem: pip
     directory: "/platform"
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       django:
