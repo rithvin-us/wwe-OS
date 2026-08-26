@@ -39,12 +39,20 @@ id = "shell-default-secret"
 description = "Secret-looking literal used as a ${VAR:-default}"
 regex = '''\$\{[A-Za-z0-9_]*(?i:TOKEN|SECRET|KEY|PASSWORD|PASSWD|CREDENTIAL)[A-Za-z0-9_]*:-([^}\s]{12,})\}'''
 
+# Matched against the SECRET VALUE, so these stay effective in both `gitleaks
+# git` and `gitleaks dir` mode. Fingerprints in .gitleaksignore do NOT: they are
+# commit-scoped (commit:path:rule:line) and never match the file-scoped
+# fingerprint (path:rule:line) that a directory scan produces.
 [allowlist]
-description = "Placeholders that are not credentials"
+description = "Placeholders and non-secrets, verified by hand"
 regexes = [
   '''change-me''',
   '''your-[a-z-]*here''',
   '''(?i)placeholder''',
   '''(?i)not-for-production''',
   '''(?i)example\.com''',
+  # The variable NAME `idempotency_key=`, not a credential.
+  '''idempotency_key''',
+  # Self-describing fixture in platform/config/settings_test.py.
+  '''test-secret-key''',
 ]

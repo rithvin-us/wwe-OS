@@ -102,7 +102,11 @@ export async function cancelInvoiceAction(
 
 export async function deleteInvoiceAction(id: string): Promise<ActionResult<null>> {
   try {
-    await djangoFetch(`${BASE}/invoices/${id}/`, { method: "DELETE" });
+    try {
+      await djangoFetch(`${BASE}/invoices/${id}/`, { method: "DELETE" });
+    } catch {
+      await djangoFetch(`${BASE}/invoices/${id}/delete/`, { method: "POST" });
+    }
     revalidatePath("/invoices");
     revalidatePath("/automation");
     return { ok: true, message: "Invoice deleted." };

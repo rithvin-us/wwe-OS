@@ -131,6 +131,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
         "destroy": "finance.invoice.delete",
+        "delete_invoice": "finance.invoice.delete",
         "mark_sent": "finance.invoice.generate",
         "mark_paid": "finance.invoice.generate",
         "unmark_paid": "finance.invoice.generate",
@@ -215,6 +216,12 @@ class InvoiceViewSet(BaseModelViewSet):
         return Response(InvoiceSerializer(invoice).data)
 
     def destroy(self, request: Request, *args, **kwargs) -> Response:
+        invoice = self.get_object()
+        InvoiceService().delete(invoice=invoice, actor=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post", "delete"], url_path="delete")
+    def delete_invoice(self, request: Request, pk=None) -> Response:
         invoice = self.get_object()
         InvoiceService().delete(invoice=invoice, actor=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)

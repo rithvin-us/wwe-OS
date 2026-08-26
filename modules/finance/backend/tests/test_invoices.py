@@ -353,3 +353,14 @@ def test_delete_invoice_over_api(owner, auth_client, customer):
     delete_resp = client.delete(f"{BASE}/invoices/{invoice_id}/")
     assert delete_resp.status_code == 204
     assert not Invoice.objects.filter(id=invoice_id).exists()
+
+
+def test_delete_invoice_via_post_action_over_api(owner, auth_client, customer):
+    client = auth_client(owner)
+    created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
+    body = _body(created)
+    invoice_id = body["id"]
+
+    delete_resp = client.post(f"{BASE}/invoices/{invoice_id}/delete/")
+    assert delete_resp.status_code == 204
+    assert not Invoice.objects.filter(id=invoice_id).exists()
