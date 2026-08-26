@@ -353,8 +353,11 @@ def test_the_api_deletes_a_bill_that_never_left_the_building(owner, auth_client,
     invoice_id = _body(created)["id"]
     assert _body(created)["can_delete"] is True
 
-    assert client.delete(f"{BASE}/invoices/{invoice_id}/").status_code == 204
-    assert client.post(f"{BASE}/invoices/{invoice_id}/delete/").status_code == 404
+    deleted = client.delete(f"{BASE}/invoices/{invoice_id}/")
+    action_route = client.post(f"{BASE}/invoices/{invoice_id}/delete/")
+
+    assert deleted.status_code == 204
+    assert action_route.status_code == 404
     assert not Invoice.objects.filter(id=invoice_id).exists()
 
 
@@ -366,7 +369,8 @@ def test_deleting_a_bill_does_not_release_its_number(owner, auth_client, custome
     created = _body(client.post(f"{BASE}/invoices/", _payload(customer), format="json"))
     retracted_number = created["sequence_number"]
 
-    assert client.delete(f"{BASE}/invoices/{created['id']}/").status_code == 204
+    deleted = client.delete(f"{BASE}/invoices/{created['id']}/")
+    assert deleted.status_code == 204
 
     replacement = _body(client.post(f"{BASE}/invoices/", _payload(customer), format="json"))
     assert replacement["sequence_number"] == retracted_number + 1
@@ -387,9 +391,11 @@ def test_the_api_refuses_to_delete_a_bill_the_customer_has_seen(
 
     response = client.delete(f"{BASE}/invoices/{invoice_id}/")
 
+    reread = _body(client.get(f"{BASE}/invoices/{invoice_id}/"))
+
     assert response.status_code == 409
     assert Invoice.objects.filter(id=invoice_id).exists()
-    assert _body(client.get(f"{BASE}/invoices/{invoice_id}/"))["can_delete"] is False
+    assert reread["can_delete"] is False
 
 
 def test_the_api_refuses_to_delete_a_cancelled_bill(owner, auth_client, customer):
@@ -400,5 +406,7 @@ def test_the_api_refuses_to_delete_a_cancelled_bill(owner, auth_client, customer
     invoice_id = _body(created)["id"]
     client.post(f"{BASE}/invoices/{invoice_id}/cancel/", {"reason": "Duplicate"}, format="json")
 
-    assert client.delete(f"{BASE}/invoices/{invoice_id}/").status_code == 409
+    response = client.delete(f"{BASE}/invoices/{invoice_id}/")
+
+    assert response.status_code == 409
     assert Invoice.objects.filter(id=invoice_id).exists()
