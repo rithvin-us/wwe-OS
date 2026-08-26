@@ -1,0 +1,50 @@
+# Gitleaks configuration for WWE OS.
+#
+# Extends the upstream ruleset rather than replacing it, then adds rules for
+# the three shapes that let real credentials sit in this repo's history from
+# 2026-07-19 to 2026-08-26 without a single scanner noticing.
+
+title = "WWE OS gitleaks config"
+
+[extend]
+useDefault = true
+
+# The leaked Telegram token was written as a Compose default:
+#
+#     INGESTION_SERVICE_TOKENS: ${INGESTION_SERVICE_TOKENS:-telegram-bot:<token>}
+#
+# The upstream `telegram-bot-api-token` rule requires the character after the
+# token to be a quote, backtick, whitespace, semicolon or end-of-line. Here it
+# is `}`, so the rule never fired. This one matches the token shape wherever it
+# appears, with no trailing-delimiter requirement.
+[[rules]]
+id = "telegram-bot-token-anywhere"
+description = "Telegram Bot API token, including inside a ${VAR:-default} substitution"
+regex = '''[0-9]{5,16}:(?-i:A)[A-Za-z0-9_-]{34}'''
+
+# The leaked Gemini key used Google's newer `AQ.`-prefixed format. Upstream
+# only covers the older `AIza...` shape, so the key was invisible to every
+# scan even after the Telegram token was reported.
+[[rules]]
+id = "google-ai-studio-key"
+description = "Google AI Studio / Gemini API key (AQ. format)"
+regex = '''\bAQ\.[A-Za-z0-9_\-]{25,60}\b'''
+
+# Generic backstop for the same mistake in any other variable: a
+# secret-sounding name given a long literal fallback in Compose or shell.
+# `${VAR:?message}` (the required-variable form this repo now uses) and short
+# non-secret defaults such as `${POSTGRES_PASSWORD:-bop}` do not match.
+[[rules]]
+id = "shell-default-secret"
+description = "Secret-looking literal used as a ${VAR:-default}"
+regex = '''\$\{[A-Za-z0-9_]*(?i:TOKEN|SECRET|KEY|PASSWORD|PASSWD|CREDENTIAL)[A-Za-z0-9_]*:-([^}\s]{12,})\}'''
+
+[allowlist]
+description = "Placeholders that are not credentials"
+regexes = [
+  '''change-me''',
+  '''your-[a-z-]*here''',
+  '''(?i)placeholder''',
+  '''(?i)not-for-production''',
+  '''(?i)example\.com''',
+]

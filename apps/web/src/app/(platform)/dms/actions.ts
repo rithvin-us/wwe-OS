@@ -24,7 +24,7 @@ function assertId(id: string): string {
   return id;
 }
 
-function _assertVersion(version: number): number {
+function assertVersion(version: number): number {
   if (!Number.isInteger(version) || version < 0) {
     throw new Error(INVALID_ID_MESSAGE);
   }
