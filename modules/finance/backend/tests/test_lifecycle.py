@@ -375,9 +375,15 @@ def test_cancelling_over_the_api(owner, auth_client, customer):
     assert cancelled["cancellation_reason"] == "Duplicate"
 
 
-def test_a_raised_bill_cannot_be_deleted_over_the_api(owner, auth_client, customer):
+def test_a_sent_bill_cannot_be_deleted_over_the_api(owner, auth_client, customer):
+    """Deletion is only for a bill still at the generated stage. Marking it sent
+    puts it in the customer's hands, and from there the way to void it is
+    cancel — which keeps the row, the number and a reason on the register."""
     client = auth_client(owner)
     created = _body(client.post(f"{BASE}/invoices/", _api_payload(customer), format="json"))
+    client.post(f"{BASE}/invoices/{created['id']}/mark-sent/")
+
     response = client.delete(f"{BASE}/invoices/{created['id']}/")
-    assert response.status_code == 405
+
+    assert response.status_code == 409
     assert Invoice.objects.filter(id=created["id"]).exists()

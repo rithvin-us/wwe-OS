@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from finance.backend.models.invoice import Customer, Invoice, InvoiceLine, InvoiceType
+from finance.backend.models.invoice import (
+    Customer,
+    Invoice,
+    InvoiceLine,
+    InvoiceType,
+    LifecycleStage,
+)
 from rest_framework import serializers
 
 
@@ -35,6 +41,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     generated_by = serializers.SerializerMethodField()
     lifecycle_stage = serializers.SerializerMethodField()
     is_overdue = serializers.SerializerMethodField()
+    can_delete = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -68,6 +75,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "payment_status",
             "lifecycle_stage",
             "is_overdue",
+            "can_delete",
             "due_date",
             "sent_at",
             "paid_at",
@@ -97,6 +105,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_is_overdue(self, obj: Invoice) -> bool:
         return obj.is_overdue()
+
+    def get_can_delete(self, obj: Invoice) -> bool:
+        """Whether DELETE would be accepted — the same rule the API enforces,
+        published so the UI offers the action only where it exists rather than
+        offering it everywhere and reporting a 409 afterwards."""
+        return obj.lifecycle_stage() == LifecycleStage.GENERATED
 
 
 class DueDateSerializer(serializers.Serializer):

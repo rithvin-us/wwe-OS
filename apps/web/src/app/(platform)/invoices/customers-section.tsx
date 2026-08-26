@@ -40,6 +40,8 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The customer the removal confirmation is open for, or null when it is closed.
+  const [pendingDelete, setPendingDelete] = useState<BillingCustomer | null>(null);
   const [editing, setEditing] = useState<BillingCustomer | null>(null);
   const [form, setForm] = useState(BLANK);
 
@@ -79,16 +81,17 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
     router.refresh();
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Are you sure you want to remove customer "${name}"?`)) return;
+  async function handleDelete() {
+    if (!pendingDelete) return;
     setBusy(true);
-    const result = await deleteCustomerAction(id);
+    const result = await deleteCustomerAction(pendingDelete.id);
     setBusy(false);
     if (!result.ok) {
       toast.error(result.message);
       return;
     }
     toast.success(result.message);
+    setPendingDelete(null);
     if (open) setOpen(false);
     router.refresh();
   }
@@ -131,7 +134,7 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
                   size="sm"
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => handleDelete(customer.id, customer.name)}
+                  onClick={() => setPendingDelete(customer)}
                   title="Remove customer"
                 >
                   <Trash2 className="size-4" />
@@ -226,7 +229,7 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
                 variant="destructive"
                 size="sm"
                 disabled={busy}
-                onClick={() => handleDelete(editing.id, editing.name)}
+                onClick={() => setPendingDelete(editing)}
               >
                 <Trash2 className="mr-2 size-4" /> Remove customer
               </Button>
@@ -241,6 +244,31 @@ export function CustomersSection({ customers }: { customers: BillingCustomer[] }
                 {busy ? "Saving…" : "Save customer"}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Remove {pendingDelete?.name}?</DialogTitle>
+            <DialogDescription>
+              The customer stops appearing when raising a bill. Invoices already raised against them
+              keep the name, address and GSTIN that were printed on the day, so the register is
+              unchanged.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPendingDelete(null)}>
+              Keep it
+            </Button>
+            <Button type="button" variant="destructive" disabled={busy} onClick={handleDelete}>
+              {busy ? "Removing…" : "Remove customer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
