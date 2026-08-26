@@ -9,19 +9,10 @@ import {
   FileSpreadsheet,
   FileText,
   Pencil,
-  Trash2,
   XCircle,
 } from "@bop/icons";
 import { Badge } from "@bop/ui/components/badge";
 import { Button } from "@bop/ui/components/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@bop/ui/components/dialog";
 import { EmptyState } from "@bop/ui/components/empty-state";
 import { toast } from "sonner";
 
@@ -39,7 +30,7 @@ import {
   type InvoiceStatus,
 } from "@/config/invoices";
 
-import { deleteInvoiceAction, updateInvoiceStatusAction } from "./actions";
+import { updateInvoiceStatusAction } from "./actions";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 
 export type FilterTab = "all" | "approved" | "on_hold" | "declined_cancelled";
@@ -55,8 +46,6 @@ export function InvoicesSection({
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   // Tab Counts
   const countAll = invoices.length;
@@ -90,21 +79,6 @@ export function InvoicesSection({
       toast.error(res.message);
       // Revert if failed
       setInvoices(initialInvoices);
-    }
-  }
-
-  async function handleDeleteInvoice() {
-    if (!deletingInvoice) return;
-    setDeleting(true);
-    const res = await deleteInvoiceAction(deletingInvoice.id);
-    setDeleting(false);
-    if (res.ok) {
-      toast.success(res.message);
-      setInvoices((prev) => prev.filter((inv) => inv.id !== deletingInvoice.id));
-      setDeletingInvoice(null);
-      router.refresh();
-    } else {
-      toast.error(res.message);
     }
   }
 
@@ -298,17 +272,6 @@ export function InvoicesSection({
                             }
                           />
                         ) : null}
-
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-                          title="Delete this invoice"
-                          disabled={busyId === invoice.id}
-                          onClick={() => setDeletingInvoice(invoice)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -318,32 +281,6 @@ export function InvoicesSection({
           </table>
         </div>
       )}
-
-      <Dialog open={!!deletingInvoice} onOpenChange={(open) => !open && setDeletingInvoice(null)}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>Delete invoice {deletingInvoice?.number}?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete invoice {deletingInvoice?.number} and remove its stored
-              workbook & PDF files. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDeletingInvoice(null)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={deleting}
-              onClick={handleDeleteInvoice}
-            >
-              {deleting ? "Deleting…" : "Delete invoice"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

@@ -344,23 +344,16 @@ def test_delete_invoice_removes_record_and_files(tenant, customer, line_items):
     assert not local_path.exists()
 
 
-def test_delete_invoice_over_api(owner, auth_client, customer):
+def test_the_api_refuses_to_delete_an_invoice(owner, auth_client, customer):
+    """The register has no delete. A number is reserved when the bill is raised
+    and never released, so removing one would leave a permanent hole in the
+    statutory sequence. Cancelling is the supported way to void a bill, and it
+    keeps the number consumed. Both the verb and the action route must refuse.
+    """
     client = auth_client(owner)
     created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
-    body = _body(created)
-    invoice_id = body["id"]
+    invoice_id = _body(created)["id"]
 
-    delete_resp = client.delete(f"{BASE}/invoices/{invoice_id}/")
-    assert delete_resp.status_code == 204
-    assert not Invoice.objects.filter(id=invoice_id).exists()
-
-
-def test_delete_invoice_via_post_action_over_api(owner, auth_client, customer):
-    client = auth_client(owner)
-    created = client.post(f"{BASE}/invoices/", _payload(customer), format="json")
-    body = _body(created)
-    invoice_id = body["id"]
-
-    delete_resp = client.post(f"{BASE}/invoices/{invoice_id}/delete/")
-    assert delete_resp.status_code == 204
-    assert not Invoice.objects.filter(id=invoice_id).exists()
+    assert client.delete(f"{BASE}/invoices/{invoice_id}/").status_code == 405
+    assert client.post(f"{BASE}/invoices/{invoice_id}/delete/").status_code == 404
+    assert Invoice.objects.filter(id=invoice_id).exists()
