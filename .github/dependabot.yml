@@ -16,15 +16,26 @@ updates:
         patterns: ["@biomejs/*", "typescript", "tailwindcss", "@tailwindcss/*"]
       capacitor:
         patterns: ["@capacitor/*"]
-      minor-and-patch:
-        update-types: ["minor", "patch"]
-    # Minor/patch updates still flow through the groups above. Only the major
-    # jumps below are held back — each moves the platform off its declared stack
-    # (CLAUDE.md § "Stack") or has been verified to break a CI gate. Revisit an
-    # entry only when the toolchain actually supports the new major.
+      # Catch-all, last: an `update-types`-only group never claims updates
+      # Dependabot cannot classify as minor/patch, so everything unclassified
+      # fell through and opened its own PR. A "*" pattern group takes the rest;
+      # "@*/*" is listed too because a bare "*" is not documented to span the
+      # "/" in a scoped package name.
+      all-npm:
+        patterns: ["*", "@*/*"]
     ignore:
-      # CLAUDE.md pins the frontend to Next.js 16 and Tailwind v4. Stay on those
-      # majors; 16.x / 4.x minor+patch updates are unaffected.
+      # Policy: no automated major bumps, for any package. Majors move the
+      # platform off its declared stack or break a CI gate often enough that
+      # each one needs a human decision — they are done deliberately, by hand.
+      # Minor/patch still flow through the groups above.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Belt and braces. The wildcard above SHOULD cover these, but GitHub does
+      # not document whether a bare "*" matches scoped names (@types/node) the
+      # way it matches bare ones, and each entry below is a major already tried
+      # and verified to break a gate. Naming them explicitly costs nothing and
+      # keeps the hold if the wildcard ever narrows.
+      # CLAUDE.md pins the frontend to Next.js 16 and Tailwind v4.
       - dependency-name: "next"
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint-config-next"
@@ -33,17 +44,17 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@tailwindcss/*"
         update-types: ["version-update:semver-major"]
-      # TypeScript 7 (the native-compiler rewrite) fails `pnpm --filter web build`
-      # against this toolchain, and ESLint 10 is unsupported by eslint-config-next's
-      # bundled plugins (eslint-plugin-react/import/jsx-a11y cap at eslint 9) and
-      # crashes the lint gate. Hold both at their current major.
+      # TypeScript 7 (the native-compiler rewrite) fails `pnpm --filter web build`.
+      # ESLint 10 is unsupported by eslint-config-next's bundled plugins
+      # (eslint-plugin-react / import / jsx-a11y cap at eslint 9) and crashes the
+      # lint gate.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       # @tanstack/react-table 9 rewrote ColumnDef's generics (the new TableFeatures
-      # param), breaking the typecheck gate across every data table. @types/node must
-      # track the Node runtime (22), not jump ahead to 26. Hold both majors.
+      # param), breaking the typecheck gate across every data table. @types/node
+      # must track the Node runtime (22), not jump ahead to 26.
       - dependency-name: "@tanstack/react-table"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/node"
@@ -69,11 +80,17 @@ updates:
     groups:
       django:
         patterns: ["Django", "djangorestframework", "django-*"]
-      minor-and-patch:
-        update-types: ["minor", "patch"]
+      # Catch-all, last: requirements.txt declares `>=` floors, which Dependabot
+      # does not classify as minor/patch, so an `update-types` group left them
+      # ungrouped and each package opened its own PR. "*" takes the rest.
+      all-python:
+        patterns: ["*"]
     ignore:
+      # Same policy as the npm block above: majors are a human decision.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Named explicitly for the same belt-and-braces reason as the npm block.
       # CLAUDE.md pins the kernel to Django 6 (requirements.txt caps it at <6.2).
-      # Block major jumps; 6.x updates still flow through the django group.
       - dependency-name: "Django"
         update-types: ["version-update:semver-major"]
     commit-message:
@@ -83,5 +100,12 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      # One PR for the whole monthly action sweep, not one per action.
+      # "*/*" is listed alongside "*" because action names carry a "/"
+      # (actions/checkout) and a bare "*" is not documented to span it.
+      actions:
+        patterns: ["*", "*/*"]
     commit-message:
       prefix: "chore(ci)"
