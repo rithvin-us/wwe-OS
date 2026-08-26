@@ -6,16 +6,16 @@ djangorestframework-simplejwt>=5.5.1
 drf-spectacular>=0.30
 django-cors-headers>=4.9
 django-filter>=26
-argon2-cffi>=25
-dj-database-url>=3.1
-psycopg[binary]>=3.2
-redis>=5.2
-gunicorn>=23.0
+argon2-cffi>=25.1.0
+dj-database-url>=3.1.2
+psycopg[binary]>=3.3.4
+redis>=8.1.0
+gunicorn>=26.1.0
 # Platform services
 httpx>=0.28.1        # AI gateway provider calls
 openpyxl>=3.1.5      # reporting: Excel renderer
-reportlab>=5.0.0       # reporting: PDF renderer
-pypdf>=5.0           # auditor: merges PDFs into one package
+reportlab>=5.0.1       # reporting: PDF renderer
+pypdf>=6.16.1           # auditor: merges PDFs into one package
 # storage/providers.py imports boto3 lazily, but production (and any dev env
 # pointed at real S3/R2 storage) sets STORAGE_BACKEND=s3, so it's not truly
 # optional — Render's build only runs this file, with no conditional install
