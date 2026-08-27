@@ -15,7 +15,7 @@ gunicorn>=26.1.0
 httpx>=0.28.1        # AI gateway provider calls
 openpyxl>=3.1.5      # reporting: Excel renderer
 reportlab>=5.0.1       # reporting: PDF renderer
-pypdf>=6.16.1           # auditor: merges PDFs into one package
+pypdf>=6.16.2           # auditor: merges PDFs into one package
 # storage/providers.py imports boto3 lazily, but production (and any dev env
 # pointed at real S3/R2 storage) sets STORAGE_BACKEND=s3, so it's not truly
 # optional — Render's build only runs this file, with no conditional install
