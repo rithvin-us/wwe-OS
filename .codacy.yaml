@@ -1,0 +1,13 @@
+---
+# Local configuration for the Codacy Analysis CLI
+# (https://github.com/codacy/codacy-analysis-cli).
+#
+# Disable the duplication engine. The pinned CLI in
+# .github/workflows/codacy.yml crashes while formatting duplication results
+# into SARIF (java.lang.IndexOutOfBoundsException in
+# Sarif.generatePrimaryLocationHash), which is what fails the Codacy Security
+# Scan check. The security/quality pattern tools still run and report to Code
+# Scanning; only duplication — which we don't gate on — is turned off.
+engines:
+  duplication:
+    enabled: false

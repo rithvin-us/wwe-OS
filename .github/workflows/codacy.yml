@@ -41,6 +41,14 @@ jobs:
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+        # This scan is report-only: max-allowed-issues is unbounded and findings
+        # are handed to GitHub Code Scanning, so it must never fail the build on a
+        # finding. The only thing that fails it is an upstream CLI crash formatting
+        # duplication results to SARIF (IndexOutOfBoundsException in
+        # generatePrimaryLocationHash). .codacy.yaml disables the duplication
+        # engine to avoid it; continue-on-error keeps the report-only contract if
+        # the CLI still errors for any other reason.
+        continue-on-error: true
         with:
           # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
           # You can also omit the token and run the tools that support default configurations
@@ -54,8 +62,12 @@ jobs:
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
 
-      # Upload the SARIF file generated in the previous step
+      # Upload the SARIF file generated in the previous step. Only when the CLI
+      # actually produced one, and tolerate an upload hiccup, so a report-only
+      # scan never fails the build.
       - name: Upload SARIF results file
+        if: ${{ hashFiles('results.sarif') != '' }}
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
