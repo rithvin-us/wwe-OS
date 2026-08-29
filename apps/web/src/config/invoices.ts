@@ -173,6 +173,145 @@ export function emptyLine(): InvoiceLineDraft {
   return { description: "", hsn: "", quantity: "1", uom: "Nos", rate: "" };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Bulk historical-invoice import (OCR)                                        */
+/* -------------------------------------------------------------------------- */
+
+export type ImportItemStatus =
+  | "queued"
+  | "processing"
+  | "extracted"
+  | "needs_attention"
+  | "committed"
+  | "failed"
+  | "discarded";
+
+export type ImportBatchStatus = "processing" | "review" | "completed" | "archived";
+
+export const IMPORT_ITEM_STATUS_LABELS: Record<ImportItemStatus, string> = {
+  queued: "Queued",
+  processing: "Reading…",
+  extracted: "Ready to review",
+  needs_attention: "Needs attention",
+  committed: "Committed",
+  failed: "Failed",
+  discarded: "Discarded",
+};
+
+export const IMPORT_ITEM_BADGE_VARIANTS: Record<
+  ImportItemStatus,
+  "default" | "secondary" | "success" | "warning" | "destructive" | "outline"
+> = {
+  queued: "outline",
+  processing: "secondary",
+  extracted: "default",
+  needs_attention: "warning",
+  committed: "success",
+  failed: "destructive",
+  discarded: "secondary",
+};
+
+/** OCR at or above this confidence reads as trustworthy in the review grid —
+ * the ring turns green, matching the backend's own review threshold default. */
+export const IMPORT_CONFIDENCE_OK = 0.75;
+
+export interface ImportDraftLine {
+  description: string;
+  hsn: string;
+  quantity: string;
+  uom: string;
+  rate: string;
+}
+
+/** The operator-editable draft an item carries — the invoice it will become.
+ * Mirrors the generate payload plus the printed `number`. All strings so it
+ * survives the round-trip through the backend's JSON draft field. */
+export interface ImportDraft {
+  number: string;
+  invoice_type: InvoiceType;
+  invoice_date: string;
+  customer_id: string | null;
+  consignee_name: string;
+  consignee_address: string;
+  facility: string;
+  gstin: string;
+  is_sez: boolean;
+  gst_rate: string;
+  period_year: number | null;
+  period_month: number | null;
+  lines: ImportDraftLine[];
+}
+
+export interface ImportItem {
+  id: string;
+  batch: string;
+  status: ImportItemStatus;
+  original_filename: string;
+  confidence_score: string;
+  proposed_number: string;
+  proposed_invoice_date: string | null;
+  proposed_total: string;
+  proposed: Partial<ImportDraft>;
+  raw_extraction: Record<string, unknown>;
+  error_message: string;
+  invoice: string | null;
+  invoice_number: string | null;
+  source_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportBatchCounts {
+  total: number;
+  queued: number;
+  processing: number;
+  extracted: number;
+  needs_attention: number;
+  committed: number;
+  failed: number;
+  discarded: number;
+}
+
+export interface ImportBatch {
+  id: string;
+  label: string;
+  status: ImportBatchStatus;
+  created_by: string | null;
+  counts: ImportBatchCounts;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportBatchDetail extends ImportBatch {
+  items: ImportItem[];
+}
+
+/** Serve the original scan through this app's own proxy — the browser holds no
+ * Django token. */
+export function importScanUrl(itemId: string): string {
+  return `/api/finance/invoice-import-items/${itemId}/scan`;
+}
+
+/** Fill a possibly-partial draft (a still-`queued` item's is `{}`) to a complete
+ * one the review form can bind to. */
+export function toImportDraft(proposed: Partial<ImportDraft> | undefined): ImportDraft {
+  return {
+    number: proposed?.number ?? "",
+    invoice_type: proposed?.invoice_type ?? "sales",
+    invoice_date: proposed?.invoice_date ?? "",
+    customer_id: proposed?.customer_id ?? null,
+    consignee_name: proposed?.consignee_name ?? "",
+    consignee_address: proposed?.consignee_address ?? "",
+    facility: proposed?.facility ?? "",
+    gstin: proposed?.gstin ?? "",
+    is_sez: proposed?.is_sez ?? false,
+    gst_rate: proposed?.gst_rate ?? "18",
+    period_year: proposed?.period_year ?? null,
+    period_month: proposed?.period_month ?? null,
+    lines: proposed?.lines?.length ? proposed.lines : [emptyLine()],
+  };
+}
+
 /** Document links go through this app's own proxy routes — the browser never
  * holds a Django token, so it can't call the backend directly. */
 export function invoiceWorkbookUrl(id: string): string {
