@@ -334,6 +334,19 @@ def test_api_upload_then_commit_flow(tenant, owner, customer, auth_client, stub_
     assert Invoice.objects.filter(tenant=tenant, number="G/M/12/2026-27").exists()
 
 
+def test_parse_document_reads_through_the_gateway(tenant, owner, auth_client, stub_ocr):
+    """The PO/invoice parse endpoint runs OCR on the backend (platform AI
+    gateway) rather than the web tier calling a provider directly."""
+    stub_ocr(_extraction())
+    response = auth_client(owner).post(
+        f"{BASE}/invoices/parse-document/", {"file": _upload("po.pdf")}, format="multipart"
+    )
+    assert response.status_code == 200
+    data = _body(response)
+    assert data["number"] == "G/M/12/2026-27"
+    assert data["consignee_name"] == "Waterworks Engineering Pvt Ltd"
+
+
 def _upload(name: str):
     from django.core.files.uploadedfile import SimpleUploadedFile
 

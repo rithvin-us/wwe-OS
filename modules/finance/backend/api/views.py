@@ -37,7 +37,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from shared.exceptions import NotFoundError
+from shared.exceptions import NotFoundError, ValidationError
 from shared.permissions import HasPlatformPermission
 from shared.views import BaseModelViewSet
 
@@ -138,6 +138,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "create": "finance.invoice.generate",
         "preview": "finance.invoice.generate",
         "preview_document": "finance.invoice.generate",
+        "parse_document": "finance.invoice.generate",
         "partial_update": "finance.invoice.generate",
         "cancel": "finance.invoice.cancel",
         "destroy": "finance.invoice.cancel",
@@ -281,6 +282,26 @@ class InvoiceViewSet(BaseModelViewSet):
         response = HttpResponse(document, content_type=PDF_CONTENT_TYPE)
         response["Content-Disposition"] = 'inline; filename="invoice-preview.pdf"'
         return response
+
+    @action(detail=False, methods=["post"], url_path="parse-document")
+    def parse_document(self, request: Request) -> Response:
+        """Read an uploaded PO/invoice document into structured fields through
+        the platform AI gateway. It persists nothing — the operator reviews the
+        result before generating. Exists so the web tier proxies OCR here rather
+        than calling a provider directly (CLAUDE.md rule 3)."""
+        from finance.backend.services.invoice_ocr import InvoiceOCRService
+
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError(detail={"file": ["No document uploaded."]})
+        if upload.size > 10 * 1024 * 1024:
+            raise ValidationError(detail={"file": ["File exceeds the 10MB limit."]})
+        extraction = InvoiceOCRService().extract_from_image(
+            upload.read(),
+            mime_type=upload.content_type or "image/jpeg",
+            tenant=getattr(request.user, "tenant", None),
+        )
+        return Response(extraction)
 
     @action(detail=False, methods=["get"], url_path="next-number")
     def next_number(self, request: Request) -> Response:
