@@ -246,10 +246,17 @@ happy path.
 - Gates to pass (per CLAUDE.md): `biome ci`, `pnpm --filter web lint`,
   `pnpm --filter web build`, `tsc --noEmit`, `pnpm --filter web test`,
   `ruff check .` + `ruff format --check .`, `python manage.py check`, `pytest`.
-- Deployment: OCR uses the platform AI gateway → **no new service to deploy**.
-  The async path needs `pipeline_tick` running (already scheduled). Required env
-  in prod: `GEMINI_API_KEY`, `AI_OCR_MODEL`, `AI_OCR_TIMEOUT_SECONDS`,
-  `STORAGE_*`. Documented in `.env.example` + `docs/deployment/backend.md`.
+- Deployment (verified, two gaps found and closed):
+  1. **The async drain was not scheduled anywhere.** Neither `render.yaml` nor
+     `docker-compose.yml` ran `pipeline_tick`, so queued OCR would sit forever.
+     Added a `scheduler` service to both (`python manage.py pipeline_tick
+     --loop`); a Render Cron Job is noted as the cheaper alternative.
+  2. **The backend web service had no `GEMINI_API_KEY`.** OCR runs through the
+     platform gateway *on the backend*, so the key was added to the web service
+     (and the scheduler) in `render.yaml`.
+  Required env in prod: `GEMINI_API_KEY` (backend + scheduler), optional
+  `AI_OCR_TIMEOUT_SECONDS` / `INVOICE_OCR_REVIEW_THRESHOLD`; documented in
+  `.env.example`. No dedicated OCR microservice is deployed — the gateway is it.
 
 ## 13. Sequencing
 
