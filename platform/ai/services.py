@@ -54,6 +54,7 @@ class AIService(BaseService):
         max_tokens: int = 1024,
         temperature: float | None = None,
         cache_ttl: int = 0,
+        timeout: int | None = None,
         images: Sequence[AIImage] = (),
     ) -> AIResult:
         tenant = tenant or context.current_tenant()
@@ -108,7 +109,9 @@ class AIService(BaseService):
             user=user,
             max_tokens=max_tokens,
             temperature=temperature,
-            timeout=settings.AI_TIMEOUT_SECONDS,
+            # A caller can raise the ceiling for a slow job (OCR on a dense
+            # multi-page scan) without changing the platform-wide default.
+            timeout=timeout if timeout is not None else settings.AI_TIMEOUT_SECONDS,
             images=tuple(images),
         )
         try:
@@ -139,6 +142,7 @@ class AIService(BaseService):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 cache_ttl=cache_ttl,
+                timeout=timeout,
                 # Must carry the images across. Falling back without them
                 # would hand the fallback model the instruction but not the
                 # document, and it would answer confidently about nothing.

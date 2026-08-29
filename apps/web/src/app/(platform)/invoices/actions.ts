@@ -142,9 +142,11 @@ export async function updateInvoiceStatusAction(
     revalidatePath("/invoices");
     revalidatePath("/automation");
     return { ok: true, message: "Invoice status updated.", data };
-  } catch {
-    revalidatePath("/invoices");
-    return { ok: true, message: "Invoice status updated." };
+  } catch (error) {
+    // The register persists only `issued`/`cancelled` (the review states
+    // approved/on-hold/declined have no backend home yet). Report the real
+    // failure instead of claiming success and silently reverting on refresh.
+    return { ok: false, message: errorMessage(error) };
   }
 }
 

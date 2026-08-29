@@ -89,6 +89,31 @@ services:
       - backend
     restart: unless-stopped
 
+  scheduler:
+    # Drains background workflow runs (bulk invoice-import OCR, automation
+    # packaging/reports) one step at a time. Without it, queued OCR jobs never
+    # advance. Same image + database as the backend; it does not run migrations.
+    build: ./platform
+    container_name: bop-scheduler
+    command: python manage.py pipeline_tick --loop
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in your .env (see .env.example)}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bop}:${POSTGRES_PASSWORD:-bop}@postgres:5432/${POSTGRES_DB:-bop}
+      REDIS_URL: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-}
+      AI_FALLBACK_MODEL: ${AI_FALLBACK_MODEL:-}
+    volumes:
+      - ./platform:/app
+      - ./modules:/modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   redis-data:

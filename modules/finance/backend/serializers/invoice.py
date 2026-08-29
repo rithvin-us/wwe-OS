@@ -38,6 +38,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.name", default="", read_only=True)
     download_url = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
+    source_url = serializers.SerializerMethodField()
     generated_by = serializers.SerializerMethodField()
     lifecycle_stage = serializers.SerializerMethodField()
     is_overdue = serializers.SerializerMethodField()
@@ -49,6 +50,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "id",
             "number",
             "invoice_type",
+            "source",
             "financial_year",
             "sequence_number",
             "invoice_date",
@@ -87,6 +89,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "lines",
             "download_url",
             "pdf_url",
+            "source_url",
             "generated_by",
             "created_at",
         )
@@ -96,6 +99,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_pdf_url(self, obj: Invoice) -> str | None:
         return f"/api/v1/finance/invoices/{obj.id}/pdf/" if obj.pdf_file_id else None
+
+    def get_source_url(self, obj: Invoice) -> str | None:
+        """The original uploaded scan, for an imported invoice — the copy kept
+        for analytics beside the regenerated documents."""
+        return f"/api/v1/finance/invoices/{obj.id}/source/" if obj.source_file_id else None
 
     def get_generated_by(self, obj: Invoice) -> str | None:
         return obj.generated_by.email if obj.generated_by else None

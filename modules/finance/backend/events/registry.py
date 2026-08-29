@@ -9,3 +9,6 @@ INVOICE_GENERATED = "finance.invoice.generated"
 INVOICE_UPDATED = "finance.invoice.updated"
 INVOICE_CANCELLED = "finance.invoice.cancelled"
 INVOICE_DELETED = "finance.invoice.deleted"
+# A historical invoice back-filled into the register from a scan, under its own
+# printed number (see InvoiceService.import_historical).
+INVOICE_IMPORTED = "finance.invoice.imported"

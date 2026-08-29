@@ -1,8 +1,17 @@
 import { djangoFetch } from "@/lib/api/server";
-import type { BillingCustomer, Invoice, NextInvoiceNumber } from "@/config/invoices";
+import type {
+  BillingCustomer,
+  ImportBatch,
+  ImportBatchDetail,
+  Invoice,
+  NextInvoiceNumber,
+} from "@/config/invoices";
 
 export type {
   BillingCustomer,
+  ImportBatch,
+  ImportBatchDetail,
+  ImportItem,
   Invoice,
   InvoiceLine,
   InvoicePreview,
@@ -54,6 +63,27 @@ export interface InvoiceStats {
 export async function getInvoiceStats(): Promise<InvoiceStats | null> {
   try {
     return await djangoFetch<InvoiceStats>("/api/v1/finance/invoices/stats/");
+  } catch {
+    return null;
+  }
+}
+
+/** Bulk historical-invoice import batches, newest first. Empty on failure. */
+export async function getInvoiceImports(): Promise<ImportBatch[]> {
+  try {
+    return await djangoFetch<ImportBatch[]>(
+      "/api/v1/finance/invoice-imports/?ordering=-created_at&page_size=100",
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** One import batch with its items. `null` when it doesn't exist or the fetch
+ * failed — the page renders a not-found rather than a broken grid. */
+export async function getInvoiceImport(id: string): Promise<ImportBatchDetail | null> {
+  try {
+    return await djangoFetch<ImportBatchDetail>(`/api/v1/finance/invoice-imports/${id}/`);
   } catch {
     return null;
   }

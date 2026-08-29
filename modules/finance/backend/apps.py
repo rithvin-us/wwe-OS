@@ -33,6 +33,7 @@ class FinanceConfig(AppConfig):
         from finance.backend.demo_reset import register_demo_reset
         from finance.backend.document_types import register_document_types
         from finance.backend.models.invoice import Customer
+        from finance.backend.pipelines import register_pipelines
         from finance.backend.search import customer as customer_search
         from finance.backend.search.adapter import register_search
 
@@ -40,6 +41,7 @@ class FinanceConfig(AppConfig):
         register_demo_reset()
         register_search()
         register_deadlines()
+        register_pipelines()
 
         # Customers have no service layer, so index them off model signals.
         customer_search.register_search()

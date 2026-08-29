@@ -4,6 +4,7 @@ import { PageHeader } from "@bop/ui/components/page-header";
 import { formatRupees } from "@/config/invoices";
 import { getBillingCustomers, getInvoices, getNextInvoiceNumber } from "@/lib/invoices";
 
+import { BulkImportDialog } from "./bulk-import-dialog";
 import { CustomersSection } from "./customers-section";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 import { InvoicesSection } from "./invoices-section";
@@ -58,6 +59,7 @@ export default async function InvoicesPage() {
         description="Every AMC and sales invoice raised on the company format, in one shared numbering sequence, with the workbook each one produced."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <BulkImportDialog />
             <UploadPoDialog customers={customers} />
             <GenerateInvoiceDialog customers={customers} />
           </div>

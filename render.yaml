@@ -34,6 +34,12 @@ services:
       # and give the bot's PLATFORM_SERVICE_TOKEN the <LONG_RANDOM_SECRET> half.
       - key: INGESTION_SERVICE_TOKENS
         sync: false
+      # OCR and Rithu AI run through the platform AI gateway ON THE BACKEND
+      # (platform/ai), so the API needs the Gemini key too — not just the
+      # Telegram bot. Without it, bulk invoice-import OCR and PO parsing fall
+      # back to a low-confidence stub. Same key as the bot/scheduler.
+      - key: GEMINI_API_KEY
+        sync: false
 
   # 2. Telegram Ingestion Bot (Worker Service)
   - type: worker
@@ -64,4 +70,37 @@ services:
       # auto-wired from the backend: the backend value carries a "telegram-bot:"
       # prefix that must NOT be sent by the bot.
       - key: PLATFORM_SERVICE_TOKEN
+        sync: false
+
+  # 3. Pipeline scheduler (Worker Service)
+  # Drains background workflow runs one step at a time — the async OCR for bulk
+  # invoice import, and automation's packaging/report pipelines. WITHOUT THIS
+  # SERVICE, queued OCR jobs never advance and imported scans stay "reading"
+  # forever. It shares the backend's database and Gemini key; it does NOT run
+  # migrations (the web service owns those). A Render Cron Job running the
+  # one-shot `python manage.py pipeline_tick` each minute is an equivalent,
+  # cheaper alternative if you prefer per-minute latency over an always-on loop.
+  - type: worker
+    name: wwe-os-scheduler
+    env: python
+    region: singapore
+    plan: free
+    rootDir: platform
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py pipeline_tick --loop
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # Point at the SAME database the web service uses (the Supabase pooler
+      # string). The scheduler advances rows the API created.
+      - key: DATABASE_URL
+        sync: false
+      # OCR runs here too — needs the same Gemini key as the backend.
+      - key: GEMINI_API_KEY
         sync: false
