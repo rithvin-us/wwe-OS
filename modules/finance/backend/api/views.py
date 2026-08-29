@@ -132,6 +132,7 @@ class InvoiceViewSet(BaseModelViewSet):
         "retrieve": "finance.invoice.read",
         "download": "finance.invoice.read",
         "pdf": "finance.invoice.read",
+        "source": "finance.invoice.read",
         "next_number": "finance.invoice.read",
         "stats": "finance.invoice.read",
         "create": "finance.invoice.generate",
@@ -312,6 +313,14 @@ class InvoiceViewSet(BaseModelViewSet):
         return self._serve(
             self.get_object().pdf_file, content_type=PDF_CONTENT_TYPE, disposition="inline"
         )
+
+    @action(detail=True, methods=["get"])
+    def source(self, request: Request, pk=None) -> HttpResponse:
+        """The original scan of an imported invoice — the kept copy, served
+        inline. 404 for a generated invoice, which has no source document."""
+        stored = self.get_object().source_file
+        content_type = stored.content_type if stored else PDF_CONTENT_TYPE
+        return self._serve(stored, content_type=content_type, disposition="inline")
 
     @staticmethod
     def _serve(stored, *, content_type: str, disposition: str = "attachment") -> HttpResponse:

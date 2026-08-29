@@ -511,6 +511,10 @@ INVOICE_LIBREOFFICE_TIMEOUT = env_int("INVOICE_LIBREOFFICE_TIMEOUT", 120)
 # same root the local storage provider uses, so in local mode the platform
 # writes once and this is a no-op.
 INVOICE_LOCAL_ARCHIVE_PATH = env_str("INVOICE_LOCAL_ARCHIVE_PATH", "") or STORAGE_LOCAL_PATH
+# Bulk-import OCR below this confidence (0-1), or missing a number/date/total,
+# lands an imported invoice in "needs attention" for the operator rather than
+# "ready to review". Raise it to send more to manual review, lower to trust OCR.
+INVOICE_OCR_REVIEW_THRESHOLD = float(env_str("INVOICE_OCR_REVIEW_THRESHOLD", "0.75"))
 
 # --------------------------------------------------------------------------- #
 # AI gateway (platform/ai)

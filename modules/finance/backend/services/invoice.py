@@ -35,6 +35,7 @@ from typing import Any
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 from finance.backend.document_types import AMC_INVOICE, SALES_INVOICE
@@ -42,12 +43,14 @@ from finance.backend.events.registry import (
     INVOICE_CANCELLED,
     INVOICE_DELETED,
     INVOICE_GENERATED,
+    INVOICE_IMPORTED,
     INVOICE_UPDATED,
 )
 from finance.backend.models.invoice import (
     Customer,
     Invoice,
     InvoiceLine,
+    InvoiceSource,
     InvoiceStatus,
     InvoiceType,
     LifecycleStage,
@@ -58,6 +61,7 @@ from finance.backend.services.numbering import (
     InvoiceNumberingService,
     financial_year_for,
     format_invoice_number,
+    parse_invoice_number,
 )
 from finance.backend.services.words import rupees_in_words
 from periods.resolution import DocumentContext, resolve_location
@@ -225,6 +229,87 @@ class InvoiceService(BaseService):
             action="finance.invoice_generated",
             event=INVOICE_GENERATED,
             extra={},
+        )
+        return invoice
+
+    # ------------------------------------------------------------------ #
+    # Importing — back-filling an already-issued invoice
+    # ------------------------------------------------------------------ #
+    def import_historical(self, *, number: str, source_file=None, actor=None, **kwargs) -> Invoice:
+        """Back-fills an invoice that was already issued outside the platform
+        into the register under its own printed number.
+
+        Unlike `generate`, it does not reserve a number — the number is the one
+        the customer already holds, parsed straight off the scan and preserved.
+        It then reconciles the counter so the next generated bill lands above it.
+        A locked period does not block it: it is recording history, not raising
+        new liability. The original scan is kept on the row (`source_file`) and
+        the standard workbook + PDF are regenerated from the reviewed figures, so
+        an imported bill downloads and prints like any other.
+        """
+        prepared = self._prepare(**kwargs)
+        tenant = prepared["tenant"]
+
+        sequence_number, financial_year = parse_invoice_number(number)
+        if financial_year != prepared["financial_year"]:
+            raise ConflictError(
+                f"The number is in financial year {financial_year} but the invoice date "
+                f"falls in {prepared['financial_year']}. Fix the date or the number so they agree."
+            )
+
+        # Refuse a number already on the register — soft-deleted rows included, a
+        # cancelled bill has still consumed its number. The DB unique constraints
+        # are the backstop; this gives the operator a clear message instead of an
+        # IntegrityError mid-batch.
+        clash = Invoice.all_objects.filter(tenant=tenant).filter(
+            Q(number=number) | Q(financial_year=financial_year, sequence_number=sequence_number)
+        )
+        if clash.exists():
+            raise ConflictError(f"Invoice {number} is already on the register.")
+
+        totals = prepared["totals"]
+        with transaction.atomic():
+            invoice = Invoice.objects.create(
+                tenant=tenant,
+                source=InvoiceSource.IMPORTED,
+                invoice_type=prepared["invoice_type"],
+                number=number,
+                financial_year=financial_year,
+                sequence_number=sequence_number,
+                invoice_date=prepared["invoice_date"],
+                customer=prepared["customer"],
+                consignee_name=prepared["consignee_name"],
+                consignee_address=prepared["consignee_address"],
+                facility=prepared["facility"],
+                gstin=prepared["gstin"],
+                is_sez=prepared["is_sez"],
+                tax_mode=prepared["tax_mode"],
+                gst_rate=prepared["gst_rate"],
+                period_year=prepared["period_year"],
+                period_month=prepared["period_month"],
+                period_text=prepared["period_text"],
+                subtotal=totals.subtotal,
+                cgst_amount=totals.cgst_amount,
+                sgst_amount=totals.sgst_amount,
+                igst_amount=totals.igst_amount,
+                round_off=totals.round_off,
+                total=totals.total,
+                amount_in_words=prepared["amount_in_words"],
+                generated_by=actor,
+                source_file=source_file,
+            )
+            self._write_lines(invoice=invoice, lines=prepared["lines"])
+            self._attach_documents(invoice=invoice, prepared=prepared, actor=actor)
+            InvoiceNumberingService().reconcile(
+                tenant=tenant, financial_year=financial_year, sequence_number=sequence_number
+            )
+
+        self._record(
+            invoice=invoice,
+            actor=actor,
+            action="finance.invoice_imported",
+            event=INVOICE_IMPORTED,
+            extra={"source": InvoiceSource.IMPORTED, "imported_number": number},
         )
         return invoice
 
