@@ -4,7 +4,6 @@ import {
   CalendarClock,
   FileSearch,
   Inbox,
-  Layers,
   LayoutDashboard,
   Loader2,
   Moon,
