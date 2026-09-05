@@ -1,0 +1,74 @@
+# Path-based PR auto-labeling — config for actions/labeler@v5.
+# Each top-level key is a label name; a PR gets the label when it touches any of
+# the listed globs. Labels are area tags that map to the monorepo layout, so a
+# PR is triaged by where it lands the moment it opens.
+
+"area: web":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/web/**"
+
+"area: mobile":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/mobile/**"
+          - "apps/web/android/**"
+          - "apps/web/capacitor.config.ts"
+
+"area: platform":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "platform/**"
+
+"area: modules":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "modules/**"
+
+"area: packages":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/**"
+
+"area: services":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "services/**"
+
+"area: face-ai":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "services/face-ai/**"
+
+"area: database":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "database/**"
+
+"area: infra":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "infrastructure/**"
+          - "docker-compose.yml"
+          - "render.yaml"
+          - "**/Dockerfile"
+
+"area: ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+"documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "**/*.md"
+
+"dependencies":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pnpm-lock.yaml"
+          - "**/package.json"
+          - "requirements.txt"
+          - "platform/requirements*.txt"
+          - "pyproject.toml"

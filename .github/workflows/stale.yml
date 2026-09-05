@@ -1,0 +1,52 @@
+name: Stale
+
+# Gentle housekeeping for a single-operator repo: nudge issues/PRs that have
+# gone quiet for two months, and close them three weeks later if still silent.
+# Windows are deliberately long and the exempt labels give an easy opt-out —
+# label anything "pinned", "roadmap", "security", or "keep" to have the bot
+# leave it alone forever. Runs once a day and caps work per run so it can never
+# storm the tracker.
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: stale
+  cancel-in-progress: false
+
+jobs:
+  stale:
+    name: Mark and sweep stale items
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 60
+          days-before-close: 21
+          operations-per-run: 60
+          exempt-issue-labels: "pinned,roadmap,security,keep,blocked"
+          exempt-pr-labels: "pinned,roadmap,security,keep,blocked"
+          exempt-all-milestones: true
+          exempt-all-assignees: true
+          stale-issue-label: "stale"
+          stale-pr-label: "stale"
+          stale-issue-message: >
+            This issue has been quiet for 60 days, so it's been marked stale.
+            Comment or remove the `stale` label to keep it open — otherwise it
+            will close in 21 days. Add `keep` to exempt it for good.
+          stale-pr-message: >
+            This PR has been quiet for 60 days, so it's been marked stale.
+            Push a commit or comment to keep it open — otherwise it will close
+            in 21 days. Add `keep` to exempt it for good.
+          close-issue-message: >
+            Closing this issue after 81 days of inactivity. Reopen any time if
+            it's still relevant — no hard feelings.
+          close-pr-message: >
+            Closing this PR after 81 days of inactivity. Reopen when you're
+            ready to pick it back up.

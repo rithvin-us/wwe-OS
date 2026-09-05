@@ -1,0 +1,29 @@
+name: Workflow lint
+
+# Lints the GitHub Actions workflows themselves (actionlint + shellcheck on
+# every `run:` block) so a typo'd expression, an unknown action input, or a
+# broken shell snippet is caught in review instead of at 2am when a scheduled
+# job silently no-ops. Runs only when workflow files change.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/**"
+  pull_request:
+    paths:
+      - ".github/**"
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          fail-on-error: true

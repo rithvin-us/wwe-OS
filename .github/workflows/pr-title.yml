@@ -1,0 +1,55 @@
+name: PR title
+
+# The repo uses Conventional Commits (feat(hr): …, fix(platform/auth): …).
+# Squash-merges use the PR title as the commit subject, so a well-formed title
+# is what actually lands on main. This validates the title on every edit and
+# leaves an inline comment explaining the format when it doesn't match — a
+# guide for contributors, not just a red X.
+#
+# pull_request_target is used deliberately: it grants the token write access so
+# the check can post its explanatory comment even on fork PRs. This job never
+# checks out or runs PR code, so that elevated token is not exposed to it.
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate Conventional Commit title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Keep in sync with the commit types the project actually uses.
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          # Scopes are encouraged (e.g. hr, platform/auth) but not required,
+          # so a repo-wide change with no natural scope still passes.
+          requireScope: false
+          # Subject should read like a sentence fragment, lower-case start,
+          # no trailing period — matches the existing history.
+          subjectPattern: ^(?![A-Z])(?!.*\.$).+$
+          subjectPatternError: |
+            The subject "{subject}" is not formatted correctly. Start it with a
+            lower-case letter and drop any trailing period, e.g.
+            "feat(hr): add leave-balance widget".

@@ -1,0 +1,46 @@
+name: Labeler
+
+# Auto-labels PRs by the area of the tree they touch, using .github/labeler.yml.
+# pull_request_target is the trigger actions/labeler documents (it needs a write
+# token and never runs PR code). An idempotent ensure-labels step runs first
+# because actions/labeler adds labels but does not create them.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Apply area labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure area labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ensure() { gh label create "$1" --color "$2" --description "$3" --force; }
+          ensure "area: web"      "1f6feb" "Next.js web app (apps/web)"
+          ensure "area: mobile"   "0e8a16" "Mobile app / Capacitor wrapper"
+          ensure "area: platform" "5319e7" "Django platform kernel"
+          ensure "area: modules"  "b60205" "Business modules"
+          ensure "area: packages" "fbca04" "Shared TS packages"
+          ensure "area: services" "d93f0b" "Deployment-isolated services"
+          ensure "area: face-ai"  "c5def5" "Face-AI biometric service"
+          ensure "area: database" "006b75" "Database / migrations"
+          ensure "area: infra"    "bfd4f2" "Infrastructure & deploy config"
+          ensure "area: ci"       "ededed" "CI/CD & GitHub Actions"
+          ensure "documentation"  "0075ca" "Docs and Markdown"
+          ensure "dependencies"   "0366d6" "Dependency manifests / lockfiles"
+
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
