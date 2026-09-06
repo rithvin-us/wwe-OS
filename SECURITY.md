@@ -240,6 +240,21 @@ fix to pin to, so they are explicitly acknowledged in
 advisory is never masked by a persistent non-zero count. Revisit if
 `apps/mobile` ships or upstream publishes a fix.
 
+### Remaining moderate advisories (Expo dev tooling, below the enforced gate)
+
+`pnpm audit` also reports three **moderate** advisories — `decode-uri-component`
+(GHSA-vcc3-ghjq-m6fr, via `expo-router` → `query-string`) and two in
+`@xmldom/xmldom` (GHSA-6gmq-8vp8-gcm6 / GHSA-jp4x-w63m-7wgm, via
+`@expo/config-plugins` → `xcode` → `plist`). Like the `image-size` pair above,
+all three sit entirely inside Expo's build-time tooling under `apps/mobile`
+(the not-yet-shipping native app), never in the web app or backend, and never
+process untrusted input. The enforced CI gate is `pnpm audit --audit-level=high`,
+so these do not (and should not) fail the build, and the patched versions are
+pinned by Expo's own dependency tree rather than ours — forcing an override into
+Expo's internals risks breaking `expo` / `cap sync` for no real gain. They are
+tracked here rather than in `ignoreGhsas` precisely because they fall below the
+gate. Revisit when Expo bumps the transitive deps or `apps/mobile` ships.
+
 ---
 
 ## Scope of this review
