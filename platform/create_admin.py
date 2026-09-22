@@ -22,7 +22,10 @@ def main() -> None:
             "is_email_verified": True,
         },
     )
-    user.set_password(os.getenv("ADMIN_PASSWORD", "AdminPassword123!"))
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError("ADMIN_PASSWORD environment variable is required")
+    user.set_password(admin_password)
     user.status = "active"
     user.is_email_verified = True
     user.tenant = tenant

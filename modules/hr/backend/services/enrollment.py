@@ -41,7 +41,7 @@ class EnrollmentService:
         try:
             embedding = face.embed(image_bytes, enroll=True)
         except FaceError as exc:
-            logger.info("enrol rejected for employee %s: %s", employee.employee_code, exc.message)
+            logger.info("enrol rejected for employee pk=%s: %s", employee.pk, exc.message)
             raise ValidationError(detail={"file": [exc.message]}) from exc
 
         employee.face_embedding = face.serialize(embedding)
@@ -49,8 +49,8 @@ class EnrollmentService:
         employee.save(update_fields=["face_embedding", "enrolled_at", "updated_at"])
 
         logger.info(
-            "enrolled face template for employee %s (dim=%d)",
-            employee.employee_code,
+            "enrolled face template for employee pk=%s (dim=%d)",
+            employee.pk,
             len(embedding),
         )
         self.audit.record(

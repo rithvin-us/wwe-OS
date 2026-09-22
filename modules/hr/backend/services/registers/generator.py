@@ -380,9 +380,9 @@ class ExcelGenerator:
                 base_row = anchor_rows[idx]
             else:
                 logger.warning(
-                    "Wage slip template has only %d blocks; employee %s written with fixed offset",
+                    "Wage slip template has only %d blocks; employee #%d written with fixed offset",
                     len(anchor_rows),
-                    emp.employee_code,
+                    idx + 1,
                 )
                 base_row = block_start + (idx * block_size)
 
