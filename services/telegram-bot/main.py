@@ -272,9 +272,7 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
                 },
             }
             try:
-                response = await client.post(
-                    url, json=payload, headers={"x-goog-api-key": api_key}
-                )
+                response = await client.post(url, json=payload, headers={"x-goog-api-key": api_key})
                 if response.status_code == 200:
                     break
                 logger.warning(

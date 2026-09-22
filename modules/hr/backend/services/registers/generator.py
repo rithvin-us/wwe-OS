@@ -380,8 +380,7 @@ class ExcelGenerator:
                 base_row = anchor_rows[idx]
             else:
                 logger.warning(
-                    "Wage slip template has only %d blocks; "
-                    "employee %s written with fixed offset",
+                    "Wage slip template has only %d blocks; employee %s written with fixed offset",
                     len(anchor_rows),
                     emp.employee_code,
                 )
@@ -653,7 +652,9 @@ class ExcelGenerator:
                     cell = ws.cell(row=rng.min_row, column=rng.min_col)
                     break
             else:
-                logger.warning("Merged cell at r%dc%d on '%s' has no range; skipped", row, col, ws.title)
+                logger.warning(
+                    "Merged cell at r%dc%d on '%s' has no range; skipped", row, col, ws.title
+                )
                 return None
         existing = cell.value
         is_new_formula = isinstance(value, str) and value.startswith("=")
