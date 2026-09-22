@@ -9,6 +9,7 @@ from hr.backend.models.expense import (
 )
 from hr.backend.models.generation_log import GenerationLog, GenerationStatus
 from hr.backend.models.holiday import Holiday, HolidayType
+from hr.backend.models.hrms_upload import HRMSUploadLog
 from hr.backend.models.leave import LeaveBalance, LeaveRequest, LeaveStatus, LeaveType
 from hr.backend.models.onboarding import (
     EmployeeTask,
@@ -34,6 +35,7 @@ __all__ = [
     "ExpenseClaim",
     "GenerationLog",
     "GenerationStatus",
+    "HRMSUploadLog",
     "Holiday",
     "HolidayType",
     "LeaveBalance",

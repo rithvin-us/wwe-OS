@@ -55,6 +55,7 @@ from hr.backend.serializers import (
 from hr.backend.services.attendance import AttendanceService
 from hr.backend.services.employee import EmployeeService
 from hr.backend.services.enrollment import EnrollmentService
+from hr.backend.services.hrms_upload_service import HRMSUploadService
 from hr.backend.services.payroll import PayrollService
 from hr.backend.services.register_service import XLSX_CONTENT_TYPE, RegisterService
 
@@ -422,3 +423,83 @@ class FaceDiagnosticsView(APIView):
         from hr.backend.services.face_doctor import run_face_diagnostics
 
         return Response(run_face_diagnostics())
+
+
+@extend_schema(tags=["hr"])
+class HRMSUploadGenerateView(APIView):
+    """POST /api/v1/hr/compliance/{establishment_id}/{year}/{month}/hrms-upload/generate/"""
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "hr.register.generate"
+
+    @extend_schema(responses={200: OpenApiResponse(description="Generated HRMS Upload Package")})
+    def post(self, request: Request, establishment_id: str, year: int, month: int) -> Response:
+        service = HRMSUploadService()
+        log = service.generate(
+            establishment_id=establishment_id,
+            year=year,
+            month=month,
+            actor=request.user,
+        )
+        return Response(
+            {
+                "message": "HRMS upload files generated successfully",
+                "version": log.version,
+                "client_code": log.client_code,
+                "warnings": log.warnings,
+                "generated_at": log.generated_at.isoformat(),
+                "files": ["hrms", "attendance", "leave", "paysheet", "zip"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["hr"])
+class HRMSUploadStatusView(APIView):
+    """GET /api/v1/hr/compliance/{establishment_id}/{year}/{month}/hrms-upload/"""
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "hr.register.read"
+
+    @extend_schema(responses={200: OpenApiResponse(description="HRMS Upload Status and Warnings")})
+    def get(self, request: Request, establishment_id: str, year: int, month: int) -> Response:
+        service = HRMSUploadService()
+        log = service.latest_log(year=year, month=month)
+        if not log:
+            return Response(
+                {"status": "not_generated", "version": 0, "warnings": [], "files": []},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "status": "generated",
+                "version": log.version,
+                "client_code": log.client_code,
+                "warnings": log.warnings,
+                "generated_at": log.generated_at.isoformat(),
+                "files": ["hrms", "attendance", "leave", "paysheet", "zip"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["hr"])
+class HRMSUploadDownloadView(APIView):
+    """GET /api/v1/hr/compliance/{establishment_id}/{year}/{month}/hrms-upload/download/"""
+
+    permission_classes = [IsAuthenticated, HasPlatformPermission]
+    required_permissions = "hr.register.read"
+
+    @extend_schema(responses={200: {"type": "string", "format": "binary"}})
+    def get(self, request: Request, establishment_id: str, year: int, month: int) -> HttpResponse:
+        file_type = request.query_params.get("type", "zip")
+        service = HRMSUploadService()
+        log = service.latest_log(year=year, month=month)
+        if not log:
+            raise NotFoundError(f"No HRMS upload files generated for {year}-{month:02d}.")
+
+        data, filename = service.download(log, file_type=file_type)
+        content_type = "application/zip" if file_type == "zip" else XLSX_CONTENT_TYPE
+        response = HttpResponse(data, content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response

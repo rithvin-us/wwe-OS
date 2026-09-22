@@ -43,9 +43,13 @@ class Employee(TenantOwnedModel):
     gender = models.CharField(max_length=10, default="M")
     dob = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True)
+    permanent_address = models.TextField(blank=True)
     phone = models.CharField(max_length=15, blank=True)
     designation = models.CharField(max_length=50, default="Operator")
     department = models.CharField(max_length=50, blank=True)
+    nature_of_work = models.CharField(
+        max_length=100, blank=True, default="Operation & Maintenance (STP)"
+    )
     date_of_joining = models.DateField()
     date_of_leaving = models.DateField(null=True, blank=True)
 
