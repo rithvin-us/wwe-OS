@@ -19,7 +19,7 @@ class ExcelMapper:
         """Load all JSON files from the mappings directory."""
         mappings_dir = self.settings.mappings_full_path
         if not mappings_dir.exists():
-            logger.warning(f"Mappings directory {mappings_dir} does not exist.")
+            logger.warning("Mappings directory %s does not exist.", mappings_dir)
             return
 
         for file_path in mappings_dir.glob("*.json"):
@@ -30,7 +30,7 @@ class ExcelMapper:
                     if sheet_name:
                         self.mappings[sheet_name] = mapping_data
             except Exception as e:
-                logger.error(f"Failed to load mapping file {file_path}: {e}")
+                logger.error("Failed to load mapping file %s: %s", file_path, e)
 
     def get_mapping(self, sheet_name: str) -> dict[str, Any]:
         """Get the mapping dictionary for a specific sheet."""

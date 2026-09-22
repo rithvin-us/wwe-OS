@@ -22,7 +22,10 @@ def main() -> None:
             "is_email_verified": True,
         },
     )
-    user.set_password("AdminPassword123!")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError("ADMIN_PASSWORD environment variable is required")
+    user.set_password(admin_password)
     user.status = "active"
     user.is_email_verified = True
     user.tenant = tenant
@@ -32,7 +35,7 @@ def main() -> None:
     if owner_role:
         RoleService().assign_role(user=user, role=owner_role)
 
-    print(f"User {user.email} successfully updated/created with password AdminPassword123!")
+    print(f"User {user.email} successfully updated/created.")
 
 
 if __name__ == "__main__":

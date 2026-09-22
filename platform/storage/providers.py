@@ -54,8 +54,19 @@ class LocalStorageProvider(StorageProvider):
     def __init__(self, root: str | Path | None = None) -> None:
         self.root = Path(root or settings.STORAGE_LOCAL_PATH).resolve()
 
+    @staticmethod
+    def _sanitize_key(key: str) -> str:
+        parts = Path(key).parts
+        for part in parts:
+            if part in (".", "..", "") or part.startswith(".."):
+                raise ValidationError("Invalid storage key.")
+        return str(Path(*parts)) if parts else ""
+
     def _path(self, key: str) -> Path:
-        path = (self.root / key).resolve()
+        clean = self._sanitize_key(key)
+        if not clean:
+            raise ValidationError("Invalid storage key.")
+        path = (self.root / clean).resolve()
         if not path.is_relative_to(self.root):
             raise ValidationError("Invalid storage key.")
         return path

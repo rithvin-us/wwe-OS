@@ -164,14 +164,15 @@ class NotificationService(BaseService):
             else (notification.title)
         )
         try:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
             response = httpx.post(
-                f"https://api.telegram.org/bot{token}/sendMessage",
+                url,
                 json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
                 timeout=10,
             )
             response.raise_for_status()
         except httpx.HTTPError:
-            logger.exception("Failed to deliver Telegram notification %s.", notification.id)
+            logger.error("Failed to deliver Telegram notification %s.", notification.id)
 
     def mark_read(self, notification: Notification) -> Notification:
         notification.status = Status.READ

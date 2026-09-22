@@ -89,7 +89,7 @@ class ExcelGenerator:
 
         # Copy template
         shutil.copy2(template_path, output_path)
-        logger.info(f"Copied template to {output_path}")
+        logger.info("Copied template to %s", output_path)
 
         wb = openpyxl.load_workbook(output_path)
         writer = ExcelWriter(wb, self.mapper)
@@ -141,7 +141,7 @@ class ExcelGenerator:
         del wb  # release the in-memory workbook immediately
         gc.collect()
 
-        logger.info(f"Generated Excel file: {filename}")
+        logger.info("Generated Excel file: %s", filename)
         return filename
 
     def _group_attendance_by_employee(self, attendance):
@@ -193,7 +193,7 @@ class ExcelGenerator:
     ):
         sheet_name = "Form No.XXVI"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -306,7 +306,7 @@ class ExcelGenerator:
     def _write_form_xxvii(self, writer, header_data, employees, payroll_by_emp):
         sheet_name = "Form XXVII Register of Wages"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -354,7 +354,7 @@ class ExcelGenerator:
     def _write_form_xxviii(self, writer, header_data, employees, payroll_by_emp):
         sheet_name = "Form XXVIII Wage Slip"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         mapping = self.mapper.get_mapping(sheet_name)
@@ -380,8 +380,9 @@ class ExcelGenerator:
                 base_row = anchor_rows[idx]
             else:
                 logger.warning(
-                    f"Wage slip template has only {len(anchor_rows)} blocks; "
-                    f"employee {emp.employee_code} written with fixed offset"
+                    "Wage slip template has only %d blocks; employee #%d written with fixed offset",
+                    len(anchor_rows),
+                    idx + 1,
                 )
                 base_row = block_start + (idx * block_size)
 
@@ -467,7 +468,7 @@ class ExcelGenerator:
     def _write_form_b(self, writer, header_data, employees, payroll_by_emp):
         sheet_name = "Form B Consolidated Wages"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -507,7 +508,7 @@ class ExcelGenerator:
         register is legitimately empty apart from contractor name and year."""
         sheet_name = "Form C Register of Unpaid"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -517,7 +518,7 @@ class ExcelGenerator:
     def _write_form_d(self, writer, header_data, employees, payroll_by_emp):
         sheet_name = "Form D Equal Wages Register"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -574,7 +575,7 @@ class ExcelGenerator:
     def _write_form_vi(self, writer, header_data, employees):
         sheet_name = "Form VI"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -604,7 +605,7 @@ class ExcelGenerator:
     def _write_deduction_sheet(self, writer, header_data, employees, payroll_by_emp):
         sheet_name = "Deduction"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -651,13 +652,15 @@ class ExcelGenerator:
                     cell = ws.cell(row=rng.min_row, column=rng.min_col)
                     break
             else:
-                logger.warning(f"Merged cell at r{row}c{col} on '{ws.title}' has no range; skipped")
+                logger.warning(
+                    "Merged cell at r%dc%d on '%s' has no range; skipped", row, col, ws.title
+                )
                 return None
         existing = cell.value
         is_new_formula = isinstance(value, str) and value.startswith("=")
         if isinstance(existing, str) and existing.startswith("=") and not is_new_formula:
             logger.warning(
-                f"Skipping write at {cell.coordinate} on '{ws.title}' — cell holds a formula"
+                "Skipping write at %s on '%s' — cell holds a formula", cell.coordinate, ws.title
             )
             return None
         cell.value = value
@@ -688,7 +691,7 @@ class ExcelGenerator:
         """
         sheet_name = "In -out register"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
@@ -858,7 +861,7 @@ class ExcelGenerator:
     def _write_esic_epf_tracking(self, writer, header_data, employees):
         sheet_name = "ESIC_EPF_Tracking sheet"
         if sheet_name not in writer.wb.sheetnames:
-            logger.warning(f"Sheet '{sheet_name}' not found in template")
+            logger.warning("Sheet '%s' not found in template", sheet_name)
             return
 
         writer.write_headers(sheet_name, header_data)
