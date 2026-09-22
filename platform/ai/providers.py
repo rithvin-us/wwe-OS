@@ -118,11 +118,11 @@ class GeminiProvider(AIProvider):
             payload["generationConfig"]["temperature"] = request.temperature
 
         started = time.perf_counter()
-        key = settings.GEMINI_API_KEY
-        url = f"{self.base_url}/models/{request.model}:generateContent?key={key}"
+        url = f"{self.base_url}/models/{request.model}:generateContent"
         try:
             response = httpx.post(
                 url,
+                headers={"x-goog-api-key": settings.GEMINI_API_KEY},
                 json=payload,
                 timeout=request.timeout,
             )

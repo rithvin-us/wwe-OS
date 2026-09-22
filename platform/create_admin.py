@@ -32,7 +32,7 @@ def main() -> None:
     if owner_role:
         RoleService().assign_role(user=user, role=owner_role)
 
-    print(f"User {user.email} successfully updated/created with password AdminPassword123!")
+    print(f"User {user.email} successfully updated/created.")
 
 
 if __name__ == "__main__":
