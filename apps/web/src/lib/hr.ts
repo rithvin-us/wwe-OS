@@ -59,6 +59,27 @@ export async function getRegisters(): Promise<GenerationLog[]> {
   return djangoFetch<GenerationLog[]>(`/api/v1/hr/registers/?page_size=100`);
 }
 
+// -------------------------------------------------------------- hrms upload
+
+export interface HRMSUploadStatus {
+  status: "generated" | "not_generated";
+  version: number;
+  client_code: string;
+  warnings: string[];
+  generated_at?: string;
+  files: string[];
+}
+
+export async function getHRMSUploadStatus(
+  year: number,
+  month: number,
+  establishmentId = "167948248",
+): Promise<HRMSUploadStatus> {
+  return djangoFetch<HRMSUploadStatus>(
+    `/api/v1/hr/compliance/${establishmentId}/${year}/${month}/hrms-upload/`,
+  );
+}
+
 // -------------------------------------------------------------------- leave
 
 export async function getLeaveTypes(): Promise<LeaveType[]> {

@@ -22,6 +22,9 @@ from hr.backend.api.views import (
     EmployeeViewSet,
     FaceDiagnosticsView,
     HolidayViewSet,
+    HRMSUploadDownloadView,
+    HRMSUploadGenerateView,
+    HRMSUploadStatusView,
     PayrollRunView,
     PayrollView,
     PayRulesConfigViewSet,
@@ -54,5 +57,20 @@ urlpatterns = [
     path("analytics/anomalies/", AnomaliesView.as_view(), name="hr-analytics-anomalies"),
     path("policy-chat/", PolicyChatView.as_view(), name="hr-policy-chat"),
     path("face/diagnostics/", FaceDiagnosticsView.as_view(), name="hr-face-diagnostics"),
+    path(
+        "compliance/<str:establishment_id>/<int:year>/<int:month>/hrms-upload/generate/",
+        HRMSUploadGenerateView.as_view(),
+        name="hr-hrms-upload-generate",
+    ),
+    path(
+        "compliance/<str:establishment_id>/<int:year>/<int:month>/hrms-upload/",
+        HRMSUploadStatusView.as_view(),
+        name="hr-hrms-upload-status",
+    ),
+    path(
+        "compliance/<str:establishment_id>/<int:year>/<int:month>/hrms-upload/download/",
+        HRMSUploadDownloadView.as_view(),
+        name="hr-hrms-upload-download",
+    ),
     *router.urls,
 ]
