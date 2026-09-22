@@ -262,7 +262,7 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
     response = None
     async with httpx.AsyncClient(timeout=OCR_TIMEOUT_SECONDS) as client:
         for idx, m in enumerate(deduped_models):
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
             payload = {
                 "contents": [{"parts": parts}],
                 "generationConfig": {
@@ -272,7 +272,9 @@ async def _extract_bill_fields(base64_image: str, file_bytes: bytes | None = Non
                 },
             }
             try:
-                response = await client.post(url, json=payload)
+                response = await client.post(
+                    url, json=payload, headers={"x-goog-api-key": api_key}
+                )
                 if response.status_code == 200:
                     break
                 logger.warning(
@@ -396,9 +398,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if raw_path.startswith(("http://", "https://")):
             document_url = raw_path
         else:
-            document_url = (
-                f"https://api.telegram.org/file/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/{raw_path}"
-            )
+            document_url = f"telegram://file/{raw_path}"
     except Exception as exc:
         logger.error("Failed to download document from Telegram: %s", exc)
         await message.edit_text("❌ Failed to receive document. Please try sending again.")
@@ -526,9 +526,9 @@ def _start_health_server(port: int) -> None:
         server = HTTPServer(("0.0.0.0", port), HealthHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        logger.info(f"Telegram Bot HTTP health endpoint listening on http://0.0.0.0:{port}/health")
+        logger.info("Telegram Bot HTTP health endpoint listening on http://0.0.0.0:%d/health", port)
     except Exception as exc:
-        logger.warning(f"Could not start health server on port {port}: {exc}")
+        logger.warning("Could not start health server on port %d: %s", port, exc)
 
 
 def main() -> None:
@@ -581,7 +581,7 @@ def main() -> None:
                 )
                 raise RuntimeError("WEBHOOK_SECRET must be set when WEBHOOK_URL is configured.")
             logger.info(
-                f"Starting Telegram bot Webhook listener on 0.0.0.0:{port} -> {webhook_url}"
+                "Starting Telegram bot Webhook listener on 0.0.0.0:%d -> %s", port, webhook_url
             )
             application.run_webhook(
                 listen="0.0.0.0",
@@ -592,11 +592,11 @@ def main() -> None:
                 allowed_updates=Update.ALL_TYPES,
             )
         else:
-            logger.info(f"Starting Telegram bot in long-polling mode on port {port}...")
+            logger.info("Starting Telegram bot in long-polling mode on port %d...", port)
             application.run_polling(allowed_updates=Update.ALL_TYPES)
     except Exception as exc:
         logger.warning(
-            f"Telegram bot network error: {exc}. Health server listening on port {port}."
+            "Telegram bot network error: %s. Health server listening on port %d.", exc, port
         )
         import time
 

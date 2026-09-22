@@ -20,7 +20,9 @@ export function internalApiUrl(): string {
     process.env.NEXT_PUBLIC_API_URL ??
     process.env.API_URL ??
     "http://localhost:8000";
-  return url.replace(/\/+$/, "");
+  let trimmed = url;
+  while (trimmed.endsWith("/")) trimmed = trimmed.slice(0, -1);
+  return trimmed;
 }
 
 export async function getAccessToken(): Promise<string | null> {

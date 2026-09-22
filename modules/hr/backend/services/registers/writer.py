@@ -21,7 +21,7 @@ def safe_set(ws, cell_ref: str, value):
             if cell.coordinate in merged_range:
                 ws.cell(row=merged_range.min_row, column=merged_range.min_col).value = value
                 return
-        logger.warning(f"MergedCell {cell_ref} on '{ws.title}' has no containing range; skipped")
+        logger.warning("MergedCell %s on '%s' has no containing range; skipped", cell_ref, ws.title)
         return
     cell.value = value
 
@@ -49,7 +49,7 @@ class ExcelWriter:
                     else:
                         safe_set(ws, cell_ref, val)
         except Exception as e:
-            logger.error(f"Error writing headers for {sheet_name}: {e}")
+            logger.error("Error writing headers for %s: %s", sheet_name, e)
 
     def write_row_data(self, sheet_name: str, row_index: int, row_data: dict[str, Any]):
         """Write a single row of data based on column mappings."""
@@ -74,7 +74,7 @@ class ExcelWriter:
                     else:
                         safe_set(ws, f"{col_ref}{row_index}", val)
         except Exception as e:
-            logger.error(f"Error writing row data for {sheet_name}: {e}")
+            logger.error("Error writing row data for %s: %s", sheet_name, e)
 
     def unmerge_data_region(self, sheet_name: str, min_row: int, min_col: int, max_col: int):
         """
@@ -93,6 +93,6 @@ class ExcelWriter:
             for r in to_unmerge:
                 ws.unmerge_cells(str(r))
             if to_unmerge:
-                logger.info(f"Unmerged {len(to_unmerge)} data-area ranges on '{sheet_name}'")
+                logger.info("Unmerged %d data-area ranges on '%s'", len(to_unmerge), sheet_name)
         except Exception as e:
-            logger.error(f"Error unmerging data region for {sheet_name}: {e}")
+            logger.error("Error unmerging data region for %s: %s", sheet_name, e)

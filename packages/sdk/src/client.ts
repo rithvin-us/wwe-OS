@@ -52,7 +52,8 @@ async function parseEnvelope<T>(response: Response): Promise<T> {
 }
 
 export function createApiClient({ baseUrl, storage }: ApiClientOptions): ApiClient {
-  const base = baseUrl.replace(/\/+$/, "");
+  let base = baseUrl;
+  while (base.endsWith("/")) base = base.slice(0, -1);
   // Dedupes concurrent 401s into one refresh call instead of one per request.
   let refreshing: Promise<string> | null = null;
 
