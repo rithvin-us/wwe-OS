@@ -22,7 +22,7 @@ def main() -> None:
             "is_email_verified": True,
         },
     )
-    user.set_password("AdminPassword123!")
+    user.set_password(os.getenv("ADMIN_PASSWORD", "AdminPassword123!"))
     user.status = "active"
     user.is_email_verified = True
     user.tenant = tenant
