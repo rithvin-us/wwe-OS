@@ -1,7 +1,7 @@
 python-telegram-bot==21.4
 python-dotenv==1.2.2
 httpx==0.28.1
-pypdf==6.16.1
+pypdf==6.19.0
 paddleocr>=2.7.0
 paddlepaddle>=2.6.0
 
