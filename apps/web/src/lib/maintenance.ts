@@ -1,4 +1,4 @@
-import { djangoFetch, djangoFetchPage } from "@/lib/api/server";
+import { djangoFetch, djangoFetchPage, internalApiUrl } from "@/lib/api/server";
 
 export interface TenantConfig {
   gemini_api_key?: string;
@@ -101,6 +101,39 @@ export async function getRuntimeStatus(): Promise<{ data: RuntimeStatus; reachab
     return { data, reachable: true };
   } catch {
     return { data: FALLBACK_RUNTIME_STATUS, reachable: false };
+  }
+}
+
+/**
+ * Public reachability probe, for the status indicators the shell shows
+ * before anyone is signed in.
+ *
+ * `/api/v1/ops/status/` requires a JWT, so asking it from the login page
+ * always 401s and the badge reads "Offline" even when the backend is
+ * perfectly healthy. `/readyz` is the kernel's unauthenticated readiness
+ * endpoint and reports the same database/cache checks: 200 when both pass,
+ * 503 with the failing check named when they don't.
+ */
+export async function getReadiness(): Promise<{
+  reachable: boolean;
+  checks: { database?: string; cache?: string };
+}> {
+  try {
+    const response = await fetch(`${internalApiUrl()}/readyz`, {
+      cache: "no-store",
+      // The backend may be a free instance waking from sleep; wait longer
+      // than a normal call, but never hang the page's status line.
+      signal: AbortSignal.timeout(20_000),
+    });
+    const body = (await response.json()) as {
+      data?: { checks?: { database?: string; cache?: string } };
+      error?: { checks?: { database?: string; cache?: string } };
+    };
+    // 200 nests the checks under `data`, 503 under `error` — same shape.
+    return { reachable: true, checks: body.data?.checks ?? body.error?.checks ?? {} };
+  } catch {
+    // Network failure, timeout, or non-JSON body: the kernel is unreachable.
+    return { reachable: false, checks: {} };
   }
 }
 

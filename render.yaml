@@ -9,7 +9,18 @@ services:
     region: singapore
     plan: free
     rootDir: platform
-    buildCommand: pip install -r requirements.txt && python manage.py migrate --noinput
+    # Migrations are NOT run here on purpose. Coupling the build to the
+    # database means an unreachable database turns a code deploy into a failed
+    # build — which is exactly what happened on 2026-11-02 when the Supabase
+    # project behind DATABASE_URL stopped existing: pip install succeeded and
+    # the build still failed, so a healthy commit could not ship.
+    #
+    # Run migrations as their own step once the database is reachable:
+    #   cd platform && DATABASE_URL='<pooler-url>' python manage.py migrate
+    # from a machine that can reach it (the free instance type has no shell).
+    # `preDeployCommand` is the native home for this, but it requires a paid
+    # instance type; revisit this if the service leaves the free plan.
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2
     envVars:
       - key: PYTHON_VERSION

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getRuntimeStatus } from "@/lib/maintenance";
+import { getReadiness } from "@/lib/maintenance";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +10,19 @@ export const dynamic = "force-dynamic";
  * The sidebar footer and the login badge used to render a hardcoded
  * "Connected" / "Systems Operational" that could never go red — they said
  * the same thing whether or not the backend was up. This route is the one
- * honest source they both read: it hits the kernel's /api/v1/ops/status/
- * and reports what actually came back.
+ * honest source they both read.
+ *
+ * It probes the kernel's unauthenticated /readyz. It used to call
+ * /api/v1/ops/status/, which requires a JWT: on the login page there is no
+ * session, so that call always 401'd and the badge read "Offline" against a
+ * perfectly healthy backend. A status indicator that cannot report "up" is
+ * worse than none.
  */
 export async function GET() {
-  const { data, reachable } = await getRuntimeStatus();
+  const { reachable, checks } = await getReadiness();
 
-  const database = data.checks.database ?? null;
-  const cache = data.checks.cache ?? null;
+  const database = checks.database ?? null;
+  const cache = checks.cache ?? null;
 
   // "operational" only when the backend answered AND its own dependency
   // checks passed. Anything else is degraded or down — never optimistic.

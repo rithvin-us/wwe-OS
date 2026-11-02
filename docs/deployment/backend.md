@@ -42,9 +42,20 @@ PostgreSQL.
 
 Deploy `platform/` as a web service:
 
-- Build: `pip install -r requirements.txt`
-- Start: `./entrypoint.sh`
-- Health check path: `/healthz`
+- Build: `pip install -r requirements.txt` — installs only. Never put
+  `migrate` in the build command: the build then fails whenever the database
+  is unreachable, so a perfectly good commit cannot ship (this is what broke
+  the 2026-11-02 deploy). Run migrations as their own step against a live
+  database, from a machine that can reach it:
+  `cd platform && DATABASE_URL='<url>' python manage.py migrate`.
+  On a paid instance type, use `preDeployCommand` instead; the free type has
+  neither pre-deploy nor a shell.
+- Start: `./entrypoint.sh` (it migrates, collects static, then boots Gunicorn —
+  so on a service whose start command is a bare `gunicorn` line, migrations
+  have no automatic home at all; see the note above)
+- Health check path: `/healthz` — the liveness probe. `/readyz` additionally
+  checks the database and cache, and is the one to look at when the service
+  answers but nothing works.
 - Environment: `DJANGO_SECRET_KEY` (long random), `DJANGO_DEBUG=0`,
   `DJANGO_ALLOWED_HOSTS`, `DATABASE_URL`, `REDIS_URL`, `SMTP_*`,
   `CORS_ALLOWED_ORIGINS`, and any JWT/lockout overrides.
