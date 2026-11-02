@@ -1,9 +1,11 @@
 import { Activity, CircleDollarSign, ShoppingCart, TriangleAlert } from "@bop/icons";
 import type { Metadata } from "next";
 
+import { PageHeader } from "@bop/ui/components/page-header";
+
 import { AlertRow } from "@/components/dashboard/alert-row";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
-import { Greeting } from "@/components/dashboard/greeting";
+import { DashboardClock } from "@/components/dashboard/dashboard-clock";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PanelEmpty, SectionCard, SummaryRows } from "@/components/dashboard/section-card";
@@ -20,6 +22,7 @@ import {
   type LivePurchaseStats,
   monthlyAmountFor,
   operationalAlerts,
+  previousPeriod,
   procurementSummary,
   recentActivity,
   spendTrend,
@@ -135,30 +138,41 @@ export default async function DashboardPage() {
   const attendance = attendanceTrend(attendanceTrendPoints);
   const categories = categoryBreakdown(purchaseInsights.top_materials);
 
+  // Last month's figures, so every KPI change says what it compares to
+  // instead of implying a trend no series backs.
+  const lastMonth: LiveFinancials = {
+    revenueMonth: monthlyAmountFor(invoiceStats?.monthly ?? null, previousPeriod()),
+    expensesMonth:
+      purchaseStats === null
+        ? null
+        : monthlyAmountFor(purchaseInsights.monthly_spend, previousPeriod()),
+  };
+
   const dataAsOf = new Date().toISOString();
-  const kpis = buildKpis(purchaseStats, financials);
+  const kpis = buildKpis(purchaseStats, financials, lastMonth);
   const alerts = operationalAlerts(purchaseStats, automationDueCount, contractsExpiringCount);
   const hasUrgentAlert = alerts.some((item) => item.severity !== "info");
   const activity = recentActivity(activityEntries, activityLabel);
 
   return (
     <PullToRefresh>
-      <div className="space-y-4 md:space-y-6 pb-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <Greeting dataAsOf={dataAsOf} />
-          <QuickActions />
-        </div>
+      <div className="space-y-6 pb-6">
+        <PageHeader
+          title="Today"
+          meta={<DashboardClock dataAsOf={dataAsOf} />}
+          actions={<QuickActions />}
+        />
 
         {/* Operational pulse */}
         <section aria-label="Key figures">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {kpis.map((kpi) => (
-              <KpiTile key={kpi.key} kpi={kpi} />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {kpis.map((kpi, index) => (
+              <KpiTile key={kpi.key} kpi={kpi} index={index} />
             ))}
           </div>
         </section>
 
-        {/* Visual insight charts — all real data: revenue vs expenses and
+        {/* Charts — all real data: revenue against expenses and monthly
             spend from invoices + purchases, attendance from HR, and spend by
             top purchased item. Each renders an honest empty state when its
             source has no data yet. */}
@@ -172,25 +186,27 @@ export default async function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-12">
           {/* Primary column */}
           <div className="space-y-4 lg:col-span-8">
-            <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports" glass>
-              <SummaryRows rows={financialSummary(financials, outstanding)} />
-            </SectionCard>
+            <div className="grid gap-4 md:grid-cols-2">
+              <SectionCard title="Financial summary" icon={CircleDollarSign} href="/reports">
+                <SummaryRows rows={financialSummary(financials, outstanding)} />
+              </SectionCard>
 
-            <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase" glass>
-              <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
-            </SectionCard>
+              <SectionCard title="Procurement & bills" icon={ShoppingCart} href="/purchase">
+                <SummaryRows rows={procurementSummary(purchaseStats, telegramCount)} />
+              </SectionCard>
+            </div>
 
-            <SectionCard title="Recent activity" icon={Activity} href="/timeline" glass>
+            <SectionCard title="Recent activity" icon={Activity} href="/timeline">
               {activity.length === 0 ? (
                 <PanelEmpty>
-                  Activity from across the company will appear here as your team gets to work.
+                  Activity from across the company appears here as records are created.
                 </PanelEmpty>
               ) : (
                 <ul className="space-y-3">
                   {activity.map((item) => (
-                    <li key={item.id} className="flex items-baseline justify-between gap-3 text-sm">
+                    <li key={item.id} className="flex items-baseline justify-between gap-4 text-sm">
                       <span className="text-foreground">{item.summary}</span>
-                      <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+                      <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
                         {item.at}
                       </span>
                     </li>

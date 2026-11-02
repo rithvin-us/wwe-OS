@@ -67,7 +67,7 @@ export function getAdminPage(slug: string): AdminPage | undefined {
 
 export const NAVIGATION: NavGroup[] = [
   {
-    label: "CORE MODULES",
+    label: "Core modules",
     items: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
       ...APPS.map((app) => ({ name: app.name, href: `/${app.slug}`, icon: app.icon })),
@@ -76,7 +76,7 @@ export const NAVIGATION: NavGroup[] = [
   {
     // Cross-cutting operator surfaces — the "task cockpit" the whole company is
     // run from, aggregating across the apps above rather than being one of them.
-    label: "WORKSPACE",
+    label: "Workspace",
     items: [
       { name: "Focus", href: "/briefing", icon: Target },
       { name: "Approvals", href: "/approvals", icon: Inbox },
@@ -85,9 +85,9 @@ export const NAVIGATION: NavGroup[] = [
     ],
   },
   {
-    label: "SYSTEM",
+    label: "System",
     items: [
-      { name: "Assistant Settings", href: "/chatbot", icon: Bot, subtle: true },
+      { name: "Assistant settings", href: "/chatbot", icon: Bot, subtle: true },
       { name: "Backups", href: "/backups", icon: DatabaseBackup, subtle: true },
       { name: "Maintenance", href: "/maintenance", icon: Wrench, subtle: true },
       { name: "Settings", href: "/settings", icon: Settings, subtle: true },

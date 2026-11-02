@@ -20,8 +20,8 @@ type PlatformState = "operational" | "degraded" | "down";
  * optimistic: until the first probe resolves the state is unknown, and an
  * unreachable kernel reads as "Offline", not "Connected". */
 const STATUS_PRESENTATION: Record<PlatformState, { label: string; dot: string }> = {
-  operational: { label: "Connected", dot: "bg-blue-500" },
-  degraded: { label: "Degraded", dot: "bg-amber-500" },
+  operational: { label: "Connected", dot: "bg-success" },
+  degraded: { label: "Degraded", dot: "bg-warning" },
   down: { label: "Offline", dot: "bg-destructive" },
 };
 
@@ -98,18 +98,16 @@ export function AppSidebar({
           height: "calc(var(--layout-header-height) + env(safe-area-inset-top))",
         }}
         className={cn(
-          "flex shrink-0 items-center gap-2.5 border-b border-sidebar-border focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
+          "flex shrink-0 items-center gap-3 border-b border-sidebar-border focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
           collapsed ? "justify-center px-2" : "px-4",
         )}
       >
-        <span className="flex size-7 items-center justify-center rounded-lg bg-blue-600 font-display text-[11px] font-bold text-white shadow-xs shrink-0">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-display text-xs font-semibold text-sidebar-primary-foreground">
           {COMPANY.mark}
         </span>
         {!collapsed && (
-          <span className="min-w-0">
-            <span className="block truncate font-display text-[13px] font-bold tracking-tight text-foreground">
-              {COMPANY.name}
-            </span>
+          <span className="block min-w-0 truncate font-display text-sm font-semibold tracking-tight text-foreground">
+            {COMPANY.name}
           </span>
         )}
       </Link>
@@ -117,14 +115,12 @@ export function AppSidebar({
       <ScrollArea className="min-h-0 flex-1">
         <nav
           aria-label="Platform"
-          className={cn("flex flex-col gap-5 py-4", collapsed ? "px-1.5" : "px-3")}
+          className={cn("flex flex-col gap-6 py-4", collapsed ? "px-2" : "px-3")}
         >
           {NAVIGATION.map((group, index) => (
             <div key={group.label ?? `group-${index}`} className="flex flex-col gap-1">
               {group.label && !collapsed ? (
-                <p className="px-2.5 pb-1 font-mono text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-                  {group.label}
-                </p>
+                <p className="px-3 pb-2 text-xs text-muted-foreground">{group.label}</p>
               ) : null}
               {group.items.map((item) => {
                 const active =
@@ -141,15 +137,18 @@ export function AppSidebar({
                     title={collapsed ? item.name : undefined}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative flex items-center rounded-lg text-[13px] font-medium transition",
+                      // One row height and one icon column for every entry,
+                      // active or not — the left rail is drawn on a border
+                      // that is always there, so nothing shifts on selection.
+                      "relative flex h-9 items-center rounded-md border-l-2 text-sm transition-colors duration-(--duration-fast)",
                       "focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
-                      collapsed ? "justify-center px-0 py-2" : "gap-2.5 px-2.5 py-1.5",
+                      collapsed ? "justify-center px-0" : "gap-3 pr-3 pl-2.5",
                       active
-                        ? "bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 font-semibold shadow-xs"
-                        : item.subtle
-                          ? "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-                          : "text-sidebar-foreground/95 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
-                      active && !collapsed && "border-l-2 border-blue-600",
+                        ? "border-sidebar-primary bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                        : cn(
+                            "border-transparent hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                            item.subtle ? "text-muted-foreground" : "text-sidebar-foreground",
+                          ),
                     )}
                   >
                     <item.icon
@@ -157,18 +156,21 @@ export function AppSidebar({
                       className={cn(
                         "shrink-0",
                         collapsed ? "size-5" : "size-4",
-                        active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground",
+                        active ? "text-sidebar-primary" : "text-muted-foreground",
                       )}
                     />
                     {collapsed ? (
                       badgeCount > 0 && (
-                        <span className="absolute top-1 right-1 size-1.5 rounded-full bg-blue-500" />
+                        <span
+                          aria-hidden
+                          className="absolute top-1.5 right-1.5 size-1.5 bg-sidebar-primary"
+                        />
                       )
                     ) : (
                       <>
                         <span className="min-w-0 flex-1 truncate">{item.name}</span>
                         {badgeCount > 0 && (
-                          <span className="ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1 font-mono text-[10px] font-bold tabular-nums text-white">
+                          <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
                             {badgeCount > 99 ? "99+" : badgeCount}
                           </span>
                         )}
@@ -184,16 +186,15 @@ export function AppSidebar({
 
       {/* Platform status footer. Reflects a real probe of the kernel — while
           the first probe is in flight nothing is asserted. */}
-      <div className={cn("border-t border-sidebar-border bg-card/40", collapsed ? "p-2" : "p-3.5")}>
+      <div className={cn("border-t border-sidebar-border", collapsed ? "p-3" : "px-4 py-3")}>
         {(() => {
           const presentation = platformState ? STATUS_PRESENTATION[platformState] : null;
           const dot = (
             <span
               aria-hidden
               className={cn(
-                "size-2 rounded-full",
+                "size-1.5 shrink-0",
                 presentation ? presentation.dot : "bg-muted-foreground/40",
-                platformState === "operational" && "animate-pulse",
               )}
             />
           );
@@ -208,12 +209,12 @@ export function AppSidebar({
           }
 
           return (
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-3 font-mono text-xs">
+              <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
                 {dot}
-                <span className="font-bold tracking-tight text-foreground">{COMPANY.name}</span>
-              </div>
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                <span className="truncate">{COMPANY.name}</span>
+              </span>
+              <span className="shrink-0 text-muted-foreground-subtle">
                 {presentation?.label ?? "Checking"}
               </span>
             </div>

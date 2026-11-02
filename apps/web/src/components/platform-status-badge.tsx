@@ -54,13 +54,7 @@ export function PlatformStatusBadge({
   return (
     <>
       <StatusDot status={presentation?.status ?? "planned"} />
-      <span
-        className={cn(
-          "font-mono font-medium tracking-[0.08em] text-muted-foreground uppercase",
-          variant === "full" ? "text-[11px]" : "text-[10px]",
-          className,
-        )}
-      >
+      <span className={cn("font-mono text-xs text-muted-foreground", className)}>
         {presentation ? (variant === "full" ? presentation.label : presentation.short) : "Checking"}
       </span>
     </>

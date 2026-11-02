@@ -70,6 +70,13 @@ reserved for module lifecycle only):
 | Success | `--success` | `oklch(0.545 0.13 160)` | `oklch(0.7 0.13 160)` |
 | Warning | `--warning` | `oklch(0.565 0.14 75)`  | `oklch(0.76 0.13 80)` |
 
+**Photography overlay** — text and controls laid over a photograph use
+`--overlay-ink` / `--overlay-ink-muted` for ink and `--overlay-scrim` for the
+contrast scrim. These three are identical in both themes by design: the
+photograph's light does not change when the UI theme does. They are the only
+sanctioned way to put content on an image — never `text-white` or a literal
+neutral.
+
 Light-mode values are darker than they look like they need to be — verified
 against real WCAG contrast math (`docs/design/contrast-notes.md` has the
 method), not eyeballed. The obvious `oklch(0.58 …)`/`oklch(0.66 …)` choices
@@ -221,21 +228,41 @@ wrong and how to fix it. No exclamation marks, no filler, no emoji.
 
 ---
 
-## 13. Industrial Operations Control Theme (`SYS :: AUTOSYNC`)
+## 13. Shell layout standards
 
-Inspired by the industrial operations control plane (`SYS :: AUTOSYNC HR_TERMINAL_V1`), every platform application adheres to these layout & navigation standards:
+The shell is one operations console. These standards describe it; the values
+come from tokens (§2, §3), never from literal colours.
 
-1. **Sidebar Branding & Grouping:**
-   - **Terminal Brand Badge:** Top sidebar brand identifier reads `SYS :: AUTOSYNC` with monospace terminal subtitle (`HR_TERMINAL_V1` / `OPERATIONS_V1`) and brand status dot.
-   - **Section Categorization:** Sidebar navigation items are strictly grouped under uppercase monospace section headers (`CORE MODULES`, `INTELLIGENCE`, `OUTPUTS`, `APPS`).
-   - **Active Navigation Pill:** Active navigation items render as a soft emerald pill (`bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 font-semibold border-l-2 border-emerald-600`).
-   - **Status Footer:** Bottom sidebar renders real-time connectivity status (`W.W.E. CORP · Connected`).
+1. **Sidebar:**
+   - **Brand:** the company mark in a solid `--sidebar-primary` tile beside the
+     company name in the display face. No gradient, glow or terminal subtitle.
+   - **Section grouping:** navigation is grouped under quiet sentence-case
+     labels (`Core modules`, `Workspace`, `System`) — `text-xs
+     text-muted-foreground`, not uppercase mono. Mono is reserved for status,
+     IDs and figures (§4).
+   - **Rows:** one height (`h-9`) and one icon column for every entry. The
+     active row is a surface step (`bg-sidebar-accent`) with a 2px
+     `--sidebar-primary` left rail, drawn on a border every row carries so
+     selection never shifts the layout. Badge counts are quiet mono text, not
+     filled pills.
+   - **Status footer:** real connectivity from a live probe, as a square status
+     dot plus a sentence-case label (`Connected` / `Degraded` / `Offline` /
+     `Checking`). The dot never pulses; nothing is asserted before the first
+     probe resolves.
 
-2. **Top Header & Global Controls:**
-   - **Breadcrumb & Page Title:** Left header displays current page section breadcrumb.
-   - **Live Clock Pill:** Right header displays live date/time status pill (`Sun, 26 Jul, 2026 03:57:43 pm`).
-   - **User Session Status:** Displays authenticated user pill (`admin Signed In`) with quick sign-out action.
+2. **Top header & global controls:**
+   - **Breadcrumb & page title:** left header shows the current section.
+   - **Clock:** live date/time, quiet mono.
+   - **Session:** the signed-in account with a quick sign-out action.
 
-3. **Page Controls & Workflow Cards:**
-   - **Month Stepper Header:** Period-scoped pages feature integrated month stepper control (`[ < ] [ Jul 2026 ] [ > ] ↻`).
-   - **Numbered Workflow Cards:** Sequential operational tasks render as numbered step cards (`1 Attendance`, `2 Payroll`, `3 Generate registers`) with clear status pills (`Open grid`, `Pending`).
+3. **Page controls & workflow cards:**
+   - **Month stepper:** period-scoped pages carry one month stepper control.
+   - **Numbered workflow cards:** sequential operational tasks render as
+     numbered step cards (`1 Attendance`, `2 Payroll`, `3 Generate registers`)
+     with plain status labels.
+
+4. **Dashboards:** stat tiles are a label, a figure and a change that says what
+   it compares to — no sparklines, mini bars or icons added to fill them. One
+   chart per screen is clearly the main instrument; anything else that shows
+   data is smaller and different in kind (bars, a rate, a ranked list). Series
+   colours come from `--chart-1..5` only, one leading and the rest quiet.

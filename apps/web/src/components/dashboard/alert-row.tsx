@@ -29,7 +29,7 @@ export function AlertRow({ alert }: { alert: AlertItem }) {
     <li>
       <Link
         href={alert.href}
-        className="-mx-2 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="-mx-2 flex items-start gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <Icon
           aria-hidden

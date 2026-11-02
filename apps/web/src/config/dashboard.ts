@@ -32,6 +32,10 @@ export interface Kpi {
    * metric has nowhere honest to send the operator, so it stays a plain
    * tile rather than a dead link. */
   href?: string;
+  /** Which direction of change is the good one. Revenue rising is good,
+   * expenses rising is not — the change colour follows the metric's meaning,
+   * never just the arithmetic sign. */
+  goodWhen?: "up" | "down";
 }
 
 export interface LivePurchaseStats {
@@ -55,9 +59,19 @@ function moneyStatus(value: number | null): KpiStatus {
   return value === null ? "error" : "live";
 }
 
+/** Month-over-month change, as a whole percent. `null` unless both months
+ * are real numbers and last month was non-zero — a change against nothing
+ * is not a change, and a KPI with no comparable prior month says nothing
+ * rather than implying one. */
+export function deltaPct(current: number | null, previous: number | null): number | null {
+  if (current === null || previous === null || previous === 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
 export function buildKpis(
   purchase: LivePurchaseStats | null,
   financials: LiveFinancials | null = null,
+  previous: LiveFinancials | null = null,
 ): Kpi[] {
   const purchaseFetchFailed = purchase === null;
   const revenueMonth = financials?.revenueMonth ?? null;
@@ -70,7 +84,7 @@ export function buildKpis(
       icon: CircleDollarSign,
       format: "currency",
       value: revenueMonth,
-      deltaPct: null,
+      deltaPct: deltaPct(revenueMonth, previous?.revenueMonth ?? null),
       source: "Invoices",
       status: moneyStatus(revenueMonth),
       href: "/invoices",
@@ -81,10 +95,11 @@ export function buildKpis(
       icon: Wallet,
       format: "currency",
       value: expensesMonth,
-      deltaPct: null,
+      deltaPct: deltaPct(expensesMonth, previous?.expensesMonth ?? null),
       source: "Purchases",
       status: moneyStatus(expensesMonth),
       href: "/purchase",
+      goodWhen: "down",
     },
     {
       key: "digitized-purchases",
@@ -120,6 +135,10 @@ export interface SummaryRow {
   label: string;
   value: number | null;
   format: KpiFormat;
+  /** The one figure a panel is really about — rendered in the display face
+   * at a larger size, so a summary panel has a focal point instead of four
+   * rows of equal weight. At most one row per panel sets it. */
+  emphasis?: boolean;
 }
 
 /** Live monthly financials. `Net` needs both halves, so it blanks if either
@@ -136,7 +155,7 @@ export function financialSummary(
   return [
     { label: "Revenue (month)", value: revenue, format: "currency" },
     { label: "Expenses (month)", value: expenses, format: "currency" },
-    { label: "Net (month)", value: net, format: "currency" },
+    { label: "Net (month)", value: net, format: "currency", emphasis: true },
     { label: "Outstanding", value: outstanding, format: "currency" },
   ];
 }
@@ -292,9 +311,9 @@ export interface QuickAction {
   icon: LucideIcon;
 }
 export const QUICK_ACTIONS: QuickAction[] = [
-  { label: "New Purchase", href: "/purchase", icon: ShoppingCart },
-  { label: "Upload Document", href: "/dms", icon: FilePlus2 },
-  { label: "Business Timeline", href: "/timeline", icon: History },
+  { label: "New purchase", href: "/purchase", icon: ShoppingCart },
+  { label: "Upload document", href: "/dms", icon: FilePlus2 },
+  { label: "Business timeline", href: "/timeline", icon: History },
   { label: "Automation", href: "/automation", icon: Workflow },
 ];
 
@@ -333,6 +352,13 @@ function monthLabel(period: string): string {
 /** Current month as "YYYY-MM", to pick this month's figure out of a series. */
 export function currentPeriod(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** The month before `now`, as "YYYY-MM" — the baseline every KPI change on
+ * the dashboard is measured against. */
+export function previousPeriod(now: Date = new Date()): string {
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return currentPeriod(prev);
 }
 
 /** This month's amount from a monthly series: a live 0 when the month has no

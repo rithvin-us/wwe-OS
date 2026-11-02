@@ -20,7 +20,6 @@ export function SectionCard({
   children,
   className,
   tone = "default",
-  glass = false,
 }: {
   title: string;
   icon: LucideIcon;
@@ -28,23 +27,16 @@ export function SectionCard({
   children: ReactNode;
   className?: string;
   tone?: "default" | "warning";
-  /** Opt-in — the Executive Dashboard's overview panels only. Every other
-   * SectionCard (Purchase, AI insights) keeps the plain card. */
-  glass?: boolean;
 }) {
   return (
     <section
       className={cn(
-        "flex flex-col rounded-lg border transition-shadow duration-(--duration-base) ease-out-quart",
-        glass
-          ? "bg-card/70 backdrop-blur-md max-md:bg-card max-md:backdrop-blur-none dark:border-white/10 dark:bg-card/50"
-          : "bg-card",
-        tone === "warning" ? "border-warning/40 bg-warning/5" : "border-border",
-        href && "hover:shadow-sm",
+        "flex flex-col rounded-lg border bg-card",
+        tone === "warning" ? "border-warning/40" : "border-border",
         className,
       )}
     >
-      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
           <Icon
             aria-hidden
@@ -61,23 +53,34 @@ export function SectionCard({
           </Link>
         ) : null}
       </header>
-      <div className="flex-1 p-4">{children}</div>
+      <div className="flex-1 p-5">{children}</div>
     </section>
   );
 }
 
-/** A list of label/value rows for summary panels. */
+/** A list of label/value rows for summary panels. One row may carry
+ * `emphasis` — the figure the panel exists to report — which reads larger in
+ * the display face so the panel has a focal point. */
 export function SummaryRows({ rows }: { rows: SummaryRow[] }) {
   return (
-    <dl className="space-y-2.5">
+    <dl className="space-y-3">
       {rows.map((row) => {
         const known = row.value !== null;
         return (
-          <div key={row.label} className="flex items-center justify-between gap-3">
+          <div
+            key={row.label}
+            className={cn(
+              "flex items-baseline justify-between gap-4",
+              row.emphasis && "border-t border-border pt-3",
+            )}
+          >
             <dt className="text-sm text-muted-foreground">{row.label}</dt>
             <dd
               className={cn(
-                "text-sm font-medium tabular-nums",
+                "tabular-nums",
+                row.emphasis
+                  ? "font-display text-xl font-semibold tracking-tight"
+                  : "text-sm font-medium",
                 known ? "text-foreground" : "text-muted-foreground-subtle",
               )}
             >
@@ -92,7 +95,7 @@ export function SummaryRows({ rows }: { rows: SummaryRow[] }) {
 
 /** Quiet empty state for list panels — inviting, never an error. */
 export function PanelEmpty({ children }: { children: ReactNode }) {
-  return <p className="py-6 text-center text-[13px] text-muted-foreground">{children}</p>;
+  return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
 /**
@@ -112,13 +115,13 @@ export function SectionCardSkeleton({
 }) {
   return (
     <section className={cn("flex flex-col rounded-lg border border-border bg-card", className)}>
-      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
-          <Icon aria-hidden className="size-4 text-muted-foreground/80" />
+          <Icon aria-hidden className="size-4 text-muted-foreground" />
           {title}
         </h2>
       </header>
-      <div className="flex-1 space-y-2.5 p-4">
+      <div className="flex-1 space-y-3 p-5">
         {Array.from({ length: rows }).map((_, i) => (
           <Skeleton key={i} className="h-4 w-full" style={{ animationDelay: `${i * 80}ms` }} />
         ))}

@@ -5,13 +5,19 @@ import { QUICK_ACTIONS } from "@/config/dashboard";
 
 /**
  * Quick actions — the few things people start most often. Real navigation
- * into the relevant area; each says exactly what it does.
+ * into the relevant area; each says exactly what it does. The first is the
+ * view's one primary action (design bible §6); the rest stay quiet.
  */
 export function QuickActions() {
   return (
     <div className="flex flex-wrap gap-2">
-      {QUICK_ACTIONS.map((action) => (
-        <Button key={action.href + action.label} asChild variant="outline" size="sm">
+      {QUICK_ACTIONS.map((action, index) => (
+        <Button
+          key={action.href + action.label}
+          asChild
+          variant={index === 0 ? "default" : "outline"}
+          size="sm"
+        >
           <Link href={action.href}>
             <action.icon aria-hidden />
             {action.label}

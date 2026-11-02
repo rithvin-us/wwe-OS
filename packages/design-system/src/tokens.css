@@ -80,6 +80,13 @@
   --warning: oklch(0.565 0.14 75);
   --warning-foreground: oklch(0.2 0.03 75);
 
+  /* --- Ink and scrim for content laid over photography. Fixed in both
+     themes on purpose: a photograph's own light does not follow the UI
+     theme, so text over one needs the same light ink either way. --- */
+  --overlay-ink: oklch(0.985 0.003 240);
+  --overlay-ink-muted: oklch(0.86 0.005 240);
+  --overlay-scrim: oklch(0.14 0.01 250);
+
   /* --- Shape --- */
   --radius: 0.5rem;
 
@@ -151,6 +158,12 @@
   --success-foreground: oklch(0.16 0.03 220);
   --warning: oklch(0.76 0.13 80);
   --warning-foreground: oklch(0.18 0.03 80);
+  /* --- Ink and scrim for content laid over photography. Fixed in both
+     themes on purpose: a photograph's own light does not follow the UI
+     theme, so text over one needs the same light ink either way. --- */
+  --overlay-ink: oklch(0.985 0.003 240);
+  --overlay-ink-muted: oklch(0.86 0.005 240);
+  --overlay-scrim: oklch(0.14 0.01 250);
 }
 
 @theme inline {
@@ -199,6 +212,10 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+
+  --color-overlay-ink: var(--overlay-ink);
+  --color-overlay-ink-muted: var(--overlay-ink-muted);
+  --color-overlay-scrim: var(--overlay-scrim);
 
   /* Typography roles. Font variables are attached by the app via next/font. */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

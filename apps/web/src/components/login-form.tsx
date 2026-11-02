@@ -13,9 +13,7 @@ import {
   TriangleAlert,
   CheckCircle2,
   KeyRound,
-  ArrowRight,
   RefreshCw,
-  Sparkles,
 } from "@bop/icons";
 import { Button } from "@bop/ui/components/button";
 import { Input } from "@bop/ui/components/input";
@@ -154,8 +152,8 @@ export function LoginForm() {
       }
 
       setFaceMatchScanning(false);
-      setFaceSuccessMessage("Face Matched! Signing in touchlessly...");
-      toast.success("Face Verified — Welcome Back!");
+      setFaceSuccessMessage("Face matched. Signing you in");
+      toast.success("Face verified");
 
       setTimeout(() => {
         const next = searchParams.get("next") || "/";
@@ -200,30 +198,30 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       {/* Login Method Selector (Password vs Touchless Face Login) */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 text-xs font-medium backdrop-blur-sm">
+      <div className="grid grid-cols-2 gap-1 rounded-md border border-border bg-muted p-1 text-sm">
         <button
           type="button"
           onClick={() => setLoginMethod("password")}
-          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition duration-(--duration-base) ease-out-quart cursor-pointer ${
+          className={`flex h-8 items-center justify-center gap-2 rounded-sm transition-colors duration-(--duration-fast) ease-out-quart ${
             loginMethod === "password"
-              ? "bg-background text-foreground shadow-sm font-semibold"
+              ? "bg-background font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <KeyRound className="size-3.5" />
-          <span>Password Sign-In</span>
+          <KeyRound aria-hidden className="size-4" />
+          <span>Password</span>
         </button>
         <button
           type="button"
           onClick={() => setLoginMethod("face_id")}
-          className={`flex items-center justify-center gap-2 rounded-lg py-2 transition duration-(--duration-base) ease-out-quart cursor-pointer ${
+          className={`flex h-8 items-center justify-center gap-2 rounded-sm transition-colors duration-(--duration-fast) ease-out-quart ${
             loginMethod === "face_id"
-              ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+              ? "bg-background font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <ScanFace className="size-3.5" />
-          <span>Face Login</span>
+          <ScanFace aria-hidden className="size-4" />
+          <span>Face</span>
         </button>
       </div>
 
@@ -241,9 +239,7 @@ export function LoginForm() {
           >
             {/* Email Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium">
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
                   <Mail className="size-4" />
@@ -254,13 +250,13 @@ export function LoginForm() {
                   autoComplete="email"
                   placeholder="you@company.com"
                   aria-invalid={!!errors.email}
-                  className="pl-9 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="pl-9"
                   {...register("email")}
                 />
               </div>
               {errors.email ? (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <TriangleAlert className="size-3" />
+                <p className="flex items-center gap-1.5 text-xs text-destructive">
+                  <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
                   {errors.email.message}
                 </p>
               ) : null}
@@ -269,9 +265,7 @@ export function LoginForm() {
             {/* Password Field */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs font-medium">
-                  Password
-                </Label>
+                <Label htmlFor="password">Password</Label>
                 <Dialog
                   open={forgotPasswordOpen}
                   onOpenChange={(open) => {
@@ -282,14 +276,14 @@ export function LoginForm() {
                   <DialogTrigger asChild>
                     <button
                       type="button"
-                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
+                      className="rounded-sm text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     >
                       Forgot password?
                     </button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Reset Password</DialogTitle>
+                      <DialogTitle>Reset password</DialogTitle>
                       <DialogDescription>
                         Enter your email address and we&apos;ll send you instructions to reset your
                         account password.
@@ -298,12 +292,12 @@ export function LoginForm() {
 
                     {resetSent ? (
                       <div className="space-y-4 py-4 text-center">
-                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <CheckCircle2 className="size-6" />
+                        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted text-success">
+                          <CheckCircle2 aria-hidden className="size-6" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="font-semibold text-foreground">Reset Link Sent</h4>
-                          <p className="text-xs text-muted-foreground">
+                          <h4 className="text-sm font-medium text-foreground">Reset link sent</h4>
+                          <p className="text-sm text-muted-foreground">
                             If an account exists for{" "}
                             <span className="font-medium text-foreground">{resetEmail}</span>, you
                             will receive an email shortly.
@@ -347,7 +341,7 @@ export function LoginForm() {
                           {isResetting ? (
                             <Loader2 className="size-4 animate-spin" />
                           ) : (
-                            "Send Reset Link"
+                            "Send reset link"
                           )}
                         </Button>
                       </form>
@@ -365,14 +359,14 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   aria-invalid={!!errors.password}
-                  className="pl-9 pr-10 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="pl-9 pr-10"
                   onKeyDown={handleKeyDownPassword}
                   {...register("password")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground transition-colors hover:text-foreground"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -383,16 +377,16 @@ export function LoginForm() {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-1.5 text-[11px] font-medium text-warning"
+                  className="flex items-center gap-1.5 text-xs text-warning"
                 >
                   <TriangleAlert className="size-3" />
-                  <span>Caps Lock is ON</span>
+                  <span>Caps Lock is on</span>
                 </motion.div>
               )}
 
               {errors.password ? (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <TriangleAlert className="size-3" />
+                <p className="flex items-center gap-1.5 text-xs text-destructive">
+                  <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
                   {errors.password.message}
                 </p>
               ) : null}
@@ -400,12 +394,12 @@ export function LoginForm() {
 
             {/* Remember Me Checkbox */}
             <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="size-4 rounded border-border text-primary focus:ring-primary/40 accent-primary"
+                  className="size-4 rounded-sm border-border accent-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 />
                 <span>Remember this device</span>
               </label>
@@ -414,27 +408,19 @@ export function LoginForm() {
             {/* Root Error Banner */}
             {errors.root ? (
               <motion.p
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-xs font-medium text-destructive flex items-center gap-2"
+                className="flex items-center gap-2 rounded-md border border-destructive/30 px-4 py-3 text-sm text-destructive"
               >
-                <TriangleAlert className="size-4 shrink-0" />
+                <TriangleAlert aria-hidden className="size-4 shrink-0" />
                 <span>{errors.root.message}</span>
               </motion.p>
             ) : null}
 
             {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-10 font-semibold shadow-md transition active:scale-[0.99] cursor-pointer"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 aria-hidden className="size-4 animate-spin mr-2" />
-              ) : (
-                <ArrowRight className="size-4 mr-2" />
-              )}
+            <Button type="submit" className="h-10 w-full" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
               Sign in
             </Button>
           </motion.form>
@@ -448,55 +434,51 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="space-y-4"
           >
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center space-y-3">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                <Sparkles className="size-3.5" />
-                <span>Touchless Face Login</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
+            <div className="space-y-4 rounded-lg border border-border p-5">
+              <p className="text-sm text-muted-foreground">
                 No email or password needed. Look directly into the camera — we&apos;ll verify
                 it&apos;s really you and sign you in.
               </p>
 
               {/* Status alerts */}
               {faceSuccessMessage ? (
-                <div className="p-3 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-2">
-                  <CheckCircle2 className="size-4" />
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-foreground">
+                  <CheckCircle2 aria-hidden className="size-4 shrink-0 text-success" />
                   <span>{faceSuccessMessage}</span>
                 </div>
               ) : faceErrorMessage ? (
-                <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-center justify-center gap-2">
-                  <TriangleAlert className="size-4 shrink-0" />
+                <div className="flex items-center gap-2 rounded-md border border-destructive/30 p-3 text-sm text-destructive">
+                  <TriangleAlert aria-hidden className="size-4 shrink-0" />
                   <span>{faceErrorMessage}</span>
                 </div>
               ) : null}
 
               {/* Camera Feed Viewfinder */}
-              <div className="relative overflow-hidden rounded-xl border border-border bg-muted p-2 shadow-inner flex items-center justify-center min-h-[220px]">
+              <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-md border border-border bg-muted p-2">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className={`w-full h-56 object-cover rounded-lg border border-primary/50 ${
+                  className={`h-56 w-full rounded-sm object-cover ${
                     cameraActive ? "block" : "hidden"
                   }`}
                 />
 
                 {!cameraActive && (
-                  <div className="flex flex-col items-center justify-center p-4 text-center text-muted-foreground space-y-2">
-                    <Camera className="size-8 text-muted-foreground" />
-                    <p className="text-xs">Connecting to camera feed...</p>
+                  <div className="flex flex-col items-center justify-center space-y-3 p-4 text-center text-muted-foreground">
+                    <Camera aria-hidden className="size-6" />
+                    <p className="text-sm">Connecting to the camera</p>
                     <Button size="xs" variant="outline" onClick={startCamera} className="gap-1">
-                      <RefreshCw className="size-3" /> Enable Camera
+                      <RefreshCw aria-hidden className="size-3" /> Enable camera
                     </Button>
                   </div>
                 )}
 
                 {faceMatchScanning && (
-                  <div className="absolute inset-0 bg-background/85 backdrop-blur-xs flex flex-col items-center justify-center text-primary space-y-2">
-                    <ScanFace className="size-10 animate-pulse" />
-                    <span className="text-xs font-semibold">Verifying your face...</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 bg-background/90 text-foreground">
+                    <ScanFace aria-hidden className="size-8 text-muted-foreground" />
+                    <span className="text-sm">Verifying your face</span>
                   </div>
                 )}
               </div>
@@ -506,14 +488,14 @@ export function LoginForm() {
                 type="button"
                 onClick={handleFaceLogin}
                 disabled={faceMatchScanning || !cameraActive}
-                className="w-full h-10 font-semibold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground gap-2 cursor-pointer"
+                className="h-10 w-full gap-2"
               >
                 {faceMatchScanning ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <ScanFace className="size-4" />
                 )}
-                <span>Scan Face & Sign In</span>
+                <span>Scan face and sign in</span>
               </Button>
             </div>
           </motion.div>

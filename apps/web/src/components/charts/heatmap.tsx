@@ -14,11 +14,11 @@ export interface HeatmapProps {
 }
 
 const INTENSITY_COLORS = [
-  "bg-muted/40 border-border/40",
-  "bg-blue-500/20 border-blue-500/30 text-blue-800 dark:text-blue-300",
-  "bg-blue-500/40 border-blue-500/50 text-blue-900 dark:text-blue-200",
-  "bg-blue-500/70 border-blue-500/80 text-white",
-  "bg-blue-600 border-blue-700 text-white font-bold",
+  "bg-muted border-border text-muted-foreground",
+  "bg-chart-1/15 border-chart-1/25 text-foreground",
+  "bg-chart-1/35 border-chart-1/45 text-foreground",
+  "bg-chart-1/60 border-chart-1/70 text-foreground",
+  "bg-chart-1 border-chart-1 text-background font-medium",
 ];
 
 export function HeatmapComponent({ data, columns = 7 }: HeatmapProps) {
@@ -34,7 +34,7 @@ export function HeatmapComponent({ data, columns = 7 }: HeatmapProps) {
             key={p.day}
             title={p.label || `Day ${p.day}: Level ${p.value}`}
             className={cn(
-              "flex aspect-square items-center justify-center rounded border text-[10px] font-mono transition-transform hover:scale-105 cursor-pointer",
+              "flex aspect-square cursor-pointer items-center justify-center rounded-sm border font-mono text-xs tabular-nums transition-colors",
               colorClass,
             )}
           >

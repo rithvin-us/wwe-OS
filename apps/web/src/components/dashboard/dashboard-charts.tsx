@@ -1,15 +1,20 @@
 "use client";
 
-import { BarChart3, LineChart, PieChart as PieChartIcon, TrendingUp, Workflow } from "@bop/icons";
+import { BarChart3, LineChart, PieChart as PieChartIcon, TrendingUp } from "@bop/icons";
 
 import {
   AreaChartComponent,
   BarChartComponent,
   ChartCard,
-  DonutChartComponent,
-  FunnelChartComponent,
   LineChartComponent,
 } from "@/components/charts";
+import { SpendRanking } from "@/components/dashboard/spend-ranking";
+
+/** Series colours come from the chart ramp only (design bible §3). Revenue
+ * leads in the first chart colour; every other series on the dashboard sits
+ * in a quieter step of the same ramp, so one line is clearly the subject. */
+const REVENUE_COLOR = "var(--chart-1)";
+const EXPENSES_COLOR = "var(--chart-5)";
 
 export interface DashboardChartsProps {
   loading?: boolean;
@@ -18,7 +23,24 @@ export interface DashboardChartsProps {
   spendTrend?: Array<{ month: string; spend: number }>;
   attendanceTrend?: Array<{ month: string; attendanceRate: number }>;
   categoryBreakdown?: Array<{ name: string; value: number; color?: string }>;
-  processFunnel?: Array<{ step: string; count: number; percentage: number }>;
+}
+
+/** Square swatch + mono label — the instrument-panel legend used wherever a
+ * dashboard chart carries more than one series. */
+function Legend({ series }: { series: Array<{ name: string; color: string }> }) {
+  return (
+    <ul className="flex items-center gap-4">
+      {series.map((item) => (
+        <li
+          key={item.name}
+          className="flex items-center gap-2 font-mono text-xs text-muted-foreground"
+        >
+          <span aria-hidden className="size-2 shrink-0" style={{ backgroundColor: item.color }} />
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function DashboardCharts({
@@ -28,107 +50,94 @@ export function DashboardCharts({
   spendTrend = [],
   attendanceTrend = [],
   categoryBreakdown = [],
-  processFunnel = [],
 }: DashboardChartsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {/* 1. Revenue vs Expenses Line Chart */}
+    <div className="space-y-4">
+      {/* The dashboard's one main instrument: money in against money out,
+          full width and taller than anything else that plots data. */}
       <ChartCard
-        title="Revenue vs Expenses"
-        description="6-month financial performance trend"
-        badge="6 Months"
+        title="Revenue and expenses"
+        description="Last 6 months, from invoices and purchase bills"
         icon={LineChart}
+        action={
+          <Legend
+            series={[
+              { name: "Revenue", color: REVENUE_COLOR },
+              { name: "Expenses", color: EXPENSES_COLOR },
+            ]}
+          />
+        }
         loading={loading}
         error={error}
         empty={financialTrend.length === 0}
-        emptyMessage="No financial performance data recorded yet."
+        emptyMessage="No invoiced revenue or bill spend recorded yet."
       >
         <LineChartComponent
           data={financialTrend}
           xAxisKey="month"
-          height={190}
+          height={300}
           valueFormat="currency"
           series={[
-            { key: "revenue", name: "Revenue", color: "var(--chart-2)" },
-            { key: "expenses", name: "Expenses", color: "var(--chart-5)" },
+            { key: "revenue", name: "Revenue", color: REVENUE_COLOR },
+            { key: "expenses", name: "Expenses", color: EXPENSES_COLOR },
           ]}
         />
       </ChartCard>
 
-      {/* 2. Procurement & Spend Bar Chart */}
-      <ChartCard
-        title="Procurement & Spend"
-        description="Monthly bill spend volume"
-        badge="Monthly"
-        icon={TrendingUp}
-        loading={loading}
-        error={error}
-        empty={spendTrend.length === 0}
-        emptyMessage="No procurement spend recorded yet."
-      >
-        <BarChartComponent
-          data={spendTrend}
-          xAxisKey="month"
-          height={190}
-          valueFormat="currency"
-          series={[{ key: "spend", name: "Spend Amount", color: "var(--module-dashboard)" }]}
-        />
-      </ChartCard>
+      {/* Supporting figures: each smaller than the main chart, and each a
+          different kind of read — bars, a rate over time, a ranking. */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <ChartCard
+          title="Monthly spend"
+          description="Purchase bills per month"
+          icon={TrendingUp}
+          className="lg:col-span-5"
+          loading={loading}
+          error={error}
+          empty={spendTrend.length === 0}
+          emptyMessage="No purchase spend recorded yet."
+        >
+          <BarChartComponent
+            data={spendTrend}
+            xAxisKey="month"
+            height={180}
+            valueFormat="currency"
+            series={[{ key: "spend", name: "Spend", color: REVENUE_COLOR }]}
+          />
+        </ChartCard>
 
-      {/* 3. Attendance Rate Area Chart */}
-      <ChartCard
-        title="Attendance & OT Hours"
-        description="Workforce presence percentage"
-        badge="Monthly %"
-        icon={BarChart3}
-        loading={loading}
-        error={error}
-        empty={attendanceTrend.length === 0}
-        emptyMessage="No attendance logs recorded yet."
-      >
-        <AreaChartComponent
-          data={attendanceTrend}
-          xAxisKey="month"
-          height={190}
-          valueSuffix="%"
-          series={[{ key: "attendanceRate", name: "Attendance %", color: "var(--module-hr)" }]}
-        />
-      </ChartCard>
+        <ChartCard
+          title="Attendance rate"
+          description="Share of working time present"
+          icon={BarChart3}
+          className="lg:col-span-4"
+          loading={loading}
+          error={error}
+          empty={attendanceTrend.length === 0}
+          emptyMessage="No attendance recorded yet."
+        >
+          <AreaChartComponent
+            data={attendanceTrend}
+            xAxisKey="month"
+            height={180}
+            valueSuffix="%"
+            series={[{ key: "attendanceRate", name: "Attendance", color: REVENUE_COLOR }]}
+          />
+        </ChartCard>
 
-      {/* 4. Category Breakdown Donut Chart */}
-      <ChartCard
-        title="Procurement Categories"
-        description="Spend distribution across top purchased items"
-        badge="By item"
-        icon={PieChartIcon}
-        loading={loading}
-        error={error}
-        empty={categoryBreakdown.length === 0}
-        emptyMessage="No itemised purchase spend recorded yet."
-      >
-        <DonutChartComponent
-          data={categoryBreakdown}
-          height={190}
-          centerTitle="Top items"
-          centerValue={`${categoryBreakdown.length}`}
-          valueFormat="currency"
-        />
-      </ChartCard>
-
-      {/* 5. Document Processing Funnel */}
-      <ChartCard
-        title="Bill Digitization Funnel"
-        description="Document extraction to ledger posting"
-        badge="Pipeline"
-        icon={Workflow}
-        loading={loading}
-        error={error}
-        empty={processFunnel.length === 0}
-        emptyMessage="No bill extraction activity in pipeline yet."
-        className="md:col-span-2 lg:col-span-2"
-      >
-        <FunnelChartComponent data={processFunnel} />
-      </ChartCard>
+        <ChartCard
+          title="Spend by item"
+          description="Largest purchased items"
+          icon={PieChartIcon}
+          className="lg:col-span-3"
+          loading={loading}
+          error={error}
+          empty={categoryBreakdown.length === 0}
+          emptyMessage="No itemised purchase spend recorded yet."
+        >
+          <SpendRanking items={categoryBreakdown} />
+        </ChartCard>
+      </div>
     </div>
   );
 }

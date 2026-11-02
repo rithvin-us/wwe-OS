@@ -17,6 +17,7 @@ import {
   Workflow,
   Zap,
 } from "@bop/icons";
+import { Skeleton } from "@bop/ui/components/skeleton";
 import { cn } from "@bop/ui/lib/utils";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -50,6 +51,12 @@ export interface ChartCardProps {
   headerClassName?: string;
 }
 
+/**
+ * One card shape for every chart in the platform: title, optional one-line
+ * description, and a content area that handles loading, failure and emptiness
+ * in the card's own shape so nothing shifts when data arrives. The chrome is
+ * deliberately quiet — the chart inside carries the colour.
+ */
 export function ChartCard({
   title,
   description,
@@ -59,7 +66,7 @@ export function ChartCard({
   loading = false,
   error = null,
   empty = false,
-  emptyMessage = "No data available for the selected period.",
+  emptyMessage = "No data recorded for this period yet.",
   action,
   children,
   className,
@@ -71,53 +78,51 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs transition-shadow hover:shadow-sm",
+        "flex flex-col justify-between rounded-lg border border-border bg-card p-5",
         className,
       )}
     >
       {/* Header */}
-      <div className={cn("flex items-start justify-between gap-3 pb-3", headerClassName)}>
-        <div className="space-y-1">
+      <div className={cn("flex items-start justify-between gap-4 pb-4", headerClassName)}>
+        <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             {MappedIcon ? (
-              <MappedIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <MappedIcon className="size-4 shrink-0 text-muted-foreground" />
             ) : React.isValidElement(Icon) ? (
               Icon
             ) : IconComp ? (
-              <IconComp className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <IconComp className="size-4 shrink-0 text-muted-foreground" />
             ) : null}
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
+            <h3 className="text-sm font-medium text-card-foreground">{title}</h3>
           </div>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-4">
           {badge && (
-            <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase tracking-wider">
-              {badge}
-            </span>
+            <span className="font-mono text-xs text-muted-foreground tabular-nums">{badge}</span>
           )}
           {action}
         </div>
       </div>
 
-      {/* Content Area with Loading, Error, Empty, and Success states */}
-      <div className="relative min-h-[180px] w-full flex-1 pt-1">
+      {/* Content area: loading, failure, emptiness, or the chart itself */}
+      <div className="relative min-h-40 w-full flex-1">
         {loading ? (
-          <div className="flex h-full w-full flex-col justify-center gap-3 animate-pulse py-8">
-            <div className="h-4 w-3/4 rounded bg-muted/60" />
-            <div className="h-32 w-full rounded bg-muted/40" />
+          <div className="flex h-full w-full flex-col justify-end gap-3 py-4">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-3 w-3/4" />
           </div>
         ) : error ? (
-          <div className="flex h-full min-h-[160px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center">
-            <AlertCircle className="size-6 text-destructive" />
-            <p className="text-xs font-semibold text-destructive">Failed to load chart</p>
-            <p className="text-[11px] text-muted-foreground max-w-xs">{error}</p>
+          <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-2 rounded-md border border-destructive/30 p-5 text-center">
+            <AlertCircle aria-hidden className="size-5 text-destructive" />
+            <p className="text-sm font-medium text-destructive">Couldn&rsquo;t load this chart</p>
+            <p className="max-w-xs text-xs text-muted-foreground">{error}</p>
           </div>
         ) : empty ? (
-          <div className="flex h-full min-h-[160px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-4 text-center">
-            <FileBarChart2 className="size-6 text-muted-foreground/60" />
-            <p className="text-xs font-medium text-muted-foreground">{emptyMessage}</p>
+          <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border p-5 text-center">
+            <FileBarChart2 aria-hidden className="size-5 text-muted-foreground-subtle" />
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           </div>
         ) : (
           children

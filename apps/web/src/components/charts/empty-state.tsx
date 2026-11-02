@@ -17,10 +17,10 @@ export function EmptyStateComponent({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="flex h-full min-h-[160px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center bg-card/40">
-      <Icon className="size-8 text-muted-foreground/60" />
-      <p className="text-xs font-semibold text-foreground">{title}</p>
-      <p className="text-[11px] text-muted-foreground max-w-xs">{description}</p>
+    <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border p-6 text-center">
+      <Icon aria-hidden className="size-5 text-muted-foreground-subtle" />
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="max-w-xs text-xs text-muted-foreground">{description}</p>
       {action && <div className="pt-2">{action}</div>}
     </div>
   );

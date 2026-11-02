@@ -84,12 +84,12 @@ export function DonutChartComponent({
       {(centerTitle || centerValue) && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           {centerValue && (
-            <span className="font-mono text-base font-bold text-foreground leading-none mb-0.5">
+            <span className="mb-0.5 font-mono text-base font-semibold leading-none text-foreground tabular-nums">
               {centerValue}
             </span>
           )}
           {centerTitle && (
-            <span className="text-[9px] uppercase font-mono tracking-tight text-muted-foreground leading-tight max-w-[80px]">
+            <span className="max-w-20 text-xs leading-tight text-muted-foreground">
               {centerTitle}
             </span>
           )}
