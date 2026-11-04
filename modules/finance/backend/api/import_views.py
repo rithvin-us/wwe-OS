@@ -88,7 +88,9 @@ class InvoiceImportItemViewSet(BaseModelViewSet):
     serializer_class = InvoiceImportItemSerializer
     http_method_names = ["get", "patch", "post", "head", "options"]
     required_permissions = {
+        "list": "finance.invoice.read",
         "retrieve": "finance.invoice.read",
+        "create": "finance.invoice.import",
         "scan": "finance.invoice.read",
         "partial_update": "finance.invoice.import",
         "recompute": "finance.invoice.import",
@@ -101,7 +103,7 @@ class InvoiceImportItemViewSet(BaseModelViewSet):
             return InvoiceImportItem.objects.none()
         tenant_id = _tenant_id(self.request.user)
         queryset = InvoiceImportItem.objects.all().select_related("source_file", "invoice")
-        return queryset if tenant_id is None else queryset.filter(tenant_id=tenant_id)
+        return queryset.none() if tenant_id is None else queryset.filter(tenant_id=tenant_id)
 
     def partial_update(self, request: Request, *args, **kwargs) -> Response:
         """Save an operator edit to the draft; totals recompute on read."""

@@ -9,6 +9,7 @@ from config.settings import *  # noqa: F401,F403
 from config.settings import REST_FRAMEWORK
 
 DEBUG = True
+REGISTRATION_ENABLED = True
 
 # The base settings hardened these while DEBUG was False at import time.
 # Turn them off so the test client isn't redirected to https.

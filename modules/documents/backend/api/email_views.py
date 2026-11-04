@@ -13,11 +13,13 @@ import logging
 from documents.backend.models import DocumentCategory
 from documents.backend.services.document import DocumentService
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.ingest import IngestKind, get_ingest_handler
-from shared.service_auth import ServiceTokenAuthentication
+from shared.service_auth import IngestionRateThrottle, ServiceTokenAuthentication
 from tenancy.models import Tenant
 
 logger = logging.getLogger(__name__)
@@ -25,14 +27,29 @@ logger = logging.getLogger(__name__)
 
 class EmailIngestView(APIView):
     authentication_classes = [ServiceTokenAuthentication]
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [IngestionRateThrottle]
+
+    max_attachments = 20
+    max_attachment_bytes = 20 * 1024 * 1024
 
     def post(self, request: Request) -> Response:
         payload = request.data
-        sender = payload.get("sender", "").strip().lower()
-        subject = payload.get("subject", "").strip()
-        body = payload.get("body", "").strip()
+        if not isinstance(payload, dict):
+            raise ValidationError({"detail": "Payload must be an object."})
+        sender = payload.get("sender", "")
+        subject = payload.get("subject", "")
+        body = payload.get("body", "")
         attachments = payload.get("attachments", [])
+        if not all(isinstance(value, str) for value in (sender, subject, body)):
+            raise ValidationError({"detail": "sender, subject, and body must be strings."})
+        if not isinstance(attachments, list) or len(attachments) > self.max_attachments:
+            raise ValidationError({"attachments": ["Attach between 0 and 20 files."]})
+        if not all(isinstance(attachment, dict) for attachment in attachments):
+            raise ValidationError({"attachments": ["Each attachment must be an object."]})
+        sender = sender.strip().lower()
+        subject = subject.strip()
+        body = body.strip()
 
         tenant = Tenant.objects.first()
         if tenant is None:
@@ -52,12 +69,18 @@ class EmailIngestView(APIView):
             content_b64 = att.get("content_b64") or att.get("content", "")
 
             try:
-                data = base64.b64decode(content_b64) if content_b64 else b""
-            except Exception:
-                data = b""
+                data = base64.b64decode(content_b64, validate=True) if content_b64 else b""
+            except (TypeError, ValueError) as exc:
+                raise ValidationError(
+                    {"attachments": [f"Attachment {idx + 1} is not valid base64."]}
+                ) from exc
 
             if not data:
                 continue
+            if len(data) > self.max_attachment_bytes:
+                raise ValidationError(
+                    {"attachments": [f"Attachment {idx + 1} exceeds the 20 MB limit."]}
+                )
 
             low_filename = filename.lower()
             low_subject = subject.lower()

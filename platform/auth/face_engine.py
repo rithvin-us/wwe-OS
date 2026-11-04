@@ -115,4 +115,6 @@ class FaceAIClient:
     ) -> tuple[list[float], bool]:
         """Embedding + liveness verdict for a login attempt selfie/burst."""
         body = self._post("/verify-face", image_bytes, extra_frames)
-        return body["embedding"], bool(body.get("liveness", True))
+        # A malformed or downgraded Face-AI response must never authenticate a
+        # user merely because it omitted the liveness verdict.
+        return body["embedding"], bool(body.get("liveness", False))

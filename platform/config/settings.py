@@ -44,6 +44,20 @@ if str(REPO_ROOT / "modules") not in sys.path:
 _INSECURE_SECRET_KEY = "django-insecure-development-placeholder-key-change-in-production-12345"
 SECRET_KEY = env_str("DJANGO_SECRET_KEY") or env_str("SECRET_KEY", default=_INSECURE_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
+
+# A single-operator deployment must not become claimable by the first person
+# who discovers the registration endpoint.  Enable this only for the initial
+# bootstrap (or controlled invitation flows) and turn it off afterwards.
+REGISTRATION_ENABLED = env_bool("REGISTRATION_ENABLED", default=DEBUG)
+
+# The number of reverse-proxy hops that are allowed to supply X-Forwarded-For.
+# Render terminates one hop; direct deployments should set this to 0.
+TRUSTED_PROXY_COUNT = env_int("TRUSTED_PROXY_COUNT", 1)
+
+# Email relay webhooks are authenticated by the Next.js edge route before it
+# exchanges the request for a service token.  There is deliberately no
+# development default: an unset secret disables that public entry point.
+EMAIL_INGEST_WEBHOOK_SECRET = env_str("EMAIL_INGEST_WEBHOOK_SECRET", "")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 APP_ENV = env_str("APP_ENV", default="development")
 

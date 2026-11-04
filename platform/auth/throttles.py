@@ -2,14 +2,6 @@ from rest_framework.settings import api_settings
 from rest_framework.throttling import ScopedRateThrottle
 
 
-class LoginRateThrottle(ScopedRateThrottle):
-    scope = "login"
-
-
-class PasswordResetRateThrottle(ScopedRateThrottle):
-    scope = "password_reset"
-
-
 class _OptionalScopedRateThrottle(ScopedRateThrottle):
     """A ScopedRateThrottle that treats an unconfigured scope as "no throttle"
     instead of a 500.
@@ -38,3 +30,11 @@ class FaceLoginRateThrottle(_OptionalScopedRateThrottle):
 
 class FaceEnrollRateThrottle(_OptionalScopedRateThrottle):
     scope = "face_enroll"
+
+
+class LoginRateThrottle(_OptionalScopedRateThrottle):
+    scope = "login"
+
+
+class PasswordResetRateThrottle(_OptionalScopedRateThrottle):
+    scope = "password_reset"

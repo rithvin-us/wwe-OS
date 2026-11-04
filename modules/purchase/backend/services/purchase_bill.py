@@ -197,8 +197,9 @@ class PurchaseBillService(BaseService):
         source_channel: str = "telegram",
         raw_extraction: dict | None = None,
         document_text: str = "",
+        tenant: Tenant | None = None,
     ) -> PurchaseBill:
-        tenant = _resolve_ingest_tenant()
+        tenant = tenant or _resolve_ingest_tenant()
 
         seller_name = data.get("seller_name") or "Pending OCR Processing"
         purchase_date = data.get("purchase_date") or datetime.date.today()

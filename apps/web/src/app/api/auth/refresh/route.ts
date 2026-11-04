@@ -27,9 +27,9 @@ export async function POST() {
   });
 
   const text = await upstream.text();
-  let envelope: ApiEnvelope<{ access: string }>;
+  let envelope: ApiEnvelope<{ access: string; refresh: string }>;
   try {
-    envelope = JSON.parse(text) as ApiEnvelope<{ access: string }>;
+    envelope = JSON.parse(text) as ApiEnvelope<{ access: string; refresh: string }>;
   } catch {
     const response = NextResponse.json({ success: false }, { status: upstream.status || 500 });
     response.cookies.delete(ACCESS_COOKIE);
@@ -51,6 +51,24 @@ export async function POST() {
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 15,
+  });
+  // Django rotates and blacklists refresh tokens. Persist the replacement or
+  // every session fails on its second refresh.
+  const payload = JSON.parse(
+    Buffer.from(envelope.data.refresh.split(".")[1] ?? "", "base64url").toString("utf8"),
+  ) as { exp?: number };
+  const maxAge = payload.exp ? Math.max(0, payload.exp - Math.floor(Date.now() / 1000)) : 0;
+  if (!maxAge) {
+    response.cookies.delete(ACCESS_COOKIE);
+    response.cookies.delete(REFRESH_COOKIE);
+    return response;
+  }
+  response.cookies.set(REFRESH_COOKIE, envelope.data.refresh, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge,
   });
   return response;
 }
