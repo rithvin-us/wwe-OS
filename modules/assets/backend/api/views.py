@@ -42,6 +42,7 @@ class AssetViewSet(BaseModelViewSet):
     required_permissions = {
         "list": "assets.read",
         "retrieve": "assets.read",
+        "download": "assets.read",
         "maintenance": "assets.read",
         "stats": "assets.read",
         "export": "assets.read",

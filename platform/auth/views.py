@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from django.conf import settings
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
@@ -42,6 +44,10 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
+        if not settings.REGISTRATION_ENABLED:
+            # Do not advertise a public account-creation surface after the
+            # single-operator bootstrap is complete.
+            raise NotFound()
         data = RegisterSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         user = AuthService().register(**data.validated_data)
@@ -52,6 +58,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [LoginRateThrottle]
+    throttle_scope = "login"
 
     def post(self, request: Request) -> Response:
         data = LoginSerializer(data=request.data)
@@ -103,6 +110,7 @@ class LogoutEverywhereView(APIView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [PasswordResetRateThrottle]
+    throttle_scope = "password_reset"
 
     def post(self, request: Request) -> Response:
         data = PasswordResetRequestSerializer(data=request.data)

@@ -83,6 +83,9 @@ class PurchaseBillViewSet(BaseModelViewSet):
     required_permissions = {
         "list": "purchase.bill.read",
         "retrieve": "purchase.bill.read",
+        "create": "purchase.bill.upload",
+        "update": "purchase.bill.review",
+        "partial_update": "purchase.bill.review",
         "file": "purchase.bill.read",
         "stats": "purchase.bill.read",
         "insights": "purchase.bill.read",
@@ -94,6 +97,12 @@ class PurchaseBillViewSet(BaseModelViewSet):
         "upload": "purchase.bill.upload",
     }
 
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        """Bills enter through the ingestion/upload pipeline, never the read serializer."""
+        from rest_framework.exceptions import MethodNotAllowed
+
+        raise MethodNotAllowed("POST")
+
     def perform_destroy(self, instance):
         PurchaseBillService().delete_bill(bill=instance, actor=self.request.user)
 
@@ -102,7 +111,9 @@ class PurchaseBillViewSet(BaseModelViewSet):
             return PurchaseBill.objects.none()
         user = self.request.user
         qs = PurchaseBill.objects.all()
-        if not user.is_superuser and user.tenant_id is not None:
+        if not user.is_superuser:
+            if user.tenant_id is None:
+                return qs.none()
             qs = qs.filter(tenant_id=user.tenant_id)
         return qs
 
@@ -149,10 +160,13 @@ class PurchaseBillViewSet(BaseModelViewSet):
         file = request.FILES.get("file")
         if not file:
             raise ValidationError({"file": ["This field is required."]})
+        if file.size > 20 * 1024 * 1024:
+            raise ValidationError({"file": ["Files must not exceed 20 MB."]})
         document_base64 = base64.b64encode(file.read()).decode("ascii")
         bill = PurchaseBillService().ingest(
             data={"document_base64": document_base64, "caption": file.name},
             source_channel="upload",
+            tenant=request.user.tenant,
         )
         return Response(PurchaseBillSerializer(bill).data, status=status.HTTP_201_CREATED)
 

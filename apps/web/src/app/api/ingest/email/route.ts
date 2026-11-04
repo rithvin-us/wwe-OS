@@ -2,11 +2,19 @@ import { NextResponse } from "next/server";
 import { internalApiUrl } from "@/lib/api/server";
 
 export async function POST(request: Request) {
+  const webhookSecret = process.env.EMAIL_INGEST_WEBHOOK_SECRET;
+  const presentedSecret = request.headers.get("x-email-ingest-secret");
+  if (!webhookSecret || !presentedSecret || presentedSecret !== webhookSecret) {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
   const body = await request.json();
-  const firstEntry = process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0] || "";
-  const serviceToken = firstEntry.includes(":")
-    ? firstEntry.substring(firstEntry.indexOf(":") + 1)
-    : firstEntry || "default-service-token";
+  const serviceToken = process.env.INGESTION_SERVICE_TOKENS?.split(",")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith("email-service:"))
+    ?.slice("email-service:".length);
+  if (!serviceToken) {
+    return NextResponse.json({ message: "Email ingestion is not configured." }, { status: 503 });
+  }
 
   try {
     const upstream = await fetch(`${internalApiUrl()}/api/v1/documents/ingest/email/`, {

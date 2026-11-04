@@ -217,7 +217,7 @@ TanStack Query against the API routes under `apps/web/src/app/api/`.
 
 - **Rithu AI** is the contextual business co-pilot surfaced across the shell
   (chat widget, `/assistant`, `/chatbot` settings). Web AI routes:
-  `app/api/ai/chatbot`, `app/api/ai/assistant`, `app/api/ai/generate`. Provider
+  `app/api/ai/chatbot`, `app/api/ai/assistant`. Provider
   is **Google Gemini** (`GEMINI_API_KEY`, `gemini-flash-latest`), matching the
   platform `ai` app's default. It answers questions about company data and
   supports slash commands / `@`-mentions. Do not wire a module directly to a

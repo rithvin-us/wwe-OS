@@ -45,6 +45,9 @@ services:
       # and give the bot's PLATFORM_SERVICE_TOKEN the <LONG_RANDOM_SECRET> half.
       - key: INGESTION_SERVICE_TOKENS
         sync: false
+      # Set to 1 only for the controlled first-account bootstrap, then 0.
+      - key: REGISTRATION_ENABLED
+        value: "0"
       # OCR and Rithu AI run through the platform AI gateway ON THE BACKEND
       # (platform/ai), so the API needs the Gemini key too — not just the
       # Telegram bot. Without it, bulk invoice-import OCR and PO parsing fall

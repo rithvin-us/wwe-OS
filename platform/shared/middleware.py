@@ -32,7 +32,10 @@ QUIET_PATHS = frozenset({"/healthz", "/readyz", "/metrics"})
 def _client_ip(request: HttpRequest) -> str | None:
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+        trusted_proxy_count = max(0, getattr(settings, "TRUSTED_PROXY_COUNT", 0))
+        if trusted_proxy_count and len(hops) > trusted_proxy_count:
+            return hops[-(trusted_proxy_count + 1)]
     return request.META.get("REMOTE_ADDR")
 
 
