@@ -8,10 +8,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
   const body = await request.json();
-  const firstEntry = process.env.INGESTION_SERVICE_TOKENS?.split(",")?.[0] || "";
-  const serviceToken = firstEntry.includes(":")
-    ? firstEntry.substring(firstEntry.indexOf(":") + 1)
-    : firstEntry;
+  const serviceToken = process.env.INGESTION_SERVICE_TOKENS?.split(",")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith("email-service:"))
+    ?.slice("email-service:".length);
   if (!serviceToken) {
     return NextResponse.json({ message: "Email ingestion is not configured." }, { status: 503 });
   }

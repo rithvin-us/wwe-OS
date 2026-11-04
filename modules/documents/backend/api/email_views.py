@@ -29,9 +29,11 @@ class EmailIngestView(APIView):
     authentication_classes = [ServiceTokenAuthentication]
     permission_classes = [IsAuthenticated]
     throttle_classes = [IngestionRateThrottle]
+    throttle_scope = "ingestion"
 
     max_attachments = 20
     max_attachment_bytes = 20 * 1024 * 1024
+    max_total_attachment_bytes = 25 * 1024 * 1024
 
     def post(self, request: Request) -> Response:
         payload = request.data
@@ -56,10 +58,13 @@ class EmailIngestView(APIView):
             tenant, _ = Tenant.objects.get_or_create(name="WWE OS", slug="wwe-os")
 
         created_docs = []
+        encoded_attachment_bytes = 0
 
         tags = payload.get("tags") or payload.get("labels") or []
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(",") if t.strip()]
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise ValidationError({"tags": ["Tags must be a list of strings."]})
 
         for idx, att in enumerate(attachments):
             filename = (
@@ -67,6 +72,23 @@ class EmailIngestView(APIView):
             )
             content_type = att.get("content_type", "application/pdf")
             content_b64 = att.get("content_b64") or att.get("content", "")
+            if not all(isinstance(value, str) for value in (filename, content_type, content_b64)):
+                raise ValidationError(
+                    {"attachments": [f"Attachment {idx + 1} has invalid fields."]}
+                )
+            # Base64 expands data by approximately 4/3. Reject oversized
+            # payloads before decoding so a request cannot allocate hundreds
+            # of megabytes merely to receive a validation error.
+            encoded_attachment_bytes += len(content_b64)
+            max_encoded_bytes = (self.max_total_attachment_bytes * 4) // 3
+            if encoded_attachment_bytes > max_encoded_bytes:
+                raise ValidationError(
+                    {"attachments": ["Attachments exceed the 25 MB total limit."]}
+                )
+            if len(content_b64) > (self.max_attachment_bytes * 4) // 3:
+                raise ValidationError(
+                    {"attachments": [f"Attachment {idx + 1} exceeds the 20 MB limit."]}
+                )
 
             try:
                 data = base64.b64decode(content_b64, validate=True) if content_b64 else b""
